@@ -1,5 +1,6 @@
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
+import CredentialsProvider from 'next-auth/providers/credentials';
 import { getSheetsClient } from '@/lib/google';
 
 // We need to define types for session
@@ -18,47 +19,56 @@ declare module 'next-auth' {
 
 export const authOptions: NextAuthOptions = {
     providers: [
-        GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID!,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-        }),
+        CredentialsProvider({
+            name: 'Credentials',
+            credentials: {
+                email: { label: "Email", type: "text" },
+                password: { label: "Password", type: "password" }
+            },
+            async authorize(credentials: Record<string, string> | undefined) {
+                if (!credentials?.email || !credentials?.password) return null;
+
+                try {
+                    const client = getSheetsClient();
+                    const sheetId = process.env.GOOGLE_SHEET_ID;
+
+                    // Fetch Users sheet including Password column (D)
+                    const response = await client.spreadsheets.values.get({
+                        spreadsheetId: sheetId,
+                        range: 'Users!A2:D',
+                    });
+
+                    const rows = response.data.values || [];
+                    const userEmail = credentials.email.toLowerCase().trim();
+
+                    // Find user
+                    const userRow = rows.find(row =>
+                        row[0]?.trim().toLowerCase() === userEmail
+                    );
+
+                    if (!userRow) return null;
+
+                    // Check password (Column D is index 3)
+                    const dbPassword = userRow[3]?.toString().trim();
+                    if (dbPassword !== credentials.password) {
+                        return null;
+                    }
+
+                    // Return user object
+                    return {
+                        id: userEmail,
+                        email: userEmail,
+                        name: userRow[1],
+                        role: userRow[2], // Map role from sheet
+                    };
+                } catch (error) {
+                    console.error('Login error:', error);
+                    return null;
+                }
+            }
+        })
     ],
     callbacks: {
-        async signIn({ user }) {
-            if (!user.email) return false;
-
-            try {
-                // Init sheets client
-                const client = getSheetsClient();
-                const sheetId = process.env.GOOGLE_SHEET_ID;
-
-                // Check if user exists in Users sheet
-                // Columns: Email, Name, Role
-                const response = await client.spreadsheets.values.get({
-                    spreadsheetId: sheetId,
-                    range: 'Users!A2:C',
-                });
-
-                const rows = response.data.values || [];
-                const userEmail = user.email.toLowerCase().trim();
-                const validUser = rows.find(row =>
-                    row[0]?.trim().toLowerCase() === userEmail
-                );
-
-                if (validUser) {
-                    // Attach role to user object to bubble it up
-                    // This mutation is temporary for the session
-                    user.role = validUser[2];
-                    return true;
-                }
-
-                console.log(`User ${user.email} not found in whitelist.`);
-                return false; // Deny sign in
-            } catch (error) {
-                console.error('Auth verification failed:', error);
-                return false;
-            }
-        },
         async jwt({ token, user }) {
             if (user) {
                 token.role = user.role;

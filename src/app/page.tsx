@@ -10,6 +10,9 @@ export default function Home() {
     const { status } = useSession();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
 
     useEffect(() => {
         if (status === 'authenticated') {
@@ -17,9 +20,28 @@ export default function Home() {
         }
     }, [status, router]);
 
-    const handleLogin = async () => {
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
         setLoading(true);
-        await signIn('google', { callbackUrl: '/dashboard' });
+        setError('');
+
+        try {
+            const res = await signIn('credentials', {
+                email,
+                password,
+                redirect: false,
+            });
+
+            if (res?.error) {
+                setError('Giriş başarısız. Bilgilerinizi kontrol edin.');
+            } else {
+                router.push('/dashboard');
+            }
+        } catch (err) {
+            setError('Bir hata oluştu.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -32,16 +54,48 @@ export default function Home() {
                 </div>
 
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">Satış Yönetim Paneli</h1>
-                <p className="text-gray-500 mb-8">Devam etmek için kurumsal hesabınızla giriş yapın.</p>
+                <p className="text-gray-500 mb-8">Devam etmek için kurumsal bilgilerinizle giriş yapın.</p>
 
-                <Button
-                    size="lg"
-                    className="w-full"
-                    onClick={handleLogin}
-                    isLoading={loading}
-                >
-                    Google ile Giriş Yap
-                </Button>
+                <form onSubmit={handleLogin} className="space-y-4">
+                    <div className="text-left">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Email Adresi</label>
+                        <input
+                            type="email"
+                            required
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
+                            placeholder="ornek@sirket.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="text-left">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Şifre</label>
+                        <input
+                            type="password"
+                            required
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
+                            placeholder="******"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                        />
+                    </div>
+
+                    {error && (
+                        <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg">
+                            {error}
+                        </div>
+                    )}
+
+                    <Button
+                        type="submit"
+                        size="lg"
+                        className="w-full"
+                        isLoading={loading}
+                    >
+                        Giriş Yap
+                    </Button>
+                </form>
 
                 <p className="mt-6 text-xs text-gray-400">
                     Sadece yetkili personel giriş yapabilir.

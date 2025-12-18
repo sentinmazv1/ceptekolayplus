@@ -8,12 +8,12 @@ import { Suspense } from 'react';
 
 function ErrorContent() {
     const searchParams = useSearchParams();
-    const error = searchParams.get('error');
+    const email = searchParams.get('email');
 
     let message = 'Bir hata oluştu.';
 
     if (error === 'AccessDenied') {
-        message = 'Erişim reddedildi. Mail adresiniz "Users" tablosunda tanımlı değil veya yetkiniz yok.';
+        message = `Erişim reddedildi. "${email}" adresi "Users" tablosunda tanımlı değil veya yetkiniz yok.`;
     } else if (error === 'Configuration') {
         message = 'Sunucu yapılandırma hatası.';
     } else if (error === 'Verification') {
