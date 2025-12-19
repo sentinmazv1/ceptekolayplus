@@ -136,11 +136,20 @@ export default function SearchPage() {
                     {/* Header */}
                     <div className="bg-gray-50 p-6 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
-                            <div className="flex items-center gap-3 mb-1">
+                            <div className="flex flex-wrap items-center gap-3 mb-1">
                                 <h2 className="text-2xl font-bold text-gray-900">{result.ad_soyad}</h2>
-                                <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${getStatusColor(result.onay_durumu || result.durum)}`}>
-                                    {result.onay_durumu || result.durum}
+
+                                {/* 1. General Status */}
+                                <span className={`px-3 py-1 rounded-full text-sm font-semibold border bg-white border-gray-200 text-gray-700`}>
+                                    {result.durum}
                                 </span>
+
+                                {/* 2. Admin Approval Status (If exists) */}
+                                {(result.onay_durumu) && (
+                                    <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${getStatusColor(result.onay_durumu)}`}>
+                                        {result.onay_durumu}
+                                    </span>
+                                )}
                             </div>
                             <p className="text-gray-500 flex items-center gap-2">
                                 <span className="font-mono bg-gray-200 px-2 py-0.5 rounded text-xs text-gray-700">ID: {result.id.slice(0, 8)}</span>
@@ -233,12 +242,12 @@ export default function SearchPage() {
                             {/* Admin Feedback Section */}
                             {(result.onay_durumu || result.kredi_limiti) && (
                                 <div className={`p-4 rounded-lg border ${result.onay_durumu === 'Onaylandı' ? 'bg-green-50 border-green-200' :
-                                        result.onay_durumu === 'Reddedildi' ? 'bg-red-50 border-red-200' :
-                                            'bg-yellow-50 border-yellow-200'
+                                    result.onay_durumu === 'Reddedildi' ? 'bg-red-50 border-red-200' :
+                                        'bg-yellow-50 border-yellow-200'
                                     }`}>
                                     <h3 className={`text-sm font-bold mb-3 flex items-center gap-2 ${result.onay_durumu === 'Onaylandı' ? 'text-green-800' :
-                                            result.onay_durumu === 'Reddedildi' ? 'text-red-800' :
-                                                'text-yellow-800'
+                                        result.onay_durumu === 'Reddedildi' ? 'text-red-800' :
+                                            'text-yellow-800'
                                         }`}>
                                         {result.onay_durumu === 'Onaylandı' ? <CheckCircle className="w-4 h-4" /> :
                                             result.onay_durumu === 'Reddedildi' ? <XCircle className="w-4 h-4" /> :

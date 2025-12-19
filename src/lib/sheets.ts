@@ -274,8 +274,12 @@ export async function getLeadStats() {
     rows.forEach(row => {
         const c = rowToCustomer(row);
 
-        // General Status Counts (regardless of lock)
-        if (c.onay_durumu === 'Beklemede' || c.durum === 'Onaya gönderildi') pending_approval++;
+        // General Status Counts
+        // Fix for "Pending Approval" logic:
+        // Count if strictly "Beklemede" OR (Onaya gönderildi AND not yet processed)
+        const isPending = c.onay_durumu === 'Beklemede' || (c.durum === 'Onaya gönderildi' && !c.onay_durumu);
+
+        if (isPending) pending_approval++;
         if (c.onay_durumu === 'Kefil İstendi' || c.durum === 'Kefil bekleniyor') waiting_guarantor++;
         if (c.durum === 'Teslim edildi') delivered++;
 
