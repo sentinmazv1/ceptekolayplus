@@ -134,6 +134,34 @@ export async function getLeads(filters?: { sahip?: string; durum?: LeadStatus })
     return filtered;
 }
 
+export async function getCustomersByStatus(status: string, user: { email: string; role: string }) {
+    const client = getSheetsClient();
+    const response = await client.spreadsheets.values.get({
+        spreadsheetId: SHEET_ID,
+        range: `Customers!A2:${LAST_COL}`,
+    });
+
+    const rows = response.data.values || [];
+    const customers = rows.map(row => rowToCustomer(row));
+
+    // Filter by status
+    let filtered = customers.filter(c => c.durum === status);
+
+    // Role-based filtering: Sales reps only see their own customers
+    if (user.role === 'SALES_REP') {
+        filtered = filtered.filter(c => c.sahip === user.email);
+    }
+
+    // Sort by most recent first
+    filtered.sort((a, b) => {
+        const dateA = new Date(a.created_at || 0).getTime();
+        const dateB = new Date(b.created_at || 0).getTime();
+        return dateB - dateA;
+    });
+
+    return filtered;
+}
+
 export async function lockNextLead(userEmail: string): Promise<Customer | null> {
     const client = getSheetsClient();
 
