@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Loader2, LogOut, LayoutDashboard, BarChart3, Search, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
+import { LiveActivityTicker } from '@/components/LiveActivityTicker';
 
 export default function DashboardLayout({
     children,
@@ -136,6 +137,9 @@ export default function DashboardLayout({
                     </div>
                 </div>
             </header>
+
+            {/* 🎉 Live Activity Ticker - Gamification! */}
+            <LiveActivityTicker />
 
             {/* Page Content */}
             <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
