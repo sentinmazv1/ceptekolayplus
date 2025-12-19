@@ -4,12 +4,15 @@ import { useState, useEffect } from 'react';
 import { Customer } from '@/lib/types';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
-import { Loader2, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { CustomerCard } from './CustomerCard';
 
 export function AdminApprovalPanel() {
     const [leads, setLeads] = useState<Customer[]>([]);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState<string | null>(null);
+    const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
+    const [detailCustomer, setDetailCustomer] = useState<Customer | null>(null);
 
     // Modal state
     const [modalOpen, setModalOpen] = useState(false);
@@ -136,6 +139,73 @@ export function AdminApprovalPanel() {
         }
     };
 
+    const viewDetail = (lead: Customer) => {
+        setDetailCustomer(lead);
+        setViewMode('detail');
+    };
+
+    const backToList = () => {
+        setViewMode('list');
+        setDetailCustomer(null);
+    };
+
+    // Detail View
+    if (viewMode === 'detail' && detailCustomer) {
+        return (
+            <div className="bg-white rounded-lg shadow p-6">
+                <div className="mb-4 flex items-center justify-between">
+                    <Button variant="outline" onClick={backToList} className="flex items-center gap-2">
+                        <ArrowLeft className="w-4 h-4" />
+                        Listeye Dön
+                    </Button>
+                    <h2 className="text-xl font-bold">Başvuru Detayı</h2>
+                </div>
+
+                <CustomerCard
+                    initialData={detailCustomer}
+                    onSave={(updated) => {
+                        setDetailCustomer(updated);
+                        fetchPendingApprovals();
+                    }}
+                />
+
+                {/* Admin Actions */}
+                <div className="mt-6 p-4 bg-gray-50 rounded-lg border-t border-gray-200">
+                    <h3 className="font-semibold text-gray-900 mb-3">Yönetici İşlemleri</h3>
+                    <div className="flex flex-wrap gap-2">
+                        <Button
+                            size="sm"
+                            onClick={() => openModal(detailCustomer, 'approve')}
+                            className="flex items-center gap-1"
+                        >
+                            <CheckCircle className="w-4 h-4" />
+                            Onayla
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openModal(detailCustomer, 'guarantor')}
+                            className="flex items-center gap-1"
+                        >
+                            <AlertTriangle className="w-4 h-4" />
+                            Kefil İste
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => openModal(detailCustomer, 'reject')}
+                            className="flex items-center gap-1"
+                        >
+                            <XCircle className="w-4 h-4" />
+                            Reddet
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // List View
     return (
         <>
             <div className="bg-white rounded-lg shadow p-6">
@@ -150,7 +220,11 @@ export function AdminApprovalPanel() {
                 ) : (
                     <div className="space-y-4">
                         {leads.map((lead) => (
-                            <div key={lead.id} className="border border-gray-200 rounded-lg p-4">
+                            <div
+                                key={lead.id}
+                                className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                                onClick={() => viewDetail(lead)}
+                            >
                                 <div className="flex justify-between items-start mb-3">
                                     <div>
                                         <h3 className="font-semibold text-gray-900">{lead.ad_soyad}</h3>
@@ -162,7 +236,7 @@ export function AdminApprovalPanel() {
                                     </span>
                                 </div>
 
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
                                     <Button
                                         size="sm"
                                         onClick={() => openModal(lead, 'approve')}
