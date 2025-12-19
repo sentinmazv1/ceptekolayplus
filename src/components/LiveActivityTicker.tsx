@@ -19,6 +19,8 @@ interface ActivityStats {
     peakHour: number;
     upcomingBirthdays: number;
     streak: number;
+    hoursSinceLastCall: number;
+    activityLevel: number;
 }
 
 interface Message {
@@ -299,25 +301,44 @@ function generateMessages(stats: ActivityStats): Message[] {
         });
     }
 
-    // 💧 WELLNESS REMINDERS (20% chance)
-    if (Math.random() < 0.2) {
-        const wellness = ['healthReminders', 'postureReminders', 'eyeReminders', 'breakReminders', 'foodReminders'] as const;
-        const cat = wellness[Math.floor(Math.random() * wellness.length)];
+    // 💧 DATA-DRIVEN WELLNESS REMINDERS
+    // Su iç - 2+ saat aramadan
+    if (stats.hoursSinceLastCall >= 2) {
         messages.push({
-            id: 'wellness',
+            id: 'water',
             type: 'warning',
-            text: getRandomMessage(cat),
-            emoji: cat === 'healthReminders' ? '💧' : cat === 'postureReminders' ? '🪑' : cat === 'eyeReminders' ? '👀' : cat === 'breakReminders' ? '☕' : '🍎'
+            text: getRandomMessage('healthReminders'),
+            emoji: '💧'
         });
     }
 
-    // 😏 TEASING (15% chance if active)
-    if (stats.todayCalls > 10 && Math.random() < 0.15) {
+    // Dik otur - 20+ arama (çok oturuyor)
+    if (stats.todayCalls >= 20) {
         messages.push({
-            id: 'teasing',
-            type: 'fun',
-            text: getRandomMessage(stats.todayCalls > 30 ? 'talkingTooMuch' : 'playfulTeasing'),
-            emoji: '😏'
+            id: 'posture',
+            type: 'warning',
+            text: getRandomMessage('postureReminders'),
+            emoji: '🪑'
+        });
+    }
+
+    // Ekrana bakma - yüksek aktivite
+    if (stats.activityLevel >= 15) {
+        messages.push({
+            id: 'eyes',
+            type: 'warning',
+            text: getRandomMessage('eyeReminders'),
+            emoji: '👀'
+        });
+    }
+
+    // Mola ver - çok yüksek aktivite
+    if (stats.activityLevel >= 25) {
+        messages.push({
+            id: 'break',
+            type: 'warning',
+            text: getRandomMessage('breakReminders'),
+            emoji: '☕'
         });
     }
 

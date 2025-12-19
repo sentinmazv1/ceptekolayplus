@@ -46,6 +46,8 @@ export async function GET() {
             peakHour: 0,
             upcomingBirthdays: 0,
             streak: 0,
+            hoursSinceLastCall: 0, // NEW: for "su iç" logic
+            activityLevel: 0, // NEW: actions today (for "mola ver")
         };
 
         const cityCount: Record<string, number> = {};
@@ -155,6 +157,26 @@ export async function GET() {
 
         // Streak calculation (simplified - consecutive days with approvals)
         stats.streak = calculateStreak(); // TODO: implement proper streak logic
+
+        // Calculate hours since last call (most recent call time)
+        let mostRecentCallTime = 0;
+        rows.forEach(row => {
+            const lastCalled = getCol(row, 'son_arama_zamani');
+            if (lastCalled) {
+                try {
+                    const callTime = new Date(lastCalled).getTime();
+                    if (callTime > mostRecentCallTime) {
+                        mostRecentCallTime = callTime;
+                    }
+                } catch { }
+            }
+        });
+        if (mostRecentCallTime > 0) {
+            stats.hoursSinceLastCall = Math.floor((Date.now() - mostRecentCallTime) / (1000 * 60 * 60));
+        }
+
+        // Activity level = today's calls + approvals + updates
+        stats.activityLevel = stats.todayCalls + stats.todayApprovals;
 
         return NextResponse.json(stats);
 
