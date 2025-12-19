@@ -33,7 +33,10 @@ export const COLUMNS = [
     'kefil_kapali_icra_varmi', 'kefil_kapali_icra_kapanis_sekli', 'kefil_mulkiyet_durumu',
     'kefil_arac_varmi', 'kefil_tapu_varmi', 'kefil_notlar',
     // Winner customer number (added at end)
-    'winner_musteri_no'
+    'winner_musteri_no',
+    // Psikoteknik (added at very end)
+    'psikoteknik_varmi',
+    'psikoteknik_notu'
 ];
 
 const COL_INDEX = COLUMNS.reduce((acc, col, idx) => ({ ...acc, [col]: idx }), {} as Record<string, number>);
@@ -306,8 +309,8 @@ export async function getLeadStats() {
 
         // General Status Counts
         // Fix for "Pending Approval" logic:
-        // Count if strictly "Beklemede" OR (Onaya gönderildi AND not yet processed)
-        const isPending = c.onay_durumu === 'Beklemede' || (c.durum === 'Onaya gönderildi' && !c.onay_durumu);
+        // Count if strictly "Beklemede" OR (Başvuru alındı AND not yet processed)
+        const isPending = c.onay_durumu === 'Beklemede' || (c.durum === 'Başvuru alındı' && !c.onay_durumu);
 
         if (isPending) pending_approval++;
         if (c.onay_durumu === 'Kefil İstendi' || c.durum === 'Kefil bekleniyor') waiting_guarantor++;

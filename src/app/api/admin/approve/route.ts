@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
         const now = new Date().toISOString();
         const updated = await updateLead({
             ...customer,
-            durum: 'Onaya gönderildi',
+            // Don't change durum - keep it as 'Başvuru alındı' or whatever it was
             onay_durumu: 'Onaylandı',
             kredi_limiti,
             admin_notu: admin_notu || '',
@@ -49,8 +49,8 @@ export async function POST(req: NextRequest) {
             user_email: session.user.email,
             customer_id: customerId,
             action: 'UPDATE_STATUS',
-            old_value: customer.durum,
-            new_value: 'Onaya gönderildi',
+            old_value: customer.onay_durumu || 'Beklemede',
+            new_value: 'Onaylandı',
             note: `Approved with limit: ${kredi_limiti}`
         });
 

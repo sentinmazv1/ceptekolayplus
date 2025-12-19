@@ -13,11 +13,10 @@ export type LeadStatus =
   | 'Meşgul/Hattı kapalı'
   | 'Yanlış numara'
   | 'Daha sonra aranmak istiyor'
-  | 'WhatsApp’tan bilgi istiyor'
+  | "WhatsApp'tan bilgi istiyor"
   | 'E-Devlet paylaşmak istemedi'
   | 'Başvuru alındı'
   | 'Eksik evrak bekleniyor'
-  | 'Onaya gönderildi'
   | 'Satış yapıldı/Tamamlandı'
   | 'Reddetti'
   | 'Uygun değil'
@@ -46,6 +45,8 @@ export interface Customer {
   arama_not_kisa?: string;
   aciklama_uzun?: string;
   e_devlet_sifre?: string;
+  psikoteknik_varmi?: 'Evet' | 'Hayır';
+  psikoteknik_notu?: string;
   ikametgah_varmi?: 'Evet' | 'Hayır';
   hizmet_dokumu_varmi?: 'Evet' | 'Hayır';
   ayni_isyerinde_sure_ay?: string;

@@ -20,13 +20,12 @@ const STATUS_OPTIONS: { value: LeadStatus; label: string }[] = [
     { value: 'Meşgul/Hattı kapalı', label: 'Meşgul/Hattı kapalı' },
     { value: 'Yanlış numara', label: 'Yanlış numara' },
     { value: 'Daha sonra aranmak istiyor', label: 'Daha sonra aranmak istiyor' },
-    { value: 'WhatsApp’tan bilgi istiyor', label: 'WhatsApp’tan bilgi istiyor' },
+    { value: "WhatsApp'tan bilgi istiyor", label: "WhatsApp'tan bilgi istiyor" },
     { value: 'E-Devlet paylaşmak istemedi', label: 'E-Devlet paylaşmak istemedi' },
-    { value: 'Başvuru alındı', label: 'Başvuru alındı' },
+    { value: 'Başvuru alındı', label: 'Başvuru alındı (Yönetici Onayında)' },
     { value: 'Mağazaya davet edildi', label: 'Mağazaya davet edildi' },
     { value: 'Kefil bekleniyor', label: 'Kefil bekleniyor' },
     { value: 'Eksik evrak bekleniyor', label: 'Eksik evrak bekleniyor' },
-    { value: 'Onaya gönderildi', label: 'Onaya gönderildi' },
     { value: 'Teslim edildi', label: 'Teslim edildi' },
     { value: 'Satış yapıldı/Tamamlandı', label: 'Satış yapıldı/Tamamlandı' },
     { value: 'Reddetti', label: 'Reddetti' },
@@ -74,8 +73,8 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
         }
 
         // Guarantor Validation
-        // Only enforce if the sales rep is re-submitting for approval ('Başvuru alındı') or submitting for approval ('Onaya gönderildi')
-        if (data.onay_durumu === 'Kefil İstendi' && (data.durum === 'Başvuru alındı' || data.durum === 'Onaya gönderildi')) {
+        // Only enforce if the sales rep is re-submitting for approval ('Başvuru alındı')
+        if (data.onay_durumu === 'Kefil İstendi' && data.durum === 'Başvuru alındı') {
             if (!data.kefil_ad_soyad || !data.kefil_telefon || !data.kefil_tc_kimlik) {
                 setError('Kefil İstendiği ve onay süreci için; Kefil Ad Soyad, Telefon ve TC Kimlik zorunludur.');
                 setLoading(false);
@@ -375,6 +374,28 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                 onChange={(e) => handleChange('hizmet_dokumu_varmi', e.target.value)}
                                 options={YES_NO_OPTIONS}
                             />
+
+                            {/* Psikoteknik - NEW */}
+                            <div className="space-y-2">
+                                <Select
+                                    label="Psikoteknik Raporu"
+                                    value={data.psikoteknik_varmi || ''}
+                                    onChange={(e) => handleChange('psikoteknik_varmi', e.target.value)}
+                                    options={YES_NO_OPTIONS}
+                                />
+                                {data.psikoteknik_varmi === 'Evet' && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Psikoteknik Notu</label>
+                                        <textarea
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[60px]"
+                                            value={data.psikoteknik_notu || ''}
+                                            onChange={(e) => handleChange('psikoteknik_notu', e.target.value)}
+                                            placeholder="Psikoteknik raporu hakkında notlar..."
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
                             <Select
                                 label="İkametgah Var mı?"
                                 value={data.ikametgah_varmi || ''}
@@ -556,7 +577,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                     </section>
 
                     {/* Delivery Tracking Section - Show only if approved or invited */}
-                    {(data.onay_durumu === 'Onaylandı' || data.durum === 'Mağazaya davet edildi' || data.durum === 'Onaya gönderildi' || data.durum === 'Teslim edildi') && (
+                    {(data.onay_durumu === 'Onaylandı' || data.durum === 'Mağazaya davet edildi' || data.durum === 'Başvuru alındı' || data.durum === 'Teslim edildi') && (
                         <div className="border-t pt-4 mt-4">
                             <h3 className="text-sm font-semibold mb-3 text-gray-700 flex items-center gap-2">
                                 📦 Ürün Teslimat Bilgileri
