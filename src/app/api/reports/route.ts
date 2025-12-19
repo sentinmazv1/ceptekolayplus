@@ -66,8 +66,12 @@ export async function GET(req: NextRequest) {
                 contacted: 0,
                 storeVisit: 0,
                 sale: 0,
-            }
+            },
+            todayCalled: 0 // NEW: Count of customers called today
         };
+
+        // Get today's date string
+        const today = new Date().toISOString().split('T')[0];
 
         rows.forEach(row => {
             stats.funnel.total++;
@@ -80,6 +84,15 @@ export async function GET(req: NextRequest) {
             const approval = getColSafe(row, 'onay_durumu');
             const channel = getColSafe(row, 'basvuru_kanali'); // New
             const createdAt = getColSafe(row, 'created_at');
+            const lastCalled = getColSafe(row, 'son_arama_zamani'); // NEW
+
+            // Count today's calls
+            if (lastCalled) {
+                const callDay = getDayKey(lastCalled);
+                if (callDay === today) {
+                    stats.todayCalled++;
+                }
+            }
 
             // 1. Status Distribution
             stats.status[status] = (stats.status[status] || 0) + 1;

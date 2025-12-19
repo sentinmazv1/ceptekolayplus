@@ -23,6 +23,7 @@ interface ReportStats {
         storeVisit: number;
         sale: number;
     };
+    todayCalled?: number; // NEW
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ef4444', '#f97316'];
@@ -138,7 +139,7 @@ export default function ReportsPage() {
             </div>
 
             {/* Summary KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                     <div className="flex justify-between items-start">
                         <div>
@@ -149,6 +150,19 @@ export default function ReportsPage() {
                             <Users className="w-5 h-5 text-blue-600" />
                         </div>
                     </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="text-sm font-medium text-gray-500">Bugün Arananlar</p>
+                            <h3 className="text-2xl font-bold text-indigo-600 mt-1">{stats.todayCalled || 0}</h3>
+                        </div>
+                        <div className="p-2 bg-indigo-50 rounded-lg">
+                            <Calendar className="w-5 h-5 text-indigo-600" />
+                        </div>
+                    </div>
+                    <p className="text-xs text-indigo-600 mt-2">Son arama zamanı bugün</p>
                 </div>
 
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
