@@ -10,6 +10,7 @@ import { Loader2, AlertCircle, CheckCircle, Info } from 'lucide-react';
 interface CustomerCardProps {
     initialData: Customer;
     onSave?: (updated: Customer) => void;
+    isNew?: boolean;
 }
 
 const STATUS_OPTIONS: { value: LeadStatus; label: string }[] = [
@@ -39,7 +40,7 @@ const YES_NO_OPTIONS = [
     { value: 'Hayır', label: 'Hayır' }
 ];
 
-export function CustomerCard({ initialData, onSave }: CustomerCardProps) {
+export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCardProps) {
     const [data, setData] = useState<Customer>(initialData);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -90,22 +91,35 @@ export function CustomerCard({ initialData, onSave }: CustomerCardProps) {
                 updateData.teslim_eden = data.sahip || 'Unknown';
             }
 
-            const res = await fetch(`/api/leads/${data.id}`, {
-                method: 'PUT',
+            const url = isNew ? '/api/leads/create' : `/api/leads/${data.id}`;
+            const method = isNew ? 'POST' : 'PUT';
+
+            const res = await fetch(url, {
+                method: method,
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(updateData),
             });
 
-            if (!res.ok) throw new Error('Failed to update');
+            if (!res.ok) {
+                const errJson = await res.json();
+                throw new Error(errJson.message || 'Bir hata oluştu');
+            }
 
             const json = await res.json();
-            setData(json.lead); // Update local state with server response
-            if (onSave) onSave(json.lead);
-            alert('Kaydedildi!');
-        } catch (err) {
-            setError('Kaydedilemedi. Lütfen tekrar deneyin.');
+
+            if (isNew) {
+                alert('Müşteri başarıyla oluşturuldu!');
+                // Reset form or redirect handled by parent usually, but here we just update local state if we want to continue editing
+                if (onSave) onSave(json.lead);
+            } else {
+                setData(json.lead); // Update local state with server response
+                if (onSave) onSave(json.lead);
+                alert('Kaydedildi!');
+            }
+        } catch (err: any) {
+            setError(err.message || 'Kaydedilemedi. Lütfen tekrar deneyin.');
         } finally {
             setLoading(false);
         }
@@ -151,8 +165,8 @@ export function CustomerCard({ initialData, onSave }: CustomerCardProps) {
 
             <div className="p-6">
                 <h2 className="text-xl font-bold mb-4 text-gray-800 border-b pb-2 flex justify-between items-center">
-                    Müşteri Kartı
-                    <span className="text-sm font-normal text-gray-500">ID: {data.id.slice(0, 8)}...</span>
+                    {isNew ? 'Yeni Müşteri Kaydı' : 'Müşteri Kartı'}
+                    {!isNew && <span className="text-sm font-normal text-gray-500">ID: {data.id.slice(0, 8)}...</span>}
                 </h2>
 
                 {error && (
@@ -570,7 +584,7 @@ export function CustomerCard({ initialData, onSave }: CustomerCardProps) {
                     {/* Footer Actions */}
                     <div className="pt-4 flex justify-end sticky bottom-0 bg-white p-4 border-t shadow-lg md:shadow-none md:relative">
                         <Button onClick={handleSave} isLoading={loading} className="w-full md:w-auto">
-                            Değişiklikleri Kaydet
+                            {isNew ? 'Müşteriyi Kaydet' : 'Değişiklikleri Kaydet'}
                         </Button>
                     </div>
                 </div>

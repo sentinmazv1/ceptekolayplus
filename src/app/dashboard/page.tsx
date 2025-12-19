@@ -148,6 +148,12 @@ export default function Dashboard() {
                                 >
                                     🔍 Müşteri Sorgula
                                 </button>
+                                <button
+                                    onClick={() => router.push('/dashboard/add')}
+                                    className="pb-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-indigo-600"
+                                >
+                                    ➕ Müşteri Ekle
+                                </button>
                             </>
                         )}
                     </nav>
