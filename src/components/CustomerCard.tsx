@@ -203,6 +203,12 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                 onChange={(e) => handleChange('tc_kimlik', e.target.value)}
                                 maxLength={11}
                             />
+                            <Input
+                                label="Winner Müşteri No"
+                                value={data.winner_musteri_no || ''}
+                                onChange={(e) => handleChange('winner_musteri_no', e.target.value)}
+                                placeholder="Opsiyonel"
+                            />
                             <Select
                                 label="Başvuru Kanalı"
                                 value={data.basvuru_kanali || ''}

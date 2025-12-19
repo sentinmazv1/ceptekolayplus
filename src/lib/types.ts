@@ -33,6 +33,7 @@ export interface Customer {
   ad_soyad: string;
   telefon: string;
   tc_kimlik?: string;
+  winner_musteri_no?: string;
   dogum_tarihi?: string;
   sehir?: string;
   meslek_is?: string;

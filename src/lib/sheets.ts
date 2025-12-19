@@ -6,7 +6,7 @@ const SHEET_ID = process.env.GOOGLE_SHEET_ID;
 // Column Mapping Helper (0-indexed)
 // Matches the exact order in the prompt
 export const COLUMNS = [
-    'id', 'created_at', 'created_by', 'ad_soyad', 'telefon', 'tc_kimlik', 'dogum_tarihi', 'sehir', 'meslek_is', 'mulkiyet_durumu',
+    'id', 'created_at', 'created_by', 'ad_soyad', 'telefon', 'tc_kimlik', 'winner_musteri_no', 'dogum_tarihi', 'sehir', 'meslek_is', 'mulkiyet_durumu',
     'durum', 'sahip', 'cekilme_zamani', 'son_arama_zamani', 'sonraki_arama_zamani', 'arama_not_kisa', 'aciklama_uzun',
     'e_devlet_sifre', 'ikametgah_varmi', 'hizmet_dokumu_varmi', 'ayni_isyerinde_sure_ay', 'son_yatan_maas',
     'dava_dosyasi_varmi', 'acik_icra_varmi', 'kapali_icra_varmi', 'kapali_icra_kapanis_sekli', 'gizli_dosya_varmi',
