@@ -66,26 +66,34 @@ export async function GET() {
 
             // Today's approvals
             if (onayTarihi) {
-                const onayDay = formatInTimeZone(new Date(onayTarihi), 'Europe/Istanbul', 'yyyy-MM-dd');
-                if (onayDay === today && onayDurumu === 'Onaylandı') {
-                    stats.todayApprovals++;
-                    if (credit) {
-                        stats.totalCreditApproved += parseFloat(credit.replace(/[^0-9]/g, '') || '0');
+                try {
+                    const onayDay = formatInTimeZone(new Date(onayTarihi), 'Europe/Istanbul', 'yyyy-MM-dd');
+                    if (onayDay === today && onayDurumu === 'Onaylandı') {
+                        stats.todayApprovals++;
+                        if (credit) {
+                            stats.totalCreditApproved += parseFloat(credit.replace(/[^0-9]/g, '') || '0');
+                        }
                     }
+                } catch (e) {
+                    // Invalid date, skip
                 }
             }
 
             // Today's calls
             if (lastCalled) {
-                const callDay = formatInTimeZone(new Date(lastCalled), 'Europe/Istanbul', 'yyyy-MM-dd');
-                if (callDay === today) {
-                    stats.todayCalls++;
+                try {
+                    const callDay = formatInTimeZone(new Date(lastCalled), 'Europe/Istanbul', 'yyyy-MM-dd');
+                    if (callDay === today) {
+                        stats.todayCalls++;
 
-                    // Peak hour tracking
-                    try {
-                        const callHour = new Date(lastCalled).getHours();
-                        hourCalls[callHour] = (hourCalls[callHour] || 0) + 1;
-                    } catch { }
+                        // Peak hour tracking
+                        try {
+                            const callHour = new Date(lastCalled).getHours();
+                            hourCalls[callHour] = (hourCalls[callHour] || 0) + 1;
+                        } catch { }
+                    }
+                } catch (e) {
+                    // Invalid date, skip
                 }
             }
 
