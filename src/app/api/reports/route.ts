@@ -59,6 +59,7 @@ export async function GET(req: NextRequest) {
             product: {} as Record<string, number>,
             rejection: {} as Record<string, number>,
             status: {} as Record<string, number>, // Pie Chart
+            channel: {} as Record<string, number>, // New Channel Stats
             daily: {} as Record<string, number>, // Trend Line
             funnel: {
                 total: 0,
@@ -77,6 +78,7 @@ export async function GET(req: NextRequest) {
             const incomeStr = getColSafe(row, 'son_yatan_maas');
             const product = getColSafe(row, 'talep_edilen_urun');
             const approval = getColSafe(row, 'onay_durumu');
+            const channel = getColSafe(row, 'basvuru_kanali'); // New
             const createdAt = getColSafe(row, 'created_at');
 
             // 1. Status Distribution
@@ -104,7 +106,10 @@ export async function GET(req: NextRequest) {
             // 5. Product Stats
             if (product) stats.product[product] = (stats.product[product] || 0) + 1;
 
-            // 6. Profession Stats
+            // 6. Channel Stats
+            if (channel) stats.channel[channel] = (stats.channel[channel] || 0) + 1;
+
+            // 7. Profession Stats
             if (job) {
                 if (!stats.profession[job]) stats.profession[job] = { count: 0, totalIncome: 0, avgIncome: 0 };
                 stats.profession[job].count++;
@@ -112,7 +117,7 @@ export async function GET(req: NextRequest) {
                 if (income > 0) stats.profession[job].totalIncome += income;
             }
 
-            // 7. Rejection Stats
+            // 8. Rejection Stats
             if (status === 'Reddetti' || approval === 'Reddedildi' || status === 'Uygun değil' || status === 'İptal/Vazgeçti') {
                 let reason = 'Diğer';
                 if (approval === 'Reddedildi') reason = 'Yönetici Reddi';

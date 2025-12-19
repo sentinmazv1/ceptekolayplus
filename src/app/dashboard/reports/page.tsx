@@ -15,6 +15,7 @@ interface ReportStats {
     product: Record<string, number>;
     rejection: Record<string, number>;
     status: Record<string, number>;
+    channel?: Record<string, number>; // New
     daily: Record<string, number>;
     funnel: {
         total: number;
@@ -108,7 +109,12 @@ export default function ReportsPage() {
         .map(([name, value]) => ({ name, value }))
         .sort((a, b) => b.value - a.value);
 
-    // 6. Daily Trend (Line/Area)
+    // 6. Channel Distribution (New Pie)
+    const channelData = Object.entries(stats.channel || {})
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value);
+
+    // 7. Daily Trend (Line/Area)
     const dailyData = Object.entries(stats.daily || {})
         .map(([date, count]) => ({ date, count }));
 
@@ -256,6 +262,33 @@ export default function ReportsPage() {
                                 >
                                     {statusData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <RechartsTooltip />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Channel Distribution (New Pie Chart) */}
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-6">Başvuru Kanalı Dağılımı</h3>
+                    <div className="flex flex-col md:flex-row items-center h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={channelData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={100}
+                                    fill="#82ca9d"
+                                    paddingAngle={2}
+                                    dataKey="value"
+                                    label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                                >
+                                    {channelData.map((entry, index) => (
+                                        <Cell key={`cell-ch-${index}`} fill={COLORS[index % COLORS.length]} />
                                     ))}
                                 </Pie>
                                 <RechartsTooltip />

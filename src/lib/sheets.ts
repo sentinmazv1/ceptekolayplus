@@ -16,6 +16,8 @@ export const COLUMNS = [
     'kilitli_mi', 'kilit_sahibi', 'kilit_zamani',
     // Approval workflow
     'notlar',
+    'notlar',
+    'basvuru_kanali',
     'talep_edilen_urun',
     'talep_edilen_tutar',
     'onay_durumu', 'kredi_limiti', 'admin_notu', 'onay_tarihi', 'onaylayan_admin',

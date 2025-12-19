@@ -67,6 +67,7 @@ export interface Customer {
   kilit_zamani?: string;
   talep_edilen_urun?: string;
   talep_edilen_tutar?: number;
+  basvuru_kanali?: string; // Sosyal Medya, Whatsapp, Sabit Hat, Mağaza
 
   // Guarantor (Kefil) Fields
   kefil_ad_soyad?: string;

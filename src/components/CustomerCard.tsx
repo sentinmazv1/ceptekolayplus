@@ -164,7 +164,14 @@ export function CustomerCard({ initialData, onSave }: CustomerCardProps) {
                 <div className="space-y-6">
                     {/* Temel Bilgiler */}
                     <section>
-                        <h3 className="text-sm font-semibold text-gray-900 bg-gray-50 p-2 rounded mb-3">👤 Kimlik ve İletişim</h3>
+                        <h3 className="text-sm font-semibold text-gray-900 bg-gray-50 p-2 rounded mb-3 flex justify-between items-center">
+                            <span>👤 Kimlik, İletişim ve Kanal</span>
+                            {data.cekilme_zamani && (
+                                <span className="text-xs font-normal text-gray-500 bg-gray-200 px-2 py-1 rounded">
+                                    Aranma Zamanı: {new Date(data.cekilme_zamani).toLocaleString('tr-TR')}
+                                </span>
+                            )}
+                        </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Input
                                 label="Ad Soyad *"
@@ -181,6 +188,18 @@ export function CustomerCard({ initialData, onSave }: CustomerCardProps) {
                                 value={data.tc_kimlik || ''}
                                 onChange={(e) => handleChange('tc_kimlik', e.target.value)}
                                 maxLength={11}
+                            />
+                            <Select
+                                label="Başvuru Kanalı"
+                                value={data.basvuru_kanali || ''}
+                                onChange={(e) => handleChange('basvuru_kanali', e.target.value)}
+                                options={[
+                                    { value: '', label: 'Seçiniz...' },
+                                    { value: 'Sosyal Medya', label: 'Sosyal Medya' },
+                                    { value: 'Whatsapp Hattı', label: 'Whatsapp Hattı' },
+                                    { value: 'Sabit Hat', label: 'Sabit Hat' },
+                                    { value: 'Mağazadan', label: 'Mağazadan' }
+                                ]}
                             />
                             <Input
                                 label="Şehir"
