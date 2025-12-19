@@ -6,7 +6,7 @@ const SHEET_ID = process.env.GOOGLE_SHEET_ID;
 // Column Mapping Helper (0-indexed)
 // Matches the exact order in the prompt
 export const COLUMNS = [
-    'id', 'created_at', 'created_by', 'ad_soyad', 'telefon', 'tc_kimlik', 'winner_musteri_no', 'dogum_tarihi', 'sehir', 'meslek_is', 'mulkiyet_durumu',
+    'id', 'created_at', 'created_by', 'ad_soyad', 'telefon', 'tc_kimlik', 'dogum_tarihi', 'sehir', 'meslek_is', 'mulkiyet_durumu',
     'durum', 'sahip', 'cekilme_zamani', 'son_arama_zamani', 'sonraki_arama_zamani', 'arama_not_kisa', 'aciklama_uzun',
     'e_devlet_sifre', 'ikametgah_varmi', 'hizmet_dokumu_varmi', 'ayni_isyerinde_sure_ay', 'son_yatan_maas',
     'dava_dosyasi_varmi', 'acik_icra_varmi', 'kapali_icra_varmi', 'kapali_icra_kapanis_sekli', 'gizli_dosya_varmi',
@@ -31,7 +31,9 @@ export const COLUMNS = [
     'kefil_ayni_isyerinde_sure_ay', 'kefil_e_devlet_sifre', 'kefil_ikametgah_varmi', 'kefil_hizmet_dokumu_varmi',
     'kefil_dava_dosyasi_varmi', 'kefil_dava_detay', 'kefil_acik_icra_varmi', 'kefil_acik_icra_detay',
     'kefil_kapali_icra_varmi', 'kefil_kapali_icra_kapanis_sekli', 'kefil_mulkiyet_durumu',
-    'kefil_arac_varmi', 'kefil_tapu_varmi', 'kefil_notlar'
+    'kefil_arac_varmi', 'kefil_tapu_varmi', 'kefil_notlar',
+    // Winner customer number (added at end)
+    'winner_musteri_no'
 ];
 
 const COL_INDEX = COLUMNS.reduce((acc, col, idx) => ({ ...acc, [col]: idx }), {} as Record<string, number>);
