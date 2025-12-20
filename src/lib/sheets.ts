@@ -304,6 +304,8 @@ export async function lockNextLead(userEmail: string): Promise<Customer | null> 
     return finalCustomer;
 }
 
+import { formatInTimeZone } from 'date-fns-tz';
+
 export async function getLeadStats() {
     const client = getSheetsClient();
     const response = await client.spreadsheets.values.get({
@@ -324,11 +326,41 @@ export async function getLeadStats() {
     let waiting_guarantor = 0;
     let delivered = 0;
 
+    let today_called = 0; // NEW
+    const todayStr = formatInTimeZone(new Date(), 'Europe/Istanbul', 'yyyy-MM-dd');
+
     // Status counts for all statuses
     const statusCounts: Record<string, number> = {};
 
     rows.forEach(row => {
         const c = rowToCustomer(row);
+
+        // NEW: Today Called Calculation
+        if (c.son_arama_zamani) {
+            let lastCallDate = '';
+            // Try standard Date parse
+            const date = new Date(c.son_arama_zamani);
+            if (!isNaN(date.getTime())) {
+                lastCallDate = formatInTimeZone(date, 'Europe/Istanbul', 'yyyy-MM-dd');
+            } else if (c.son_arama_zamani.includes('.')) {
+                // Try Parsing DD.MM.YYYY
+                const parts = c.son_arama_zamani.split('.');
+                if (parts.length === 3) {
+                    // yyyy-mm-dd format for comparison
+                    // Check if valid date? 
+                    // Let's rely on simple string compare if mapped correctly. 
+                    // Actually formatInTimeZone expects a Date object.
+                    const d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+                    if (!isNaN(d.getTime())) {
+                        lastCallDate = formatInTimeZone(d, 'Europe/Istanbul', 'yyyy-MM-dd');
+                    }
+                }
+            }
+
+            if (lastCallDate === todayStr) {
+                today_called++;
+            }
+        }
 
         // Increment status count
         if (c.durum) {
@@ -396,7 +428,8 @@ export async function getLeadStats() {
         waiting_guarantor,
         delivered,
         approved: statusCounts['Onaylandı'] || 0,
-        statusCounts // NEW: All status counts
+        today_called, // NEW: Today called count
+        statusCounts // All status counts
     };
 }
 

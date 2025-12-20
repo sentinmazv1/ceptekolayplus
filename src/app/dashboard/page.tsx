@@ -81,9 +81,6 @@ export default function Dashboard() {
 
     return (
         <div className="flex flex-col h-full">
-            {/* VISUAL & STATS SUMMARY */}
-            <DashboardStats />
-
             {/* Main Content Area - Pull Lead Focus */}
             <div className="flex flex-col md:flex-row gap-4 items-center justify-center py-8">
                 {!activeLead ? (
@@ -140,6 +137,9 @@ export default function Dashboard() {
                     </div>
                 )}
             </div>
+
+            {/* VISUAL & STATS SUMMARY (Moved to Bottom) */}
+            <DashboardStats />
         </div>
     );
 }

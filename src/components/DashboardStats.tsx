@@ -35,11 +35,13 @@ interface Stats {
     waiting_guarantor: number;
     delivered: number;
     approved: number;
+    today_called?: number; // New optional
 }
 
 interface StatusMetric {
     label: string;
-    status: string;
+    status?: string; // Optional if not a direct status mapping
+    metricKey?: keyof Stats; // Optional mapping to direct stat key
     icon: any;
     color: string;
     textColor: string;
@@ -47,11 +49,12 @@ interface StatusMetric {
 }
 
 const STAT_CARDS: StatusMetric[] = [
-    { label: 'Uygun (Havuz)', status: 'HAVUZ', icon: RefreshCcw, color: 'text-blue-600', textColor: 'text-blue-800', bgColor: 'bg-blue-50' },
-    { label: 'Onay Bekleyen', status: 'Başvuru alındı', icon: FileText, color: 'text-yellow-600', textColor: 'text-yellow-800', bgColor: 'bg-yellow-50' },
-    { label: 'Kefil Bekleyen', status: 'Kefil bekleniyor', icon: UserCheck, color: 'text-orange-600', textColor: 'text-orange-800', bgColor: 'bg-orange-50' },
-    { label: 'Onaylananlar', status: 'Onaylandı', icon: CheckCircle, color: 'text-green-600', textColor: 'text-green-800', bgColor: 'bg-green-50' },
-    { label: 'Teslim Edilen', status: 'Teslim edildi', icon: Package, color: 'text-emerald-600', textColor: 'text-emerald-800', bgColor: 'bg-emerald-50' },
+    { label: 'Bugün Aranan', metricKey: 'today_called', icon: Phone, color: 'text-indigo-600', textColor: 'text-indigo-800', bgColor: 'bg-indigo-50' },
+    { label: 'Uygun (Havuz)', status: 'HAVUZ', metricKey: 'available', icon: RefreshCcw, color: 'text-blue-600', textColor: 'text-blue-800', bgColor: 'bg-blue-50' },
+    { label: 'Onay Bekleyen', status: 'Başvuru alındı', metricKey: 'pending_approval', icon: FileText, color: 'text-yellow-600', textColor: 'text-yellow-800', bgColor: 'bg-yellow-50' },
+    { label: 'Kefil Bekleyen', status: 'Kefil bekleniyor', metricKey: 'waiting_guarantor', icon: UserCheck, color: 'text-orange-600', textColor: 'text-orange-800', bgColor: 'bg-orange-50' },
+    { label: 'Onaylananlar', status: 'Onaylandı', metricKey: 'approved', icon: CheckCircle, color: 'text-green-600', textColor: 'text-green-800', bgColor: 'bg-green-50' },
+    { label: 'Teslim Edilen', status: 'Teslim edildi', metricKey: 'delivered', icon: Package, color: 'text-emerald-600', textColor: 'text-emerald-800', bgColor: 'bg-emerald-50' },
 ];
 
 export function DashboardStats() {
@@ -259,74 +262,86 @@ export function DashboardStats() {
 
                 {showAllStatuses && (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                        {allStatuses.map((status, idx) => (
-                            <button
-                                key={idx}
-                                onClick={() => handleStatusClick(status.status)}
-                                className={`${status.bgColor} rounded-lg p-3 border border-gray-100 hover:shadow-md transition-all cursor-pointer text-left ${expandedStatus === status.status ? 'ring-2 ring-indigo-500' : ''
-                                    }`}
-                            >
-                                <div className="flex items-center justify-between gap-2">
-                                    <div className="flex items-center gap-2">
-                                        <status.icon className={`w-4 h-4 ${status.textColor}`} />
-                                        <span className="text-sm font-medium text-gray-700 truncate">{status.label}</span>
-                                    </div>
-                                    <span className={`text-sm font-bold ${status.textColor}`}>
-                                        ({statusCounts[status.status] || 0})
-                                    </span>
+                        {allStatuses.map((card, index) => (
+                return (
+                        <div
+                            key={index}
+                            onClick={() => {
+                                if (card.status) handleStatusClick(card.status);
+                            }}
+                            className={`bg-white rounded-xl shadow-sm border border-gray-100 p-4 transition-all duration-200 
+                            ${card.status && expandedStatus === card.status ? 'ring-2 ring-indigo-500 shadow-md' : 'hover:shadow-md cursor-pointer'}
+                        `}
+                        >
+                            <div className="flex items-center justify-between mb-3">
+                                <div className={`p-2 rounded-lg ${card.bgColor}`}>
+                                    <card.icon className={`w-5 h-5 ${card.color}`} />
                                 </div>
-                            </button>
-                        ))}
+                                {card.status && expandedStatus === card.status ? (
+                                    <ChevronUp className="w-4 h-4 text-gray-400" />
+                                ) : card.status ? (
+                                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                                ) : null}
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-500">{card.label}</p>
+                                <h3 className={`text-2xl font-bold ${card.textColor}`}>
+                                    {loading ? '-' : (
+                                        card.metricKey ? (stats as any)[card.metricKey] || 0 :
+                                            statusCounts[card.status!] || 0
+                                    )}
+                                </h3>
+                            </div>
+                        </div>
+                        );
+            })}</div>
+
+            {/* Customer List View */}
+                {expandedStatus && (
+                    loadingCustomers ? (
+                        <div className="bg-white rounded-lg shadow p-6 text-center">
+                            <RefreshCcw className="w-6 h-6 animate-spin text-indigo-600 mx-auto" />
+                            <p className="text-gray-500 mt-2">Yükleniyor...</p>
+                        </div>
+                    ) : (
+                        <CustomerListView
+                            customers={filteredCustomers}
+                            status={expandedStatus}
+                            onBack={() => {
+                                setExpandedStatus(null);
+                                setFilteredCustomers([]);
+                            }}
+                        />
+                    )
+                )}
+
+                {/* Chart - Only show when list is not expanded */}
+                {!expandedStatus && (
+                    <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                        <h3 className="text-sm font-semibold text-gray-700 mb-6">İşlem Hacmi Dağılımı</h3>
+                        <div className="flex items-end justify-between h-40 gap-2 md:gap-8">
+                            {mainCards.map((card, idx) => {
+                                const heightPercent = maxVal > 0 ? Math.max((card.count / maxVal) * 100, 5) : 5;
+                                return (
+                                    <div key={idx} className="flex flex-col items-center flex-1 group h-full justify-end">
+                                        <div className="relative w-full flex flex-col items-center justify-end h-full">
+                                            <div
+                                                className={`w-full max-w-[60px] rounded-t-lg transition-all duration-500 group-hover:opacity-80 ${card.color}`}
+                                                style={{ height: `${heightPercent}%` }}
+                                            ></div>
+                                            <span className="absolute -top-6 text-xs font-bold text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                {card.count}
+                                            </span>
+                                        </div>
+                                        <span className="text-xs text-gray-500 mt-3 font-medium text-center truncate w-full">
+                                            {card.title}
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
                 )}
             </div>
-
-            {/* Customer List View */}
-            {expandedStatus && (
-                loadingCustomers ? (
-                    <div className="bg-white rounded-lg shadow p-6 text-center">
-                        <RefreshCcw className="w-6 h-6 animate-spin text-indigo-600 mx-auto" />
-                        <p className="text-gray-500 mt-2">Yükleniyor...</p>
-                    </div>
-                ) : (
-                    <CustomerListView
-                        customers={filteredCustomers}
-                        status={expandedStatus}
-                        onBack={() => {
-                            setExpandedStatus(null);
-                            setFilteredCustomers([]);
-                        }}
-                    />
-                )
-            )}
-
-            {/* Chart - Only show when list is not expanded */}
-            {!expandedStatus && (
-                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-6">İşlem Hacmi Dağılımı</h3>
-                    <div className="flex items-end justify-between h-40 gap-2 md:gap-8">
-                        {mainCards.map((card, idx) => {
-                            const heightPercent = maxVal > 0 ? Math.max((card.count / maxVal) * 100, 5) : 5;
-                            return (
-                                <div key={idx} className="flex flex-col items-center flex-1 group h-full justify-end">
-                                    <div className="relative w-full flex flex-col items-center justify-end h-full">
-                                        <div
-                                            className={`w-full max-w-[60px] rounded-t-lg transition-all duration-500 group-hover:opacity-80 ${card.color}`}
-                                            style={{ height: `${heightPercent}%` }}
-                                        ></div>
-                                        <span className="absolute -top-6 text-xs font-bold text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            {card.count}
-                                        </span>
-                                    </div>
-                                    <span className="text-xs text-gray-500 mt-3 font-medium text-center truncate w-full">
-                                        {card.title}
-                                    </span>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
-        </div>
-    );
+            );
 }
