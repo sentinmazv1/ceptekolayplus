@@ -23,7 +23,8 @@ export type LeadStatus =
   | 'İptal/Vazgeçti'
   | 'Mağazaya davet edildi'
   | 'Kefil bekleniyor'
-  | 'Teslim edildi';
+  | 'Teslim edildi'
+  | 'Onaylandı';
 
 export interface Customer {
   id: string;

@@ -33,16 +33,25 @@ interface Stats {
     pending_approval: number;
     waiting_guarantor: number;
     delivered: number;
+    approved: number;
 }
 
 interface StatusMetric {
     label: string;
-    status: string; // Changed from LeadStatus to string for flexibility
+    status: string;
     icon: any;
     color: string;
     textColor: string;
     bgColor: string;
 }
+
+const STAT_CARDS: StatusMetric[] = [
+    { label: 'Uygun (Havuz)', status: 'HAVUZ', icon: RefreshCcw, color: 'text-blue-600', textColor: 'text-blue-800', bgColor: 'bg-blue-50' },
+    { label: 'Onay Bekleyen', status: 'Başvuru alındı', icon: FileText, color: 'text-yellow-600', textColor: 'text-yellow-800', bgColor: 'bg-yellow-50' },
+    { label: 'Kefil Bekleyen', status: 'Kefil bekleniyor', icon: UserCheck, color: 'text-orange-600', textColor: 'text-orange-800', bgColor: 'bg-orange-50' },
+    { label: 'Onaylananlar', status: 'Onaylandı', icon: CheckCircle, color: 'text-green-600', textColor: 'text-green-800', bgColor: 'bg-green-50' },
+    { label: 'Teslim Edilen', status: 'Teslim edildi', icon: Package, color: 'text-emerald-600', textColor: 'text-emerald-800', bgColor: 'bg-emerald-50' },
+];
 
 export function DashboardStats() {
     const [stats, setStats] = useState<Stats | null>(null);
@@ -146,6 +155,16 @@ export function DashboardStats() {
             bgColor: 'bg-yellow-50',
             desc: 'Kefil bilgisi bekleniyor',
             status: 'Kefil bekleniyor' as LeadStatus
+        },
+        {
+            title: 'Onaylananlar',
+            count: stats.approved,
+            icon: CheckCircle,
+            color: 'bg-emerald-500',
+            textColor: 'text-emerald-600',
+            bgColor: 'bg-emerald-50',
+            desc: 'Onaylanmış başvurular',
+            status: 'Onaylandı' as LeadStatus
         },
         {
             title: 'Teslim Edilen',

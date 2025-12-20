@@ -369,6 +369,7 @@ export async function getLeadStats() {
         pending_approval,
         waiting_guarantor,
         delivered,
+        approved: statusCounts['Onaylandı'] || 0,
         statusCounts // NEW: All status counts
     };
 }

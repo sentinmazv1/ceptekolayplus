@@ -34,7 +34,9 @@ export async function POST(req: NextRequest) {
         const now = new Date().toISOString();
         const updated = await updateLead({
             ...customer,
-            // Don't change durum - keep it as 'Başvuru alındı' or whatever it was
+            ...customer,
+            // Update status to 'Onaylandı' so it leaves the pool
+            durum: 'Onaylandı',
             onay_durumu: 'Onaylandı',
             kredi_limiti,
             admin_notu: admin_notu || '',

@@ -31,6 +31,7 @@ const STATUS_OPTIONS: { value: LeadStatus; label: string }[] = [
     { value: 'Reddetti', label: 'Reddetti' },
     { value: 'Uygun değil', label: 'Uygun değil' },
     { value: 'İptal/Vazgeçti', label: 'İptal/Vazgeçti' },
+    { value: 'Onaylandı', label: 'Onaylandı' },
 ];
 
 const YES_NO_OPTIONS = [
