@@ -2,10 +2,11 @@
 
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Loader2, LogOut, LayoutDashboard, BarChart3, Search, UserPlus } from 'lucide-react';
+import { Loader2, LogOut, LayoutDashboard, BarChart3, Search, UserPlus, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
 import { LiveActivityTicker } from '@/components/LiveActivityTicker';
+import { useState, useEffect } from 'react';
 
 export default function DashboardLayout({
     children,
@@ -15,6 +16,13 @@ export default function DashboardLayout({
     const { data: session, status } = useSession();
     const router = useRouter();
     const pathname = usePathname();
+    const [stats, setStats] = useState<{ pending_approval: number } | null>(null);
+
+    useEffect(() => {
+        if (session?.user?.role === 'ADMIN') {
+            fetch('/api/leads/stats').then(res => res.json()).then(setStats).catch(() => { });
+        }
+    }, [pathname, session]);
 
     if (status === 'loading') {
         return (
@@ -47,7 +55,7 @@ export default function DashboardLayout({
                             </div>
 
                             {/* Global Navigation - Desktop */}
-                            <nav className="hidden md:flex gap-1">
+                            <nav className="hidden md:flex gap-1 overflow-x-auto">
                                 <Link href="/dashboard">
                                     <Button
                                         variant={isActive('/dashboard') ? 'primary' : 'ghost'}
@@ -59,8 +67,30 @@ export default function DashboardLayout({
                                     </Button>
                                 </Link>
 
+                                <Link href="/dashboard/my-leads">
+                                    <Button
+                                        variant={isActive('/dashboard/my-leads') ? 'primary' : 'ghost'}
+                                        size="sm"
+                                        className={isActive('/dashboard/my-leads') ? '' : 'text-gray-600 hover:text-gray-900'}
+                                    >
+                                        <UserPlus className="w-4 h-4 mr-2" />
+                                        Müşterilerim
+                                    </Button>
+                                </Link>
+
                                 {session?.user?.role === 'ADMIN' && (
                                     <>
+                                        <Link href="/dashboard/approvals">
+                                            <Button
+                                                variant={isActive('/dashboard/approvals') ? 'primary' : 'ghost'}
+                                                size="sm"
+                                                className={isActive('/dashboard/approvals') ? '' : 'text-gray-600 hover:text-gray-900'}
+                                            >
+                                                <CheckCircle className="w-4 h-4 mr-2" />
+                                                Onay ({stats?.pending_approval || 0})
+                                            </Button>
+                                        </Link>
+
                                         <Link href="/dashboard/reports">
                                             <Button
                                                 variant={isActive('/dashboard/reports') ? 'primary' : 'ghost'}
@@ -71,6 +101,7 @@ export default function DashboardLayout({
                                                 Raporlar
                                             </Button>
                                         </Link>
+
                                         <Link href="/dashboard/search">
                                             <Button
                                                 variant={isActive('/dashboard/search') ? 'primary' : 'ghost'}
@@ -81,6 +112,7 @@ export default function DashboardLayout({
                                                 Sorgula
                                             </Button>
                                         </Link>
+
                                         <Link href="/dashboard/add">
                                             <Button
                                                 variant={isActive('/dashboard/add') ? 'primary' : 'ghost'}
