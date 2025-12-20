@@ -202,13 +202,41 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                     />
                                 </div>
                                 {data.telefon && (
-                                    <a
-                                        href={`tel:${data.telefon}`}
+                                    <button
+                                        onClick={async () => {
+                                            // 1. Open phone app
+                                            window.location.href = `tel:${data.telefon}`;
+
+                                            // 2. Update last call time in background
+                                            try {
+                                                const now = new Date();
+                                                const istanbulOffset = 3 * 60; // Turkey is GMT+3
+                                                const localTime = new Date(now.getTime() + (istanbulOffset * 60000));
+                                                // Used ISO string but maybe Sheet needs better format? 
+                                                // Actually sheets.ts parser handles standard ISO.
+                                                // Let's stick to standard ISO or the existing logic's preference.
+                                                // Existing logic often reads raw. Let's send ISO.
+                                                const newData = { ...data, son_arama_zamani: now.toISOString() };
+
+                                                // Optimistic UI Update
+                                                setData(newData);
+
+                                                await fetch(`/api/leads/${data.id}`, {
+                                                    method: 'PUT',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify(newData)
+                                                });
+
+                                                // Optional: toast.success("Arama saati güncellendi");
+                                            } catch (error) {
+                                                console.error('Call time update failed', error);
+                                            }
+                                        }}
                                         className="mb-[2px] h-[42px] px-4 flex items-center justify-center bg-green-100 text-green-700 rounded-lg border border-green-200 hover:bg-green-200 transition-colors"
-                                        title="PC'den Ara"
+                                        title="Ara ve Kaydet"
                                     >
                                         <Phone className="w-5 h-5" />
-                                    </a>
+                                    </button>
                                 )}
                             </div>
                             <Input

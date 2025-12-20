@@ -383,6 +383,9 @@ export async function getLeadStats() {
         if (isAvailable) available++;
     });
 
+    // Verify total_scheduled captures ALL scheduled leads regardless of ownership
+    total_scheduled = statusCounts['Daha sonra aranmak istiyor'] || 0;
+
     return {
         available,
         waiting_new,
