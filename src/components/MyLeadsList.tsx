@@ -43,7 +43,8 @@ export function MyLeadsList({ userEmail, onSelectLead }: MyLeadsListProps) {
     const statusBadge = (status: string) => {
         const colors: Record<string, string> = {
             'Başvuru alındı': 'bg-blue-100 text-blue-800',
-            'Onaya gönderildi': 'bg-green-100 text-green-800',
+            'Onaya gönderildi': 'bg-yellow-100 text-yellow-800',
+            'Onaylandı': 'bg-green-100 text-green-800', // NEW
             'Mağazaya davet edildi': 'bg-purple-100 text-purple-800',
             'Teslim edildi': 'bg-emerald-100 text-emerald-800',
             'Satış yapıldı/Tamamlandı': 'bg-teal-100 text-teal-800',
@@ -90,6 +91,7 @@ export function MyLeadsList({ userEmail, onSelectLead }: MyLeadsListProps) {
                     <option value="Kefil bekleniyor">Kefil bekleniyor</option>
                     <option value="Eksik evrak bekleniyor">Eksik evrak bekleniyor</option>
                     <option value="Onaya gönderildi">Onaya gönderildi</option>
+                    <option value="Onaylandı">Onaylandı</option>
                     <option value="Teslim edildi">Teslim edildi</option>
                     <option value="Satış yapıldı/Tamamlandı">Satış yapıldı/Tamamlandı</option>
                     <option value="Reddetti">Reddetti</option>

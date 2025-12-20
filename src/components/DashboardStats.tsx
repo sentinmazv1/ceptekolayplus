@@ -29,6 +29,7 @@ interface Stats {
     available: number;
     waiting_new: number;
     waiting_scheduled: number;
+    total_scheduled?: number; // New optional
     waiting_retry: number;
     pending_approval: number;
     waiting_guarantor: number;
@@ -128,7 +129,7 @@ export function DashboardStats() {
         },
         {
             title: 'Randevulu',
-            count: stats.waiting_scheduled,
+            count: stats.total_scheduled || stats.waiting_scheduled, // Use total if available
             icon: Calendar,
             color: 'bg-purple-500',
             textColor: 'text-purple-600',

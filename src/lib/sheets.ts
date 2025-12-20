@@ -16,21 +16,34 @@ export const COLUMNS = [
     'dava_dosyasi_varmi', 'acik_icra_varmi', 'kapali_icra_varmi', 'kapali_icra_kapanis_sekli', 'gizli_dosya_varmi',
     'arac_varmi', 'tapu_varmi', 'avukat_sorgu_durumu', 'avukat_sorgu_sonuc',
     // Media (31-32)
+    // Media (31-32)
     'gorsel_1_url', 'gorsel_2_url',
-    // Filler / Reordered System Fields (33-42) to push AR to 43
-    // AH(33)..AQ(42)
+
+    // System Metadata (Original 33-34) - DEPRECATED (Moved to AU/AV)
+    'deprecated_updated_at', 'deprecated_updated_by',
+
+    // Lock System (Original 35-37)
     'kilitli_mi', 'kilit_sahibi', 'kilit_zamani',
+
+    // Application (Original 38-40)
     'basvuru_kanali', 'talep_edilen_urun', 'talep_edilen_tutar',
-    'onay_tarihi', 'onaylayan_admin', 'teslim_tarihi', 'teslim_eden',
-    // User Requested Specific Mapping (43-49) (AR-AX)
+
+    // Old Status Fields (Original 41-42) - DEPRECATED (Moved to AR/AS)
+    'deprecated_onay_durumu', 'deprecated_kredi_limiti',
+
+    // NEW MAPPING STARTING AT AR (43)
     'onay_durumu',      // AR (43)
     'kredi_limiti',     // AS (44)
     'admin_notu',       // AT (45)
-    'updated_at',       // AU (46) - User called 'tarih saat'
-    'updated_by',       // AV (47) - User called 'kullanıcı adı' (Modified User)
+    'updated_at',       // AU (46)
+    'updated_by',       // AV (47)
     'urun_seri_no',     // AW (48)
     'urun_imei',        // AX (49)
-    // Detail Fields (50-54)
+
+    // Filler/Shifted Fields (Need to check where these land vs data)
+    'onay_tarihi', 'onaylayan_admin', 'teslim_tarihi', 'teslim_eden',
+
+    // Detail Fields
     'arac_detay', 'tapu_detay', 'dava_detay', 'gizli_dosya_detay', 'acik_icra_detay',
     // Guarantor (Kefil) (55-67)
     'kefil_ad_soyad', 'kefil_telefon', 'kefil_tc_kimlik', 'kefil_meslek_is', 'kefil_son_yatan_maas',
@@ -305,6 +318,7 @@ export async function getLeadStats() {
     let available = 0;
     let waiting_new = 0;
     let waiting_scheduled = 0;
+    let total_scheduled = 0; // NEW: For UI display
     let waiting_retry = 0;
     let pending_approval = 0;
     let waiting_guarantor = 0;
@@ -336,11 +350,15 @@ export async function getLeadStats() {
         let isAvailable = false;
 
         // 1. Scheduled
-        if (c.durum === 'Daha sonra aranmak istiyor' && c.sonraki_arama_zamani) {
-            const scheduleTime = new Date(c.sonraki_arama_zamani).getTime();
-            if (scheduleTime <= nowTime) {
-                waiting_scheduled++;
-                isAvailable = true;
+        if (c.durum === 'Daha sonra aranmak istiyor') {
+            total_scheduled++; // Count all scheduled, regardless of time
+
+            if (c.sonraki_arama_zamani) {
+                const scheduleTime = new Date(c.sonraki_arama_zamani).getTime();
+                if (scheduleTime <= nowTime) {
+                    waiting_scheduled++;
+                    isAvailable = true;
+                }
             }
         }
         // 2. New
@@ -369,6 +387,7 @@ export async function getLeadStats() {
         available,
         waiting_new,
         waiting_scheduled,
+        total_scheduled, // Return this
         waiting_retry,
         pending_approval,
         waiting_guarantor,
