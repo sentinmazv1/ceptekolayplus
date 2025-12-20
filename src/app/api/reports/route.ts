@@ -68,7 +68,8 @@ export async function GET(req: NextRequest) {
                 storeVisit: 0,
                 sale: 0,
             },
-            todayCalled: 0 // NEW: Count of customers called today
+            todayCalled: 0, // NEW: Count of customers called today
+            todayApproved: 0 // NEW: Count of customers approved today
         };
 
         // Get today's date string in Turkey timezone
@@ -93,6 +94,12 @@ export async function GET(req: NextRequest) {
                 if (callDay === today) {
                     stats.todayCalled++;
                 }
+            }
+
+            // Count today's approvals (timezone-aware)
+            const approvalDate = getColSafe(row, 'onay_tarihi');
+            if (approval === 'Onaylandı' && approvalDate && getDayKey(approvalDate) === today) {
+                stats.todayApproved++;
             }
 
             // 1. Status Distribution

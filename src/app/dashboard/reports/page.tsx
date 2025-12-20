@@ -6,7 +6,7 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
     PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
-import { Loader2, ArrowLeft, TrendingUp, Users, ShoppingBag, PieChart as PieChartIcon, Calendar } from 'lucide-react';
+import { Loader2, ArrowLeft, TrendingUp, Users, ShoppingBag, PieChart as PieChartIcon, Calendar, CheckCircle, Phone } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface ReportStats {
@@ -24,6 +24,7 @@ interface ReportStats {
         sale: number;
     };
     todayCalled?: number; // NEW
+    todayApproved?: number; // NEW
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ef4444', '#f97316'];
@@ -138,7 +139,7 @@ export default function ReportsPage() {
                 </div>
             </div>
 
-            {/* Summary KPI Cards */}
+            {/* KPI Cards Row 1 (Sales Funnel Summary) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                     <div className="flex justify-between items-start">
@@ -151,69 +152,68 @@ export default function ReportsPage() {
                         </div>
                     </div>
                 </div>
+                {/* ... other existing cards if any, or just overwrite structure ... */}
+            </div>
 
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">Bugün Arananlar</p>
-                            <h3 className="text-2xl font-bold text-indigo-600 mt-1">{stats.todayCalled || 0}</h3>
-                        </div>
-                        <div className="p-2 bg-indigo-50 rounded-lg">
-                            <Calendar className="w-5 h-5 text-indigo-600" />
-                        </div>
+            {/* KPI Cards Row 2 (Daily Activity) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-medium text-gray-500">Bugün Arananlar</p>
+                        <h3 className="text-2xl font-bold text-gray-800">{stats.todayCalled || 0}</h3>
                     </div>
-                    <p className="text-xs text-indigo-600 mt-2">Son arama zamanı bugün</p>
+                    <div className="p-2 bg-blue-50 rounded-lg">
+                        <Phone className="w-6 h-6 text-blue-600" />
+                    </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">Dönüşüm Oranı</p>
-                            <h3 className="text-2xl font-bold text-green-600 mt-1">%{conversionRate}</h3>
-                        </div>
-                        <div className="p-2 bg-green-50 rounded-lg">
-                            <TrendingUp className="w-5 h-5 text-green-600" />
-                        </div>
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-medium text-gray-500">Bugün Onaylananlar</p>
+                        <h3 className="text-2xl font-bold text-green-700">{stats.todayApproved || 0}</h3>
                     </div>
-                    <p className="text-xs text-green-600 mt-2">Başvuru &rarr; Satış</p>
+                    <div className="p-2 bg-green-50 rounded-lg">
+                        <CheckCircle className="w-6 h-6 text-green-600" />
+                    </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <div className="flex justify-between items-start">
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-500">En Çok İstenen</p>
-                            <h3
-                                className="text-lg font-bold text-gray-900 mt-1 truncate"
-                                title={productData[0]?.name || 'Henüz talep edilen ürün yok'}
-                            >
-                                {productData[0]?.name || 'Veri Yok'}
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-medium text-gray-500">En Çok İstenen</p>
+                        <div className="group relative">
+                            <h3 className="text-lg font-bold text-gray-800 truncate max-w-[150px]">
+                                {productData.length > 0 ? productData[0].name : 'Veri Yok'}
                             </h3>
+                            {productData.length > 0 && productData[0].name.length > 15 && (
+                                <div className="invisible group-hover:visible absolute left-0 bottom-full mb-2 w-48 bg-gray-900 text-white text-xs rounded p-2 z-10 shadow-lg">
+                                    {productData[0].name}
+                                </div>
+                            )}
                         </div>
-                        <div className="p-2 bg-purple-50 rounded-lg flex-shrink-0">
-                            <ShoppingBag className="w-5 h-5 text-purple-600" />
-                        </div>
+                        <p className="text-xs text-gray-500">
+                            {productData.length > 0 ? `${productData[0].count} adet` : '-'}
+                        </p>
                     </div>
-                    <p className="text-xs text-gray-400 mt-2">
-                        {productData[0]?.count || 0} adet talep
-                        {productData.length > 1 && ` (+${productData.length - 1} daha fazla)`}
-                    </p>
+                    <div className="p-2 bg-purple-50 rounded-lg">
+                        <ShoppingBag className="w-6 h-6 text-purple-600" />
+                    </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">Aktif İşlem</p>
-                            <h3 className="text-2xl font-bold text-orange-600 mt-1">
-                                {statusData.filter(s => s.name !== 'Reddetti' && s.name !== 'Teslim edildi').reduce((acc, curr) => acc + curr.value, 0)}
-                            </h3>
-                        </div>
-                        <div className="p-2 bg-orange-50 rounded-lg">
-                            <PieChartIcon className="w-5 h-5 text-orange-600" />
-                        </div>
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-medium text-gray-500">Satış Oranı</p>
+                        <h3 className="text-2xl font-bold text-gray-800">
+                            {stats.funnel.total > 0
+                                ? `%${Math.round((stats.funnel.sale / stats.funnel.total) * 100)}`
+                                : '%0'}
+                        </h3>
                     </div>
-                    <p className="text-xs text-orange-600 mt-2">Devam eden süreçler</p>
+                    <div className="p-2 bg-green-50 rounded-lg">
+                        <TrendingUp className="w-6 h-6 text-green-600" />
+                    </div>
                 </div>
             </div>
+
 
             {/* Charts Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -366,6 +366,6 @@ export default function ReportsPage() {
                     <p className="text-xs text-gray-400 mt-2 text-center">* En az 1 kayıtlı veri olan meslekler</p>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
