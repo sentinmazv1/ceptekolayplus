@@ -306,11 +306,24 @@ export async function lockNextLead(userEmail: string): Promise<Customer | null> 
 
 // import { formatInTimeZone } from 'date-fns-tz';
 
+// Direct Index Access for Performance
+// This avoids creating thousands of Customer objects for simple counting
+// Ensure these match COLUMNS const
+const COL_DURUM = COLUMNS.indexOf('durum');
+const COL_ONAY_DURUMU = COLUMNS.indexOf('onay_durumu');
+const COL_SON_ARAMA = COLUMNS.indexOf('son_arama_zamani');
+const COL_SONRAKI_ARAMA = COLUMNS.indexOf('sonraki_arama_zamani');
+const COL_KILITLI = COLUMNS.indexOf('kilitli_mi');
+const COL_SAHIP = COLUMNS.indexOf('sahip');
+
 export async function getLeadStats() {
     const client = getSheetsClient();
+    // Fetch A2:ZZ but impose a SAFETY LIMIT for Vercel
+    // Even A2:ZZ dynamic might be too huge if there are 5000+ rows
+    // We will fetch up to ROW 3500 as a temporary fix to ensure stability
     const response = await client.spreadsheets.values.get({
         spreadsheetId: SHEET_ID,
-        range: `Customers!A2:ZZ`, // Dynamic range, optimized
+        range: `Customers!A2:ZZ3500`, // Explicit safety limit for stability
     });
 
     const rows = response.data.values || [];
@@ -320,46 +333,52 @@ export async function getLeadStats() {
     let available = 0;
     let waiting_new = 0;
     let waiting_scheduled = 0;
-    let total_scheduled = 0; // NEW: For UI display
+    let total_scheduled = 0;
     let waiting_retry = 0;
     let pending_approval = 0;
     let waiting_guarantor = 0;
     let delivered = 0;
+    let approved = 0;
 
-    let today_called = 0; // NEW
+    let today_called = 0;
 
-    // Use native Intl for robust timezone handling without external deps
     const trFormatter = new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Europe/Istanbul',
         year: 'numeric',
         month: '2-digit',
         day: '2-digit'
     });
-    const todayStr = trFormatter.format(new Date()); // Returns yyyy-mm-dd
+    const todayStr = trFormatter.format(new Date());
 
-    // Status counts for all statuses
     const statusCounts: Record<string, number> = {};
 
-    rows.forEach(row => {
-        const c = rowToCustomer(row);
+    // Loop through RAW rows for max speed
+    for (const row of rows) {
+        // Direct access
+        const durum = row[COL_DURUM];
+        const onay_durumu = row[COL_ONAY_DURUMU];
+        const son_arama = row[COL_SON_ARAMA];
+        const sonraki_arama = row[COL_SONRAKI_ARAMA];
+        const kilitli_mi = row[COL_KILITLI];
+        const sahip = row[COL_SAHIP];
 
-        // NEW: Today Called Calculation
-        if (c.son_arama_zamani) {
+        // Status Counts
+        if (durum) {
+            statusCounts[durum] = (statusCounts[durum] || 0) + 1;
+        }
+
+        // Today Called
+        if (son_arama) {
             let lastCallDate = '';
-            // Try standard Date parse
-            const date = new Date(c.son_arama_zamani);
-            if (!isNaN(date.getTime())) {
-                lastCallDate = trFormatter.format(date);
-            } else if (c.son_arama_zamani.includes('.')) {
-                // Try Parsing DD.MM.YYYY
-                const parts = c.son_arama_zamani.split('.');
-                if (parts.length === 3) {
-                    // yyyy-mm-dd format for comparison
-                    // Check if valid date? 
-                    const d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-                    if (!isNaN(d.getTime())) {
-                        lastCallDate = trFormatter.format(d);
-                    }
+            // Fast date check
+            if (son_arama.length === 10 && son_arama.includes('-')) {
+                // assume yyyy-mm-dd check
+                if (son_arama.startsWith(todayStr)) lastCallDate = todayStr;
+            } else {
+                // Fallback parsing
+                const date = new Date(son_arama);
+                if (!isNaN(date.getTime())) {
+                    lastCallDate = trFormatter.format(date);
                 }
             }
 
@@ -368,31 +387,24 @@ export async function getLeadStats() {
             }
         }
 
-        // Increment status count
-        if (c.durum) {
-            statusCounts[c.durum] = (statusCounts[c.durum] || 0) + 1;
-        }
-
-        // General Status Counts
-        // Fix for "Pending Approval" logic:
-        // Count if strictly "Beklemede" OR (Başvuru alındı AND not yet processed)
-        const isPending = c.onay_durumu === 'Beklemede' || (c.durum === 'Başvuru alındı' && !c.onay_durumu);
-
+        // Pending Apporval logic
+        const isPending = onay_durumu === 'Beklemede' || (durum === 'Başvuru alındı' && !onay_durumu);
         if (isPending) pending_approval++;
-        if (c.onay_durumu === 'Kefil İstendi' || c.durum === 'Kefil bekleniyor') waiting_guarantor++;
-        if (c.durum === 'Teslim edildi') delivered++;
 
-        // Locked/Owned
-        if (c.kilitli_mi === true || (c.kilitli_mi as any) === 'TRUE' || c.sahip) return;
+        if (onay_durumu === 'Kefil İstendi' || durum === 'Kefil bekleniyor') waiting_guarantor++;
+        if (durum === 'Teslim edildi') delivered++;
+        if (durum === 'Onaylandı') approved++;
+
+        // Availability Logic
+        // Skip locked/owned
+        if (kilitli_mi === 'TRUE' || kilitli_mi === true || (sahip && sahip.length > 0)) continue;
 
         let isAvailable = false;
 
         // 1. Scheduled
-        if (c.durum === 'Daha sonra aranmak istiyor') {
-            total_scheduled++; // Count all scheduled, regardless of time
-
-            if (c.sonraki_arama_zamani) {
-                const scheduleTime = new Date(c.sonraki_arama_zamani).getTime();
+        if (durum === 'Daha sonra aranmak istiyor') {
+            if (sonraki_arama) {
+                const scheduleTime = new Date(sonraki_arama).getTime();
                 if (scheduleTime <= nowTime) {
                     waiting_scheduled++;
                     isAvailable = true;
@@ -400,17 +412,17 @@ export async function getLeadStats() {
             }
         }
         // 2. New
-        else if (c.durum === 'Yeni') {
+        else if (durum === 'Yeni') {
             waiting_new++;
             isAvailable = true;
         }
         // 3. Retry
-        else if (['Ulaşılamadı', 'Meşgul/Hattı kapalı', 'Cevap Yok'].includes(c.durum)) {
-            if (!c.son_arama_zamani) {
+        else if (durum === 'Ulaşılamadı' || durum === 'Meşgul/Hattı kapalı' || durum === 'Cevap Yok') {
+            if (!son_arama) {
                 waiting_retry++;
                 isAvailable = true;
             } else {
-                const lastCall = new Date(c.son_arama_zamani).getTime();
+                const lastCall = new Date(son_arama).getTime();
                 if (nowTime - lastCall > TWO_HOURS) {
                     waiting_retry++;
                     isAvailable = true;
@@ -419,23 +431,22 @@ export async function getLeadStats() {
         }
 
         if (isAvailable) available++;
-    });
+    }
 
-    // Verify total_scheduled captures ALL scheduled leads regardless of ownership
     total_scheduled = statusCounts['Daha sonra aranmak istiyor'] || 0;
 
     return {
         available,
         waiting_new,
         waiting_scheduled,
-        total_scheduled, // Return this
+        total_scheduled,
         waiting_retry,
         pending_approval,
         waiting_guarantor,
         delivered,
         approved: statusCounts['Onaylandı'] || 0,
-        today_called, // NEW: Today called count
-        statusCounts // All status counts
+        today_called,
+        statusCounts
     };
 }
 
