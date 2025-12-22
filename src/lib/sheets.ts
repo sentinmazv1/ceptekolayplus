@@ -102,7 +102,7 @@ export async function getLeads(filters?: { sahip?: string; durum?: LeadStatus })
     const client = getSheetsClient();
     const response = await client.spreadsheets.values.get({
         spreadsheetId: SHEET_ID,
-        range: `Customers!A2:${LAST_COL}5000`, // Explicit row limit: up to row 5000
+        range: `Customers!A2:ZZ`, // Dynamic range, no 5000 limit - fixes timeout
     });
 
     const rows = response.data.values || [];

@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
         // Fetch Header AND Data
         const response = await client.spreadsheets.values.get({
             spreadsheetId: sheetId,
-            range: 'Customers!A1:ZZ', // Get everything including header
+            range: 'Customers!A1:ZZ', // Get all columns, dynamic rows
         });
 
         const allRows = response.data.values || [];
