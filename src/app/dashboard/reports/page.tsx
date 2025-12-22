@@ -4,345 +4,246 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
-    PieChart, Pie, Cell, AreaChart, Area
+    PieChart, Pie, Cell
 } from 'recharts';
-import { Loader2, ArrowLeft, TrendingUp, Users, ShoppingBag, PieChart as PieChartIcon, Calendar, CheckCircle, Phone } from 'lucide-react';
+import {
+    Loader2, ArrowLeft, Users, Phone,
+    Package, CheckCircle, Share2, ClipboardList, TrendingUp
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface ReportStats {
     city: Record<string, number>;
     profession: Record<string, { count: number, totalIncome: number, avgIncome: number }>;
     product: Record<string, number>;
-    rejection: Record<string, number>;
     status: Record<string, number>;
-    channel?: Record<string, number>; // New
+    channel: Record<string, number>;
     daily: Record<string, number>;
     funnel: {
         total: number;
-        contacted: number;
-        storeVisit: number;
         sale: number;
     };
-    todayCalled?: number; // NEW
-    todayApproved?: number; // NEW
+    todayCalled: number;
+    totalCalled: number;
+    remainingToCall: number;
+    totalDelivered: number;
+    totalApproved: number;
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ef4444', '#f97316'];
+const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#6366F1'];
 
 export default function ReportsPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState<ReportStats | null>(null);
-    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const res = await fetch('/api/reports');
-                const json = await res.json();
-                if (json.success) {
-                    setStats(json.stats);
-                } else {
-                    setError(json.error || 'API Error');
-                }
-            } catch (error: any) {
-                console.error('Failed to load reports', error);
-                setError(error.message || 'Network Error');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchStats();
+        fetch('/api/reports')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) setStats(data.stats);
+            })
+            .catch(err => console.error(err))
+            .finally(() => setLoading(false));
     }, []);
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
-            </div>
-        );
-    }
+    const handlePrint = () => {
+        window.print();
+    };
 
-    if (error) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
-                <div className="bg-red-50 text-red-600 p-4 rounded-lg max-w-lg">
-                    <h3 className="font-bold mb-2">Raporlar Yüklenemedi</h3>
-                    <p>{error}</p>
-                    <Button onClick={() => window.location.reload()} className="mt-4" variant="outline">Tekrar Dene</Button>
-                </div>
-            </div>
-        );
-    }
+    if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin w-8 h-8 text-indigo-600" /></div>;
+    if (!stats) return <div className="p-8 text-center text-gray-500">Veri yok.</div>;
 
-    if (!stats) return <div className="p-8 text-center text-gray-500">Veri bulunamadı.</div>;
-
-    // Transform Data for Charts
-
-    // 1. City (Top 10)
+    // Charts Data Preparation
+    const statusData = Object.entries(stats.status || {}).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+    const channelData = Object.entries(stats.channel || {}).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+    // City - Filter out empty/invalid
     const cityData = Object.entries(stats.city || {})
+        .filter(([name]) => name && name !== 'Belirsiz')
         .sort((a, b) => b[1] - a[1])
         .slice(0, 10)
         .map(([name, count]) => ({ name, count }));
+    const professionData = Object.entries(stats.profession || {}).map(([name, d]) => ({ name, count: d.count })).sort((a, b) => b.count - a.count).slice(0, 10);
+    const productData = Object.entries(stats.product || {}).sort((a, b) => b[1] - a[1]).slice(0, 10);
 
-    // 2. Product (Top 10)
-    const productData = Object.entries(stats.product || {})
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 10)
-        .map(([name, count]) => ({ name, count }));
-
-    // 3. Profession & Income (Top 10 by count, sorted by Income)
-    const professionData = Object.entries(stats.profession || {})
-        .filter(([_, d]) => d.count > 0)
-        .sort((a, b) => b[1].avgIncome - a[1].avgIncome)
-        .slice(0, 10)
-        .map(([name, d]) => ({ name, income: d.avgIncome, count: d.count }));
-
-    // 4. Sales Funnel
-    const funnelData = [
-        { name: 'Başvuru', value: stats.funnel?.total || 0 },
-        { name: 'İletişim', value: stats.funnel?.contacted || 0 },
-        { name: 'Mağaza Ziyareti', value: stats.funnel?.storeVisit || 0 },
-        { name: 'Satış', value: stats.funnel?.sale || 0 },
-    ];
-
-    // 5. Status Distribution (Pie)
-    const statusData = Object.entries(stats.status || {})
-        .map(([name, value]) => ({ name, value }))
-        .sort((a, b) => b.value - a.value);
-
-    // 6. Channel Distribution (New Pie)
-    const channelData = Object.entries(stats.channel || {})
-        .map(([name, value]) => ({ name, value }))
-        .sort((a, b) => b.value - a.value);
-
-    // 7. Daily Trend (Line/Area)
-    const dailyData = Object.entries(stats.daily || {})
-        .map(([date, count]) => ({ date, count }));
-
-    const conversionRate = (stats.funnel?.total || 0) > 0
-        ? (((stats.funnel?.sale || 0) / stats.funnel.total) * 100).toFixed(1)
+    // Sales Rate (Delivered / Approved)
+    const salesRate = stats.totalApproved > 0
+        ? ((stats.totalDelivered / stats.totalApproved) * 100).toFixed(1)
         : '0';
 
     return (
-        <div className="min-h-screen bg-gray-50 p-4 md:p-8 space-y-8 pb-24">
+        <div className="min-h-screen bg-gray-50 p-6 md:p-8 pb-20 print:bg-white print:p-0">
             {/* Header */}
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex justify-between items-center mb-8 print:hidden">
                 <div className="flex items-center gap-4">
-                    <Button variant="outline" onClick={() => router.back()} size="sm">
+                    <Button variant="outline" onClick={() => router.back()}>
                         <ArrowLeft className="w-4 h-4 mr-2" /> Geri
                     </Button>
-                    <h1 className="text-2xl font-bold text-gray-900">Gelişmiş Yönetici Raporları</h1>
+                    <h1 className="text-2xl font-bold text-gray-900">Yönetici Raporları</h1>
                 </div>
-                <div className="text-sm text-gray-500">
-                    Son Güncelleme: {new Date().toLocaleTimeString()}
-                </div>
+                <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                    <Share2 className="w-4 h-4 mr-2" />
+                    PDF Paylaş
+                </Button>
             </div>
 
-            {/* KPI Cards Row 1 (Sales Funnel Summary) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">Toplam Başvuru</p>
-                            <h3 className="text-2xl font-bold text-gray-900 mt-1">{stats.funnel.total}</h3>
-                        </div>
-                        <div className="p-2 bg-blue-50 rounded-lg">
-                            <Users className="w-5 h-5 text-blue-600" />
-                        </div>
+            {/* TOP METRICS ROW (Single Line if possible, or grid) */}
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
+                {/* 1. Total Applications */}
+                <KpiCard label="Toplam Başvuru" value={stats.funnel.total} icon={Users} color="blue" />
+
+                {/* 2. Called To Date */}
+                <KpiCard label="Bugüne Kadar Aranan" value={stats.totalCalled} icon={Phone} color="indigo" />
+
+                {/* 3. Today Called */}
+                <KpiCard label="Bugün Aranan" value={stats.todayCalled} icon={Phone} color="cyan" />
+
+                {/* 4. Remaining */}
+                <KpiCard label="Kalan Aranacak" value={stats.remainingToCall} icon={ClipboardList} color="amber" />
+
+                {/* 5. Top Product */}
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between">
+                    <span className="text-xs font-medium text-gray-500">En Çok İstenen</span>
+                    <div className="mt-1 font-bold text-gray-800 text-sm truncate" title={productData[0]?.[0]}>
+                        {productData[0]?.[0] || '-'}
                     </div>
                 </div>
-                {/* ... other existing cards if any, or just overwrite structure ... */}
+
+                {/* 6. Sales Rate (Approved base) */}
+                <KpiCard label="Satış Oranı %" value={`%${salesRate}`} icon={TrendingUp} color="emerald" subtext="(Onaylanan)" />
+
+                {/* 7. Delivered */}
+                <KpiCard label="Teslim Edilen" value={stats.totalDelivered} icon={Package} color="green" />
             </div>
 
-            {/* KPI Cards Row 2 (Daily Activity) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
-                    <div>
-                        <p className="text-sm font-medium text-gray-500">Bugün Arananlar</p>
-                        <h3 className="text-2xl font-bold text-gray-800">{stats.todayCalled || 0}</h3>
-                    </div>
-                    <div className="p-2 bg-blue-50 rounded-lg">
-                        <Phone className="w-6 h-6 text-blue-600" />
-                    </div>
-                </div>
+            {/* CHARTS GRID */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:block print:space-y-8">
 
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
-                    <div>
-                        <p className="text-sm font-medium text-gray-500">Bugün Onaylananlar</p>
-                        <h3 className="text-2xl font-bold text-green-700">{stats.todayApproved || 0}</h3>
+                {/* 1. Dosya Durumu Dağılımı */}
+                <ChartCard title="Dosya Durumu Dağılımı">
+                    <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                            <Pie
+                                data={statusData}
+                                cx="50%" cy="50%"
+                                innerRadius={60} outerRadius={100}
+                                paddingAngle={2}
+                                dataKey="value"
+                            >
+                                {statusData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                            </Pie>
+                            <RechartsTooltip />
+                        </PieChart>
+                    </ResponsiveContainer>
+                    <div className="mt-4 flex flex-wrap justify-center gap-3">
+                        {statusData.slice(0, 5).map((entry, index) => (
+                            <div key={index} className="flex items-center gap-1 text-xs text-gray-600">
+                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                                {entry.name}: {entry.value}
+                            </div>
+                        ))}
                     </div>
-                    <div className="p-2 bg-green-50 rounded-lg">
-                        <CheckCircle className="w-6 h-6 text-green-600" />
-                    </div>
-                </div>
+                </ChartCard>
 
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
-                    <div>
-                        <p className="text-sm font-medium text-gray-500">En Çok İstenen</p>
-                        <div className="group relative">
-                            <h3 className="text-lg font-bold text-gray-800 truncate max-w-[150px]">
-                                {productData.length > 0 ? productData[0].name : 'Veri Yok'}
-                            </h3>
-                            {productData.length > 0 && productData[0].name.length > 15 && (
-                                <div className="invisible group-hover:visible absolute left-0 bottom-full mb-2 w-48 bg-gray-900 text-white text-xs rounded p-2 z-10 shadow-lg">
-                                    {productData[0].name}
-                                </div>
-                            )}
-                        </div>
-                        <p className="text-xs text-gray-500">
-                            {productData.length > 0 ? `${productData[0].count} adet` : '-'}
-                        </p>
+                {/* 2. Başvuru Kanalı Dağılımı */}
+                <ChartCard title="Başvuru Kanalı Dağılımı">
+                    <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                            <Pie
+                                data={channelData}
+                                cx="50%" cy="50%"
+                                innerRadius={60} outerRadius={100}
+                                paddingAngle={2}
+                                dataKey="value"
+                            >
+                                {channelData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={COLORS[(index + 4) % COLORS.length]} />
+                                ))}
+                            </Pie>
+                            <RechartsTooltip />
+                        </PieChart>
+                    </ResponsiveContainer>
+                    <div className="mt-4 flex flex-wrap justify-center gap-3">
+                        {channelData.slice(0, 5).map((entry, index) => (
+                            <div key={index} className="flex items-center gap-1 text-xs text-gray-600">
+                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[(index + 4) % COLORS.length] }}></div>
+                                {entry.name}: {entry.value}
+                            </div>
+                        ))}
                     </div>
-                    <div className="p-2 bg-purple-50 rounded-lg">
-                        <ShoppingBag className="w-6 h-6 text-purple-600" />
-                    </div>
-                </div>
+                </ChartCard>
 
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
-                    <div>
-                        <p className="text-sm font-medium text-gray-500">Satış Oranı</p>
-                        <h3 className="text-2xl font-bold text-gray-800">
-                            {stats.funnel.total > 0
-                                ? `%${Math.round((stats.funnel.sale / stats.funnel.total) * 100)}`
-                                : '%0'}
-                        </h3>
-                    </div>
-                    <div className="p-2 bg-green-50 rounded-lg">
-                        <TrendingUp className="w-6 h-6 text-green-600" />
-                    </div>
-                </div>
+                {/* 3. Şehir Dağılımı (Bar) */}
+                <ChartCard title="Şehir Dağılımı (Top 10)">
+                    <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={cityData} layout="vertical" margin={{ left: 20 }}>
+                            <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                            <XAxis type="number" />
+                            <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 11 }} />
+                            <RechartsTooltip />
+                            <Bar dataKey="count" fill="#8B5CF6" radius={[0, 4, 4, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </ChartCard>
+
+                {/* 4. Meslek Dağılımı (Bar) */}
+                <ChartCard title="Meslek Dağılımı (Top 10)">
+                    <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={professionData} margin={{ top: 20 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-20} textAnchor="end" height={60} />
+                            <YAxis />
+                            <RechartsTooltip />
+                            <Bar dataKey="count" fill="#EC4899" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </ChartCard>
             </div>
 
+            {/* Print Footer */}
+            <div className="hidden print:block text-center mt-12 text-sm text-gray-500">
+                CepteKolay+ Raporu - {new Date().toLocaleDateString('tr-TR')}
+            </div>
+        </div>
+    );
+}
 
-            {/* Charts Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+// Helpers
+function KpiCard({ label, value, icon: Icon, color, subtext }: any) {
+    const colors: any = {
+        blue: 'text-blue-600 bg-blue-50',
+        indigo: 'text-indigo-600 bg-indigo-50',
+        cyan: 'text-cyan-600 bg-cyan-50',
+        amber: 'text-amber-600 bg-amber-50',
+        emerald: 'text-emerald-600 bg-emerald-50',
+        green: 'text-green-600 bg-green-50',
+        purple: 'text-purple-600 bg-purple-50',
+    };
+    const theme = colors[color] || colors.blue;
 
-
-
-                {/* Sales Funnel */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-6">Satış Hunisi (Funnel)</h3>
-                    <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={funnelData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                                <XAxis type="number" />
-                                <YAxis type="category" dataKey="name" width={100} />
-                                <RechartsTooltip />
-                                <Bar dataKey="value" fill="#4F46E5" radius={[0, 4, 4, 0]} barSize={40}>
-                                    {funnelData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Status Distribution (New Pie Chart) */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-6">Dosya Durum Dağılımı</h3>
-                    <div className="flex flex-col md:flex-row items-center h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={statusData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={100}
-                                    fill="#8884d8"
-                                    paddingAngle={2}
-                                    dataKey="value"
-                                    label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
-                                >
-                                    {statusData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <RechartsTooltip />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Channel Distribution (New Pie Chart) */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-6">Başvuru Kanalı Dağılımı</h3>
-                    <div className="flex flex-col md:flex-row items-center h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={channelData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={100}
-                                    fill="#82ca9d"
-                                    paddingAngle={2}
-                                    dataKey="value"
-                                    label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
-                                >
-                                    {channelData.map((entry, index) => (
-                                        <Cell key={`cell-ch-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <RechartsTooltip />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* City Distribution */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-6">Şehir Dağılımı (Top 10)</h3>
-                    <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={cityData}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis dataKey="name" />
-                                <YAxis />
-                                <RechartsTooltip />
-                                <Bar dataKey="count" fill="#0EA5E9" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Product Demand */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-6">En Çok Talep Edilen Ürünler</h3>
-                    <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={productData} layout="vertical" margin={{ left: 20 }}>
-                                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                                <XAxis type="number" />
-                                <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12 }} />
-                                <RechartsTooltip />
-                                <Bar dataKey="count" fill="#8B5CF6" radius={[0, 4, 4, 0]} barSize={20} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Profession vs Income */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-6">Meslek & Ortalama Gelir Analizi</h3>
-                    <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={professionData}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis dataKey="name" tick={{ fontSize: 12 }} interval={0} angle={-15} textAnchor="end" />
-                                <YAxis />
-                                <RechartsTooltip formatter={(val) => `₺${val}`} />
-                                <Bar dataKey="income" fill="#10B981" radius={[4, 4, 0, 0]} name="Ort. Maaş" />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                    <p className="text-xs text-gray-400 mt-2 text-center">* En az 1 kayıtlı veri olan meslekler</p>
+    return (
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between">
+            <div className="flex justify-between items-start">
+                <span className="text-xs font-medium text-gray-500">{label}</span>
+                <div className={`p-1.5 rounded-lg ${theme}`}>
+                    <Icon className="w-4 h-4" />
                 </div>
             </div>
-        </div >
+            <div className="mt-2">
+                <span className="text-2xl font-bold text-gray-900">{value}</span>
+                {subtext && <span className="text-xs text-gray-400 ml-1">{subtext}</span>}
+            </div>
+        </div>
+    );
+}
+
+function ChartCard({ title, children }: { title: string, children: React.ReactNode }) {
+    return (
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 break-inside-avoid">
+            <h3 className="text-lg font-semibold text-gray-800 mb-6">{title}</h3>
+            {children}
+        </div>
     );
 }

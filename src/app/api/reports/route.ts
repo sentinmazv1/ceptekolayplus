@@ -83,69 +83,103 @@ export async function GET(req: NextRequest) {
                 storeVisit: 0,
                 sale: 0,
             },
-            todayCalled: 0, // NEW: Count of customers called today
-            todayApproved: 0 // NEW: Count of customers approved today
+            todayCalled: 0,
+            todayApproved: 0,
+            totalCalled: 0,        // NEW: "Bugüne kadar arananlar"
+            remainingToCall: 0,    // NEW: "Kalan aranacaklar"
+            totalDelivered: 0,     // NEW: "Teslim edilenler"
+            totalApproved: 0       // NEW: "Onaylananlar" (for Sales Rate calculation)
         };
 
         // Get today's date string in Turkey timezone
         const today = trFormatter.format(new Date());
+        const nowTime = new Date().getTime();
+        const TWO_HOURS = 2 * 60 * 60 * 1000;
 
         rows.forEach(row => {
             stats.funnel.total++;
 
             const status = getColSafe(row, 'durum') || 'Bilinmiyor';
-            const city = getColSafe(row, 'sehir') || 'Belirsiz';
+            const city = getColSafe(row, 'sehir');
             const job = getColSafe(row, 'meslek_is') || 'Diğer';
             const incomeStr = getColSafe(row, 'son_yatan_maas');
             const product = getColSafe(row, 'talep_edilen_urun');
             const approval = getColSafe(row, 'onay_durumu');
-            const channel = getColSafe(row, 'basvuru_kanali'); // New
+            const channel = getColSafe(row, 'basvuru_kanali');
             const createdAt = getColSafe(row, 'created_at');
-            const lastCalled = getColSafe(row, 'son_arama_zamani'); // NEW
+            const lastCalled = getColSafe(row, 'son_arama_zamani');
+            const nextCall = getColSafe(row, 'sonraki_arama_zamani');
+            const locked = getColSafe(row, 'kilitli_mi');
+            const owner = getColSafe(row, 'sahip');
 
-            // Count today's calls (timezone-aware)
+            // 1. Call Stats
             if (lastCalled) {
+                stats.totalCalled++;
                 const callDay = getDayKey(lastCalled);
                 if (callDay === today) {
                     stats.todayCalled++;
                 }
             }
 
-            // Count today's approvals (timezone-aware)
+            // 2. Approval & Delivery Stats
             const approvalDate = getColSafe(row, 'onay_tarihi');
-            if (approval === 'Onaylandı' && approvalDate && getDayKey(approvalDate) === today) {
-                stats.todayApproved++;
+            if (approval === 'Onaylandı' || status === 'Onaylandı') {
+                stats.totalApproved++; // Count for sales rate denominator
+                if (approvalDate && getDayKey(approvalDate) === today) {
+                    stats.todayApproved++;
+                }
             }
 
-            // 1. Status Distribution
+            if (status === 'Teslim edildi') {
+                stats.totalDelivered++;
+            }
+
+            // 3. Status Distribution
             stats.status[status] = (stats.status[status] || 0) + 1;
 
-            // 2. Daily Trend
+            // 4. Daily Trend
             const day = getDayKey(createdAt);
             if (day !== 'Unknown' && day !== 'Invalid Date') {
                 stats.daily[day] = (stats.daily[day] || 0) + 1;
             }
 
-            // 3. Funnel Logic
+            // 5. Funnel Logic
             if (status !== 'Yeni') stats.funnel.contacted++;
             if (status === 'Mağazaya davet edildi' || status === 'Teslim edildi' || status === 'Satış yapıldı/Tamamlandı') stats.funnel.storeVisit++;
-
-            // Conversion: "Teslim Edildi" or "Satış Yapıldı" OR Approval="Onaylandı" (maybe?)
-            // Let's stick to explicit sales statuses for funnel bottom
             if (status === 'Teslim edildi' || status === 'Satış yapıldı/Tamamlandı') {
                 stats.funnel.sale++;
             }
 
-            // 4. City Stats
+            // 6. Remaining to Call (Simplified Pool Logic)
+            // If not locked and status suggests action
+            if (locked !== 'TRUE' && locked !== true && !owner) {
+                if (status === 'Yeni') {
+                    stats.remainingToCall++;
+                } else if (status === 'Daha sonra aranmak istiyor' && nextCall) {
+                    // Check time (simple check)
+                    const scheduleTime = new Date(nextCall).getTime();
+                    if (scheduleTime <= nowTime) stats.remainingToCall++;
+                } else if (['Ulaşılamadı', 'Meşgul/Hattı kapalı', 'Cevap Yok'].includes(status)) {
+                    // Check 2h
+                    if (!lastCalled) {
+                        stats.remainingToCall++;
+                    } else {
+                        const lastCallTime = new Date(lastCalled).getTime();
+                        if ((nowTime - lastCallTime) > TWO_HOURS) stats.remainingToCall++;
+                    }
+                }
+            }
+
+            // 7. City Stats
             if (city) stats.city[city] = (stats.city[city] || 0) + 1;
 
-            // 5. Product Stats
+            // 8. Product Stats
             if (product) stats.product[product] = (stats.product[product] || 0) + 1;
 
-            // 6. Channel Stats
+            // 9. Channel Stats
             if (channel) stats.channel[channel] = (stats.channel[channel] || 0) + 1;
 
-            // 7. Profession Stats
+            // 10. Profession Stats
             if (job) {
                 if (!stats.profession[job]) stats.profession[job] = { count: 0, totalIncome: 0, avgIncome: 0 };
                 stats.profession[job].count++;
@@ -153,7 +187,7 @@ export async function GET(req: NextRequest) {
                 if (income > 0) stats.profession[job].totalIncome += income;
             }
 
-            // 8. Rejection Stats
+            // 11. Rejection Stats
             if (status === 'Reddetti' || approval === 'Reddedildi' || status === 'Uygun değil' || status === 'İptal/Vazgeçti') {
                 let reason = 'Diğer';
                 if (approval === 'Reddedildi') reason = 'Yönetici Reddi';
