@@ -147,7 +147,7 @@ export function DashboardStats({ initialStats }: { initialStats?: any }) {
             status: 'Daha sonra aranmak istiyor'
         },
         {
-            title: 'Onay Bekleyen',
+            title: 'Onay Bekleniyor',
             count: stats.pending_approval,
             icon: FileText,
             color: 'bg-orange-500',
@@ -195,7 +195,7 @@ export function DashboardStats({ initialStats }: { initialStats?: any }) {
         { label: 'Yanlış numara', status: 'Yanlış numara', icon: XCircle, color: 'bg-red-500', textColor: 'text-red-600', bgColor: 'bg-red-50' },
         { label: 'WhatsApp bilgi istiyor', status: "WhatsApp'tan bilgi istiyor", icon: MessageCircle, color: 'bg-green-500', textColor: 'text-green-600', bgColor: 'bg-green-50' },
         { label: 'E-Devlet paylaşmadı', status: 'E-Devlet paylaşmak istemedi', icon: FileX, color: 'bg-red-500', textColor: 'text-red-600', bgColor: 'bg-red-50' },
-        { label: 'Başvuru alındı', status: 'Başvuru alındı', icon: FileText, color: 'bg-indigo-500', textColor: 'text-indigo-600', bgColor: 'bg-indigo-50' },
+        { label: 'Onay Bekleniyor', status: 'Başvuru alındı', icon: FileText, color: 'bg-orange-500', textColor: 'text-orange-600', bgColor: 'bg-orange-50' },
         { label: 'Eksik evrak bekleniyor', status: 'Eksik evrak bekleniyor', icon: FileCheck, color: 'bg-amber-500', textColor: 'text-amber-600', bgColor: 'bg-amber-50' },
         { label: 'Mağazaya davet edildi', status: 'Mağazaya davet edildi', icon: Building2, color: 'bg-cyan-500', textColor: 'text-cyan-600', bgColor: 'bg-cyan-50' },
         { label: 'Satış yapıldı/Tamamlandı', status: 'Satış yapıldı/Tamamlandı', icon: CheckCircle, color: 'bg-green-500', textColor: 'text-green-600', bgColor: 'bg-green-50' },

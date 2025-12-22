@@ -16,18 +16,13 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        // Fetch all leads (no filter) so we can include both statuses
-        const leads = await getLeads({});
+        // Fetch only leads with "Başvuru alındı" status
+        const leads = await getLeads({ durum: 'Başvuru alındı' });
 
-        // Filter for Pending Approvals
-        // Logic: Status is 'Başvuru alındı' OR 'Kefil bekleniyor'
-        // AND not already finalized (approved/rejected)
-        const pendingLeads = leads.filter(l => {
-            const isPendingStatus = l.durum === 'Başvuru alındı' || l.durum === 'Kefil bekleniyor';
-            const isNotFinalized = !l.onay_durumu || l.onay_durumu === 'Beklemede' || l.onay_durumu === 'Kefil İstendi';
-
-            return isPendingStatus && isNotFinalized;
-        });
+        // Filter out those that are already decided (processed)
+        const pendingLeads = leads.filter(l =>
+            !l.onay_durumu || l.onay_durumu === 'Beklemede'
+        );
 
         // Sort by creation date (oldest first for FIFO)
         pendingLeads.sort((a, b) => {
