@@ -133,7 +133,7 @@ export default function ReportsPage() {
             </div>
 
             {/* CHARTS GRID */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:block print:space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:grid print:grid-cols-2 print:gap-4 mb-8 break-inside-avoid page-break-inside-avoid">
 
                 {/* 1. Dosya Durumu Dağılımı */}
                 <ChartCard title="Dosya Durumu Dağılımı">
@@ -196,34 +196,66 @@ export default function ReportsPage() {
 
 
                 {/* TREND & PROFESSION GRID */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:break-inside-avoid">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:grid-cols-2 print:gap-4 mb-8 break-inside-avoid page-break-inside-avoid">
                     {/* 3. Daily Trend */}
                     <ChartCard title="Son 30 Günlük Başvuru Trendi">
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={Object.entries(stats?.daily || {}).map(([date, count]) => ({ date, count }))}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                                <XAxis dataKey="date" tick={{ fill: '#6B7280', fontSize: 11 }} />
-                                <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} />
-                                <RechartsTooltip
-                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                    cursor={{ fill: '#F3F4F6' }}
-                                />
-                                <Bar dataKey="count" fill="#6366F1" radius={[4, 4, 0, 0]} name="Başvuru" />
-                            </BarChart>
-                        </ResponsiveContainer>
+                        <div className="h-[300px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={Object.entries(stats?.daily || {}).map(([date, count]) => ({ date, count }))}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
+                                    <XAxis
+                                        dataKey="date"
+                                        tick={{ fill: '#6B7280', fontSize: 10 }}
+                                        tickMargin={10}
+                                        minTickGap={20}
+                                    />
+                                    <YAxis tick={{ fill: '#6B7280', fontSize: 11 }} axisLine={false} tickLine={false} />
+                                    <RechartsTooltip
+                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                        cursor={{ fill: '#F9FAFB' }}
+                                    />
+                                    <Bar
+                                        dataKey="count"
+                                        fill="#6366F1"
+                                        radius={[4, 4, 0, 0]}
+                                        name="Başvuru"
+                                        barSize={40} // Thicker bars
+                                    />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
                     </ChartCard>
 
                     {/* 4. Profession Distribution */}
                     <ChartCard title="Meslek Dağılımı (Top 10)">
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={professionData} margin={{ top: 20 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-20} textAnchor="end" height={60} />
-                                <YAxis />
-                                <RechartsTooltip />
-                                <Bar dataKey="count" fill="#EC4899" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
+                        <div className="h-[300px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={professionData} margin={{ top: 10, bottom: 20 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
+                                    <XAxis
+                                        dataKey="name"
+                                        tick={{ fill: '#4B5563', fontSize: 10, fontWeight: 500 }}
+                                        interval={0}
+                                        angle={-25}
+                                        textAnchor="end"
+                                        height={60}
+                                        tickMargin={5}
+                                    />
+                                    <YAxis tick={{ fill: '#6B7280', fontSize: 11 }} axisLine={false} tickLine={false} />
+                                    <RechartsTooltip
+                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                        cursor={{ fill: '#E5E7EB', opacity: 0.4 }}
+                                    />
+                                    <Bar
+                                        dataKey="count"
+                                        fill="#EC4899"
+                                        radius={[4, 4, 0, 0]}
+                                        name="Kişi"
+                                        barSize={40}
+                                    />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
                     </ChartCard>
                 </div>
 
