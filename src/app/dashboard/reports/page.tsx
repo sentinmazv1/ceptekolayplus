@@ -278,125 +278,126 @@ export default function ReportsPage() {
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
+                </div>
 
-                    {/* --- Detailed City Analysis Grid (Top 10s) --- */}
-                    <div className="mb-8">
-                        <h2 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-                            <ClipboardList className="w-5 h-5 text-indigo-600" />
-                            Detaylı İl Bazlı Analizler (Top 10)
-                        </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {/* 1. Başvuru Hacmi */}
-                            <CityMetricTable
-                                title="Başvuru Hacmi En Yüksek"
-                                data={stats?.city}
-                                sortKey="total"
-                                color="blue"
-                            />
+                {/* --- Detailed City Analysis Grid (Top 10s) --- */}
+                <div className="mb-8">
+                    <h2 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                        <ClipboardList className="w-5 h-5 text-indigo-600" />
+                        Detaylı İl Bazlı Analizler (Top 10)
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {/* 1. Başvuru Hacmi */}
+                        <CityMetricTable
+                            title="Başvuru Hacmi En Yüksek"
+                            data={stats?.city}
+                            sortKey="total"
+                            color="blue"
+                        />
 
-                            {/* 2. Teslimat Başarısı */}
-                            <CityMetricTable
-                                title="En Çok Teslimat Yapılan"
-                                data={stats?.city}
-                                sortKey="delivered"
-                                color="emerald"
-                                showPercent
-                            />
+                        {/* 2. Teslimat Başarısı */}
+                        <CityMetricTable
+                            title="En Çok Teslimat Yapılan"
+                            data={stats?.city}
+                            sortKey="delivered"
+                            color="emerald"
+                            showPercent
+                        />
 
-                            {/* 3. E-Devlet Sorunu */}
-                            <CityMetricTable
-                                title="E-Devlet Vermeyenler"
-                                data={stats?.city}
-                                sortKey="noEdevlet"
-                                color="red"
-                                showPercent
-                            />
+                        {/* 3. E-Devlet Sorunu */}
+                        <CityMetricTable
+                            title="E-Devlet Vermeyenler"
+                            data={stats?.city}
+                            sortKey="noEdevlet"
+                            color="red"
+                            showPercent
+                        />
 
-                            {/* 4. Ulaşılamayanlar */}
-                            <CityMetricTable
-                                title="En Çok Ulaşılamayan"
-                                data={stats?.city}
-                                sortKey="unreachable"
-                                color="orange"
-                                showPercent
-                            />
+                        {/* 4. Ulaşılamayanlar */}
+                        <CityMetricTable
+                            title="En Çok Ulaşılamayan"
+                            data={stats?.city}
+                            sortKey="unreachable"
+                            color="orange"
+                            showPercent
+                        />
 
-                            {/* 5. Kefil Bekleyenler */}
-                            <CityMetricTable
-                                title="Kefil İstenen / Bekleyen"
-                                data={stats?.city}
-                                sortKey="kefil"
-                                color="purple"
-                                showPercent
-                            />
+                        {/* 5. Kefil Bekleyenler */}
+                        <CityMetricTable
+                            title="Kefil İstenen / Bekleyen"
+                            data={stats?.city}
+                            sortKey="kefil"
+                            color="purple"
+                            showPercent
+                        />
 
-                            {/* 6. İptal / Vazgeçenler */}
-                            <CityMetricTable
-                                title="İptal / Vazgeçenler"
-                                data={stats?.city}
-                                sortKey="cancelled"
-                                color="gray"
-                                showPercent
-                            />
-                        </div>
+                        {/* 6. İptal / Vazgeçenler */}
+                        <CityMetricTable
+                            title="İptal / Vazgeçenler"
+                            data={stats?.city}
+                            sortKey="cancelled"
+                            color="gray"
+                            showPercent
+                        />
                     </div>
-
-                    {/* 4. Meslek Dağılımı (Bar) */}
-                    <ChartCard title="Meslek Dağılımı (Top 10)">
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={professionData} margin={{ top: 20 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-20} textAnchor="end" height={60} />
-                                <YAxis />
-                                <RechartsTooltip />
-                                <Bar dataKey="count" fill="#EC4899" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </ChartCard>
                 </div>
 
-                {/* Print Footer */}
-                <div className="hidden print:block text-center mt-12 text-sm text-gray-500">
-                    CepteKolay+ Raporu - {new Date().toLocaleDateString('tr-TR')}
-                </div>
+                {/* 4. Meslek Dağılımı (Bar) */}
+                <ChartCard title="Meslek Dağılımı (Top 10)">
+                    <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={professionData} margin={{ top: 20 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-20} textAnchor="end" height={60} />
+                            <YAxis />
+                            <RechartsTooltip />
+                            <Bar dataKey="count" fill="#EC4899" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </ChartCard>
             </div>
-            );
+
+            {/* Print Footer */}
+            <div className="hidden print:block text-center mt-12 text-sm text-gray-500">
+                CepteKolay+ Raporu - {new Date().toLocaleDateString('tr-TR')}
+            </div>
+        </div>
+    );
 }
 
-            // Helpers
-            function KpiCard({label, value, icon: Icon, color, subtext }: any) {
+// Helpers
+function KpiCard({ label, value, icon: Icon, color, subtext }: any) {
     const colors: any = {
-                blue: 'text-blue-600 bg-blue-50',
-            indigo: 'text-indigo-600 bg-indigo-50',
-            cyan: 'text-cyan-600 bg-cyan-50',
-            amber: 'text-amber-600 bg-amber-50',
-            emerald: 'text-emerald-600 bg-emerald-50',
-            green: 'text-green-600 bg-green-50',
-            purple: 'text-purple-600 bg-purple-50',
+        blue: 'text-blue-600 bg-blue-50',
+        indigo: 'text-indigo-600 bg-indigo-50',
+        cyan: 'text-cyan-600 bg-cyan-50',
+        amber: 'text-amber-600 bg-amber-50',
+        emerald: 'text-emerald-600 bg-emerald-50',
+        green: 'text-green-600 bg-green-50',
+        purple: 'text-purple-600 bg-purple-50',
     };
-            const theme = colors[color] || colors.blue;
+    const theme = colors[color] || colors.blue;
 
-            return (
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between">
-                <div className="flex justify-between items-start">
-                    <span className="text-xs font-medium text-gray-500">{label}</span>
-                    <div className={`p-1.5 rounded-lg ${theme}`}>
-                        <Icon className="w-4 h-4" />
-                    </div>
-                </div>
-                <div className="mt-2">
-                    <span className="text-2xl font-bold text-gray-900">{value}</span>
-                    {subtext && <span className="text-xs text-gray-400 ml-1">{subtext}</span>}
+    return (
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between">
+            <div className="flex justify-between items-start">
+                <span className="text-xs font-medium text-gray-500">{label}</span>
+                <div className={`p-1.5 rounded-lg ${theme}`}>
+                    <Icon className="w-4 h-4" />
                 </div>
             </div>
-            );
+            <div className="mt-2">
+                <span className="text-2xl font-bold text-gray-900">{value}</span>
+                {subtext && <span className="text-xs text-gray-400 ml-1">{subtext}</span>}
+            </div>
+        </div>
+    );
 }
 
-            function ChartCard({title, children}: {title: string, children: React.ReactNode }) {
+function ChartCard({ title, children }: { title: string, children: React.ReactNode }) {
     return (
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 break-inside-avoid">
-                <h3 className="text-lg font-semibold text-gray-800 mb-6">{title}</h3>
-                {children}
-            </div>
-            );
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 break-inside-avoid">
+            <h3 className="text-lg font-semibold text-gray-800 mb-6">{title}</h3>
+            {children}
+        </div>
+    );
 }
