@@ -129,7 +129,11 @@ export default function ReportsPage() {
                 <KpiCard label="Satış Oranı %" value={`%${salesRate}`} icon={TrendingUp} color="emerald" subtext="(Aranan)" />
 
                 {/* 7. Delivered */}
-                <KpiCard label="Teslim Edilen" value={stats.totalDelivered} icon={Package} color="green" />
+                {/* 7. Delivered - CLICKABLE LINK TO REPORT */}
+                <div onClick={() => router.push('/dashboard/delivery-reports')} className="cursor-pointer transition-transform hover:scale-105 active:scale-95 relative group">
+                    <div className="absolute inset-0 bg-green-500 opacity-0 group-hover:opacity-10 rounded-xl transition-opacity" />
+                    <KpiCard label="Teslim Edilen" value={stats.totalDelivered} icon={Package} color="green" />
+                </div>
             </div>
 
             {/* CHARTS GRID */}
