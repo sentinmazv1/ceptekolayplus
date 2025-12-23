@@ -193,91 +193,38 @@ export default function ReportsPage() {
                     </div>
                 </ChartCard>
 
-                {/* --- Regional Analysis Section (Detailed) --- */}
-                <div className="col-span-1 md:col-span-2 bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-8 break-inside-avoid">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                            <Share2 className="w-5 h-5 text-indigo-600" />
-                            Bölgesel Performans Analizi
-                        </h2>
-                    </div>
 
-                    {/* Insight Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                        {(() => {
-                            const cities = Object.entries(stats?.city || {}).map(([name, data]) => ({ name, ...data }));
-                            if (cities.length === 0) return <div className="col-span-4 text-center text-gray-400">Veri yok</div>;
 
-                            const topVol = [...cities].sort((a, b) => b.total - a.total)[0];
-                            const topDel = [...cities].sort((a, b) => b.delivered - a.delivered)[0];
-                            const topNoEdevlet = [...cities].sort((a, b) => b.noEdevlet - a.noEdevlet)[0];
-                            const topUnreach = [...cities].filter(c => c.total > 1).sort((a, b) => {
-                                const rateA = a.total > 0 ? (a.unreachable / a.total) : 0;
-                                const rateB = b.total > 0 ? (b.unreachable / b.total) : 0;
-                                return rateB - rateA;
-                            })[0];
-
-                            return (
-                                <>
-                                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                                        <p className="text-xs text-gray-500 font-medium uppercase">En Yüksek Hacim</p>
-                                        <p className="text-lg font-bold text-gray-800 truncate" title={topVol?.name}>{topVol?.name || '-'}</p>
-                                        <p className="text-xs text-indigo-600">{topVol?.total || 0} Başvuru</p>
-                                    </div>
-                                    <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-100">
-                                        <p className="text-xs text-emerald-600 font-medium uppercase">Teslimat Şampiyonu</p>
-                                        <p className="text-lg font-bold text-emerald-900 truncate" title={topDel?.name}>{topDel?.name || '-'}</p>
-                                        <p className="text-xs text-emerald-700">{topDel?.delivered || 0} Teslimat</p>
-                                    </div>
-                                    <div className="bg-red-50 p-4 rounded-lg border border-red-100">
-                                        <p className="text-xs text-red-600 font-medium uppercase">E-Devlet Sorunu</p>
-                                        <p className="text-lg font-bold text-red-900 truncate" title={topNoEdevlet?.name}>{topNoEdevlet?.name || '-'}</p>
-                                        <p className="text-xs text-red-700">{topNoEdevlet?.noEdevlet || 0} Kişi Vermedi</p>
-                                    </div>
-                                    <div className="bg-orange-50 p-4 rounded-lg border border-orange-100">
-                                        <p className="text-xs text-orange-600 font-medium uppercase">En Zor Ulaşılan</p>
-                                        <p className="text-lg font-bold text-orange-900 truncate" title={topUnreach?.name}>{topUnreach?.name || '-'}</p>
-                                        <p className="text-xs text-orange-700">
-                                            {topUnreach && topUnreach.total > 0 ? `%${Math.round((topUnreach.unreachable / topUnreach.total) * 100)}` : '%0'} Ulaşılamadı
-                                        </p>
-                                    </div>
-                                </>
-                            );
-                        })()}
-                    </div>
-
-                    <div className="h-[400px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
-                                data={Object.entries(stats?.city || {})
-                                    .map(([name, data]) => ({ name, ...data }))
-                                    .sort((a, b) => b.total - a.total)
-                                    .slice(0, 15)}
-                                margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-                            >
+                {/* TREND & PROFESSION GRID */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:break-inside-avoid">
+                    {/* 3. Daily Trend */}
+                    <ChartCard title="Son 30 Günlük Başvuru Trendi">
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={Object.entries(stats?.daily || {}).map(([date, count]) => ({ date, count }))}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                                <XAxis
-                                    dataKey="name"
-                                    angle={-45}
-                                    textAnchor="end"
-                                    interval={0}
-                                    height={80}
-                                    tick={{ fill: '#6B7280', fontSize: 11 }}
-                                />
+                                <XAxis dataKey="date" tick={{ fill: '#6B7280', fontSize: 11 }} />
                                 <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} />
                                 <RechartsTooltip
                                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                                     cursor={{ fill: '#F3F4F6' }}
                                 />
-                                <Bar dataKey="delivered" name="Teslim Edildi" stackId="a" fill="#10B981" />
-                                <Bar dataKey="approved" name="Onaylandı" stackId="a" fill="#3B82F6" />
-                                <Bar dataKey="noEdevlet" name="E-Devlet Yok" stackId="a" fill="#EF4444" />
-                                <Bar dataKey="unreachable" name="Ulaşılamadı" stackId="a" fill="#9CA3AF" />
-                                <Bar dataKey="rejected" name="Red/İptal" stackId="a" fill="#F59E0B" />
-                                <Bar dataKey="other" name="Diğer" stackId="a" fill="#E5E7EB" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="count" fill="#6366F1" radius={[4, 4, 0, 0]} name="Başvuru" />
                             </BarChart>
                         </ResponsiveContainer>
-                    </div>
+                    </ChartCard>
+
+                    {/* 4. Profession Distribution */}
+                    <ChartCard title="Meslek Dağılımı (Top 10)">
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={professionData} margin={{ top: 20 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-20} textAnchor="end" height={60} />
+                                <YAxis />
+                                <RechartsTooltip />
+                                <Bar dataKey="count" fill="#EC4899" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </ChartCard>
                 </div>
 
                 {/* --- Detailed City Analysis Grid (Top 10s) --- */}
@@ -342,18 +289,7 @@ export default function ReportsPage() {
                     </div>
                 </div>
 
-                {/* 4. Meslek Dağılımı (Bar) */}
-                <ChartCard title="Meslek Dağılımı (Top 10)">
-                    <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={professionData} margin={{ top: 20 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                            <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-20} textAnchor="end" height={60} />
-                            <YAxis />
-                            <RechartsTooltip />
-                            <Bar dataKey="count" fill="#EC4899" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </ChartCard>
+
             </div>
 
             {/* Print Footer */}
