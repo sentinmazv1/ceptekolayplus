@@ -2,7 +2,7 @@
 
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Loader2, LogOut, LayoutDashboard, BarChart3, Search, UserPlus, CheckCircle } from 'lucide-react';
+import { Home, LogOut, PlusCircle, Search, User, UserCircle, BarChart2, FileSearch, Package, Loader2, LayoutDashboard, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
 import { LiveActivityTicker } from '@/components/LiveActivityTicker';
@@ -86,8 +86,8 @@ export default function DashboardLayout({
                                                 size="sm"
                                                 className={isActive('/dashboard/approvals') ? '' : 'text-gray-600 hover:text-gray-900'}
                                             >
-                                                <CheckCircle className="w-4 h-4 mr-2" />
-                                                Onay Bekleyenler ({stats?.pending_approval || 0})
+                                                <LayoutDashboard className="w-4 h-4 mr-2" />
+                                                Onay
                                             </Button>
                                         </Link>
 
@@ -97,8 +97,19 @@ export default function DashboardLayout({
                                                 size="sm"
                                                 className={isActive('/dashboard/reports') ? '' : 'text-gray-600 hover:text-gray-900'}
                                             >
-                                                <BarChart3 className="w-4 h-4 mr-2" />
+                                                <BarChart2 className="w-4 h-4 mr-2" />
                                                 Raporlar
+                                            </Button>
+                                        </Link>
+
+                                        <Link href="/dashboard/inventory">
+                                            <Button
+                                                variant={isActive('/dashboard/inventory') ? 'primary' : 'ghost'}
+                                                size="sm"
+                                                className={isActive('/dashboard/inventory') ? '' : 'text-gray-600 hover:text-gray-900'}
+                                            >
+                                                <Package className="w-4 h-4 mr-2" />
+                                                Stok
                                             </Button>
                                         </Link>
 
@@ -119,7 +130,7 @@ export default function DashboardLayout({
                                                 size="sm"
                                                 className={isActive('/dashboard/add') ? '' : 'text-gray-600 hover:text-gray-900'}
                                             >
-                                                <UserPlus className="w-4 h-4 mr-2" />
+                                                <PlusCircle className="w-4 h-4 mr-2" />
                                                 Ekle
                                             </Button>
                                         </Link>
@@ -149,6 +160,11 @@ export default function DashboardLayout({
                                 <Link href="/dashboard/reports">
                                     <Button variant={isActive('/dashboard/reports') ? 'primary' : 'outline'} size="sm" className="whitespace-nowrap">
                                         Raporlar
+                                    </Button>
+                                </Link>
+                                <Link href="/dashboard/inventory">
+                                    <Button variant={isActive('/dashboard/inventory') ? 'primary' : 'outline'} size="sm" className="whitespace-nowrap">
+                                        Stok
                                     </Button>
                                 </Link>
                                 <Link href="/dashboard/search">

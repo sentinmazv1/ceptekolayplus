@@ -125,3 +125,18 @@ export interface LogEntry {
   new_value?: string;
   note?: string;
 }
+
+export type InventoryStatus = 'STOKTA' | 'SATILDI';
+
+export interface InventoryItem {
+  id: string;
+  marka: string;
+  model: string;
+  seri_no: string;
+  imei: string;
+  durum: InventoryStatus;
+  giris_tarihi: string;
+  cikis_tarihi?: string;
+  musteri_id?: string; // Linked customer ID when sold
+  ekleyen?: string;
+}
