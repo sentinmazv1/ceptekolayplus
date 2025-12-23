@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
         };
 
         const stats = {
-            city: {} as Record<string, number>,
+            city: {} as Record<string, { total: number, delivered: number, approved: number, rejected: number, noEdevlet: number, unreachable: number, other: number }>,
             profession: {} as Record<string, { count: number, totalIncome: number, avgIncome: number }>,
             product: {} as Record<string, number>,
             rejection: {} as Record<string, number>,
@@ -170,8 +170,30 @@ export async function GET(req: NextRequest) {
                 }
             }
 
-            // 7. City Stats
-            if (city) stats.city[city] = (stats.city[city] || 0) + 1;
+            // 7. City Stats (Detailed)
+            if (city) {
+                if (!stats.city[city]) {
+                    stats.city[city] = {
+                        total: 0,
+                        delivered: 0,
+                        approved: 0,
+                        rejected: 0,
+                        noEdevlet: 0,
+                        unreachable: 0,
+                        other: 0
+                    } as any;
+                }
+
+                const cStats = stats.city[city] as any;
+                cStats.total++;
+
+                if (status === 'Teslim edildi') cStats.delivered++;
+                else if (status === 'Onaylandı' || approval === 'Onaylandı') cStats.approved++;
+                else if (status === 'E-Devlet paylaşmak istemedi') cStats.noEdevlet++;
+                else if (['Ulaşılamadı', 'Meşgul/Hattı kapalı', 'Cevap Yok'].includes(status)) cStats.unreachable++;
+                else if (['Reddetti', 'Uygun değil', 'İptal/Vazgeçti'].includes(status) || approval === 'Reddedildi') cStats.rejected++;
+                else cStats.other++;
+            }
 
             // 8. Product Stats
             if (product) stats.product[product] = (stats.product[product] || 0) + 1;
