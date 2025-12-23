@@ -24,6 +24,7 @@ export type LeadStatus =
   | 'Mağazaya davet edildi'
   | 'Kefil bekleniyor'
   | 'Teslim edildi'
+  | 'Cevap Yok'
   | 'Onaylandı';
 
 export interface Customer {

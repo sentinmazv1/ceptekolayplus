@@ -167,7 +167,41 @@ export async function getCustomersByStatus(status: string, user: { email: string
     const customers = rows.map(row => rowToCustomer(row));
 
     // Filter by status
-    let filtered = customers.filter(c => c.durum === status);
+    let filtered: Customer[] = [];
+
+    if (status === 'HAVUZ') {
+        const nowTime = new Date().getTime();
+        const TWO_HOURS = 2 * 60 * 60 * 1000;
+
+        filtered = customers.filter(c => {
+            // Must not be locked or owned
+            if (c.kilitli_mi || (c.sahip && c.sahip.length > 0)) return false;
+
+            // 1. New
+            if (c.durum === 'Yeni') return true;
+
+            // 2. Scheduled
+            if (c.durum === 'Daha sonra aranmak istiyor') {
+                if (c.sonraki_arama_zamani) {
+                    const scheduleTime = new Date(c.sonraki_arama_zamani).getTime();
+                    return scheduleTime <= nowTime;
+                }
+                return false;
+            }
+
+            // 3. Retry
+            if (c.durum === 'Ulaşılamadı' || c.durum === 'Meşgul/Hattı kapalı' || c.durum === 'Cevap Yok') {
+                if (!c.son_arama_zamani) return true;
+                const lastCall = new Date(c.son_arama_zamani).getTime();
+                return (nowTime - lastCall) > TWO_HOURS;
+            }
+
+            return false;
+        });
+    } else {
+        // Standard Status Filter
+        filtered = customers.filter(c => c.durum === status);
+    }
 
     // Role-based filtering: Sales reps only see their own customers
     if (user.role === 'SALES_REP') {
