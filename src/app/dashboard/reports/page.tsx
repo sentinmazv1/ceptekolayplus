@@ -196,7 +196,7 @@ export default function ReportsPage() {
 
 
                 {/* TREND & PROFESSION GRID */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:grid-cols-2 print:gap-4 mb-8 break-inside-avoid page-break-inside-avoid">
+                <div className="grid grid-cols-1 gap-8 mb-8 break-inside-avoid">
                     {/* 3. Daily Trend */}
                     <ChartCard title="Son 30 Günlük Başvuru Trendi">
                         <div className="h-[300px]">
