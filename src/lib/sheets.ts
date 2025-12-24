@@ -258,13 +258,10 @@ export async function lockNextLead(userEmail: string): Promise<Customer | null> 
             // 2. New
             if (c.durum === 'Yeni') return true;
 
-            // 3. Retry
-            const retryStatuses = ['Ulaşılamadı', 'Meşgul/Hattı kapalı', 'Cevap Yok'];
-            if (retryStatuses.includes(c.durum)) {
-                if (!c.son_arama_zamani) return true; // Should have a time, but if not, retry
-                const lastCall = new Date(c.son_arama_zamani).getTime();
-                if (nowTime - lastCall > TWO_HOURS) return true;
-            }
+            // 3. Retry Logic REMOVED per user request (Phase 64)
+            // Unreachable leads must be worked manually from the specific list.
+
+            return false;
 
             return false;
         })
@@ -451,18 +448,39 @@ export async function getLeadStats() {
             waiting_new++;
             isAvailable = true;
         }
-        // 3. Retry
+        // 3. Retry - REMOVED from availability count (Phase 64)
         else if (durum === 'Ulaşılamadı' || durum === 'Meşgul/Hattı kapalı' || durum === 'Cevap Yok') {
+            // We still count them for the DASHBOARD STATS (waiting_retry), 
+            // but we do NOT set isAvailable = true.
+            // Because "Available" means "Available for Auto-Pull".
             if (!son_arama) {
                 waiting_retry++;
-                isAvailable = true;
+                // isAvailable = true; // REMOVED
             } else {
                 const lastCall = new Date(son_arama).getTime();
                 if (nowTime - lastCall > TWO_HOURS) {
                     waiting_retry++;
-                    isAvailable = true;
+                    // isAvailable = true; // REMOVED
+                } else {
+                    // Even if not cooled down, we track them as waiting retry generally?
+                    // Actually original logic only counted them if cooled down.
+                    // Let's keep counting them as "waiting_retry" if satisfied, 
+                    // but NOT add to 'available'.
                 }
             }
+            // Actually, to be consistent with "waiting_retry" usually meaning "Ready to call",
+            // let's keep the logic for `waiting_retry` increment, but remove `isAvailable = true`.
+
+            // Wait, looking at original code:
+            /*
+             if (!son_arama) {
+                waiting_retry++;
+                isAvailable = true;
+            } ...
+            */
+            // So `waiting_retry` was effectively "Ready Retry".
+            // We should probably still count them if they are ready, so the admin sees them,
+            // but just don't make them `isAvailable`.
         }
 
         if (isAvailable) available++;
