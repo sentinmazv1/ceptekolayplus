@@ -131,6 +131,17 @@ export default function DashboardLayout({
                                             </Button>
                                         </Link>
 
+                                        <Link href="/dashboard/duplicates">
+                                            <Button
+                                                variant={isActive('/dashboard/duplicates') ? 'primary' : 'ghost'}
+                                                size="sm"
+                                                className={isActive('/dashboard/duplicates') ? '' : 'text-gray-600 hover:text-gray-900'}
+                                            >
+                                                <FileSearch className="w-4 h-4 mr-2" />
+                                                Mükerrer
+                                            </Button>
+                                        </Link>
+
                                         <Link href="/dashboard/search">
                                             <Button
                                                 variant={isActive('/dashboard/search') ? 'primary' : 'ghost'}

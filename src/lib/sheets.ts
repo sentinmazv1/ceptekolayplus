@@ -540,3 +540,50 @@ export async function logAction(entry: LogEntry) {
         requestBody: { values: [row] }
     });
 }
+
+export async function deleteCustomer(id: string, userEmail: string) {
+    const client = getSheetsClient();
+
+    // Find row index by ID
+    const allLeads = await getLeads();
+    const index = allLeads.findIndex(c => c.id === id);
+
+    if (index === -1) throw new Error('Lead not found');
+
+    const rowIndex = index + 2; // +1 for header, +1 to match 1-based index
+
+    // We actully want to DELETE the row, shifting up.
+    // The previous implementation used batchUpdate for value updates.
+    // here we need the 'deleteDimension' request.
+    const requests = [
+        {
+            deleteDimension: {
+                range: {
+                    sheetId: parseInt(process.env.GOOGLE_SHEET_GID || '0'), // Default GID 0 for first sheet 'Customers'
+                    dimension: 'ROWS',
+                    startIndex: rowIndex - 1, // 0-based inclusive
+                    endIndex: rowIndex        // 0-based exclusive
+                }
+            }
+        }
+    ];
+
+    await client.spreadsheets.batchUpdate({
+        spreadsheetId: SHEET_ID,
+        requestBody: {
+            requests
+        }
+    });
+
+    // Log it
+    await logAction({
+        log_id: crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
+        user_email: userEmail,
+        customer_id: id,
+        action: 'UPDATE_STATUS', // Using generic as we don't have DELETE action type yet
+        old_value: 'Active',
+        new_value: 'DELETED',
+        note: `Deleted by Admin`
+    });
+}
