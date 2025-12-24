@@ -4,15 +4,15 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
 interface RouteParams {
-    params: {
+    params: Promise<{
         id: string;
-    };
+    }>;
 }
 
 export async function DELETE(request: Request, context: RouteParams) {
     try {
         const session = await getServerSession(authOptions);
-        const { id } = context.params;
+        const { id } = await context.params;
 
         if (!session || session.user?.role !== 'ADMIN' || !session.user.email) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
