@@ -55,6 +55,15 @@ export default function Dashboard() {
             }
 
             setActiveLead(json.lead);
+            // Show Source Notification
+            if (json.lead.source) {
+                // Simple Alert/Toast equivalent
+                // We'll use a temporary state for visual feedback if we want, or just a console log
+                // Per user request "popup", let's strictly imply a visible element.
+                // We'll set a state for 'sourceNotification'
+                setSourceNotification(json.lead.source);
+                setTimeout(() => setSourceNotification(null), 5000); // Hide after 5s
+            }
             fetchStats(); // Update stats after pulling
         } catch (err: any) {
             setError(err.message);
@@ -79,8 +88,23 @@ export default function Dashboard() {
     // Auth check is handled in layout.tsx, but keeping basic redirect for safety if needed
     // or we can remove it. Let's rely on layout protection to avoid double-rendering logic.
 
+    const [sourceNotification, setSourceNotification] = useState<string | null>(null);
+
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full relative">
+            {/* Source Notification Toast */}
+            {sourceNotification && (
+                <div className="fixed bottom-4 left-4 z-50 animate-in slide-in-from-left-5 duration-300">
+                    <div className="bg-gray-900 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 border border-gray-700">
+                        <span className="text-2xl">ℹ️</span>
+                        <div>
+                            <p className="text-sm text-gray-400 uppercase tracking-wider font-bold">Müşteri Kaynağı</p>
+                            <p className="text-lg font-medium">{sourceNotification}</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Main Content Area - Pull Lead Focus */}
             <div className="flex flex-col md:flex-row gap-4 items-center justify-center py-8">
                 {!activeLead ? (

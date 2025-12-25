@@ -236,7 +236,7 @@ export async function getCustomersByStatus(status: string, user: { email: string
     return filtered;
 }
 
-export async function lockNextLead(userEmail: string): Promise<Customer | null> {
+export async function lockNextLead(userEmail: string): Promise<(Customer & { source?: string }) | null> {
     const client = getSheetsClient();
 
     // 1. Fetch all leads to find the best candidate
@@ -276,10 +276,12 @@ export async function lockNextLead(userEmail: string): Promise<Customer | null> 
             // 2. New
             if (c.durum === 'Yeni') return true;
 
-            // 3. Retry Logic REMOVED per user request (Phase 64)
-            // Unreachable leads must be worked manually from the specific list.
-
-            return false;
+            // 3. Retry (Phase 72: Re-enabled)
+            if (c.durum === 'Ulaşılamadı' || c.durum === 'Meşgul/Hattı kapalı' || c.durum === 'Cevap Yok') {
+                if (!c.son_arama_zamani) return true;
+                const lastCall = new Date(c.son_arama_zamani).getTime();
+                return (nowTime - lastCall) > TWO_HOURS;
+            }
 
             return false;
         })
@@ -476,7 +478,7 @@ export async function getLeadStats() {
                 const lastCall = new Date(son_arama).getTime();
                 if (nowTime - lastCall > TWO_HOURS) {
                     waiting_retry++;
-                    // isAvailable = true; // REMOVED
+                    isAvailable = true; // RE-ENABLED (Phase 72)
                 } else {
                     // Even if not cooled down, we track them as waiting retry generally?
                     // Actually original logic only counted them if cooled down.
@@ -576,6 +578,8 @@ export async function updateLead(customer: Customer, userEmail: string) {
 
     return updatedCustomer;
 }
+
+
 
 export async function logAction(entry: LogEntry) {
     const client = getSheetsClient();
