@@ -357,6 +357,14 @@ export async function getLeadStats() {
     });
 
     const rows = response.data.values || [];
+    console.log(`[DEBUG] getLeadStats: Fetched ${rows.length} rows.`);
+    console.log(`[DEBUG] COL_DURUM index: ${COL_DURUM}`);
+
+    if (rows.length > 0) {
+        console.log(`[DEBUG] First row sample:`, rows[0]);
+        console.log(`[DEBUG] First row durum (index ${COL_DURUM}):`, rows[0][COL_DURUM]);
+    }
+
     const nowTime = new Date().getTime();
     const TWO_HOURS = 2 * 60 * 60 * 1000;
 
