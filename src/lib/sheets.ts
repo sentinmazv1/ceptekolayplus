@@ -7,7 +7,7 @@ const SHEET_ID = process.env.GOOGLE_SHEET_ID;
 // CRITICAL: This order MUST match Google Sheets column order exactly
 export const COLUMNS = [
     // Core Identity & Contact (0-9)
-    'id', 'created_at', 'created_by', 'ad_soyad', 'telefon', 'tc_kimlik', 'dogum_tarihi', 'sehir', 'ilce', 'meslek_is', 'mulkiyet_durumu',
+    'id', 'created_at', 'created_by', 'ad_soyad', 'telefon', 'tc_kimlik', 'dogum_tarihi', 'sehir', 'meslek_is', 'mulkiyet_durumu',
     // Status & Tracking (10-16)
     'durum', 'sahip', 'cekilme_zamani', 'son_arama_zamani', 'sonraki_arama_zamani', 'arama_not_kisa', 'aciklama_uzun',
     // Documents & Employment (17-21)
