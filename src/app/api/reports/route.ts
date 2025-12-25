@@ -141,7 +141,34 @@ export async function GET(req: NextRequest) {
                 }
             }
 
-            // ... (keep approval/delivery stats same)
+            // 2. Approval & Delivery Stats
+            const approvalDate = getColSafe(row, 'onay_tarihi');
+            if (approval === 'Onaylandı' || status === 'Onaylandı') {
+                stats.totalApproved++; // Count for sales rate denominator
+                if (approvalDate && getDayKey(approvalDate) === today) {
+                    stats.todayApproved++;
+                }
+            }
+
+            if (status === 'Teslim edildi') {
+                stats.totalDelivered++;
+            }
+
+            // 3. Status Distribution
+            stats.status[status] = (stats.status[status] || 0) + 1;
+
+            // 4. Daily Trend
+            const day = getDayKey(createdAt);
+            if (day !== 'Unknown' && day !== 'Invalid Date') {
+                stats.daily[day] = (stats.daily[day] || 0) + 1;
+            }
+
+            // 5. Funnel Logic
+            if (status !== 'Yeni') stats.funnel.contacted++;
+            if (status === 'Mağazaya davet edildi' || status === 'Teslim edildi' || status === 'Satış yapıldı/Tamamlandı') stats.funnel.storeVisit++;
+            if (status === 'Teslim edildi' || status === 'Satış yapıldı/Tamamlandı') {
+                stats.funnel.sale++;
+            }
 
             // 6. Remaining to Call (Kalan Aranacak)
             if (isRemaining) {
