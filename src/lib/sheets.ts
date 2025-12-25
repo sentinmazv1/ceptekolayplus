@@ -55,6 +55,14 @@ export const COLUMNS = [
     'psikoteknik_varmi',
     'psikoteknik_notu',
     'email',
+    'ilce', // Just in case it was there? No, target is below.
+    // Padding to reach Column CD (Index 81)
+    // Current last was email at 57.
+    // We need 58..80 to be fillers. 
+    // 81 will be ilce.
+    'SKIP_BG', 'SKIP_BH', 'SKIP_BI', 'SKIP_BJ', 'SKIP_BK', 'SKIP_BL', 'SKIP_BM', 'SKIP_BN', 'SKIP_BO', 'SKIP_BP',
+    'SKIP_BQ', 'SKIP_BR', 'SKIP_BS', 'SKIP_BT', 'SKIP_BU', 'SKIP_BV', 'SKIP_BW', 'SKIP_BX', 'SKIP_BY', 'SKIP_BZ',
+    'SKIP_CA', 'SKIP_CB', 'SKIP_CC',
     'ilce'
 ] as const;
 // Total: 72 columns
