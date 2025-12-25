@@ -47,6 +47,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
 
     // Inventory State
     const [isStockModalOpen, setIsStockModalOpen] = useState(false);
+    const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
     const [stockItems, setStockItems] = useState<InventoryItem[]>([]);
     const [stockLoading, setStockLoading] = useState(false);
     const [stockSearch, setStockSearch] = useState('');
@@ -236,7 +237,17 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
 
             <div className="p-6">
                 <h2 className="text-xl font-bold mb-4 text-gray-800 border-b pb-2 flex justify-between items-center">
-                    {isNew ? 'Yeni Müşteri Kaydı' : 'Müşteri Kartı'}
+                    <div className="flex items-center gap-3">
+                        {isNew ? 'Yeni Müşteri Kaydı' : 'Müşteri Kartı'}
+                        {!isNew && (
+                            <button
+                                onClick={() => setIsApprovalModalOpen(true)}
+                                className="bg-indigo-100 text-indigo-700 text-xs px-3 py-1 rounded-full hover:bg-indigo-200 transition-colors flex items-center gap-1"
+                            >
+                                📋 Onaya Sun
+                            </button>
+                        )}
+                    </div>
                     {!isNew && <span className="text-sm font-normal text-gray-500">ID: {data.id.slice(0, 8)}...</span>}
                 </h2>
 
@@ -798,7 +809,129 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                             </div>
 
                             {/* List */}
-                            <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                                {stockItems
+                                    .filter(item =>
+                                        item.marka.toLowerCase().includes(stockSearch.toLowerCase()) ||
+                                        item.model.toLowerCase().includes(stockSearch.toLowerCase()) ||
+                                        item.imei.includes(stockSearch)
+                                    )
+                                    .map(item => (
+                                        <div key={item.id} className="border rounded-lg p-3 hover:bg-gray-50 flex justify-between items-center transition-colors">
+                                            <div>
+                                                <div className="font-semibold text-gray-800">{item.marka} {item.model}</div>
+                                                <div className="text-xs text-gray-500 font-mono">IMEI: {item.imei}</div>
+                                                <div className="text-xs text-gray-400">Seri: {item.seri_no}</div>
+                                            </div>
+                                            <button
+                                                onClick={() => handleStockAssign(item)}
+                                                className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-indigo-700 shadow-sm"
+                                            >
+                                                Seç
+                                            </button>
+                                        </div>
+                                    ))}
+                                {stockItems.length === 0 && !stockLoading && (
+                                    <p className="text-center text-gray-500 py-4">Stokta uygun cihaz bulunamadı.</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <ApprovalSummaryModal
+                    isOpen={isApprovalModalOpen}
+                    onClose={() => setIsApprovalModalOpen(false)}
+                    customer={data}
+                />
+            </div>
+        </div>
+    );
+}
+
+function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; onClose: () => void; customer: Customer }) {
+    if (!isOpen) return null;
+
+    const generateSummary = () => {
+        return `Adı : ${customer.ad_soyad || '-'}
+Şehri : ${customer.sehir || '-'}
+Meslek / Son iş yeri çalışma süresi : ${customer.meslek_is || '-'} / ${customer.ayni_isyerinde_sure_ay || '?'} aydır aynı iş yerinde
+Son yatan maaş: ${customer.son_yatan_maas || '-'}
+Mülkiyet : ${customer.mulkiyet_durumu || '-'}
+Dava Dosyası : ${customer.dava_dosyasi_varmi || '-'} ${customer.dava_detay || ''}
+Gizli Dosyası : ${customer.gizli_dosya_varmi || '-'} ${customer.gizli_dosya_detay || ''}
+Açık icrası : ${customer.acik_icra_varmi || '-'} ${customer.acik_icra_detay || ''}
+Kapalı icra : ${customer.kapali_icra_varmi || '-'} Açıklama: ${customer.kapali_icra_kapanis_sekli || ''}
+Avukat Sorgusu : ${customer.avukat_sorgu_durumu || '-'} Açıklaması ${customer.avukat_sorgu_sonuc || ''}`;
+    };
+
+    const summaryText = generateSummary();
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(summaryText);
+        alert('Metin kopyalandı! ✅');
+    };
+
+    const handleWhatsApp = () => {
+        const url = `https://wa.me/?text=${encodeURIComponent(summaryText)}`;
+        window.open(url, '_blank');
+    };
+
+    const handlePrint = () => {
+        const printWindow = window.open('', '', 'width=600,height=600');
+        if (printWindow) {
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>Onay Özeti - ${customer.ad_soyad}</title>
+                        <style>
+                            body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
+                            h2 { border-bottom: 2px solid #333; padding-bottom: 10px; }
+                            pre { white-space: pre-wrap; background: #f4f4f4; padding: 15px; border-radius: 5px; font-size: 14px; }
+                        </style>
+                    </head>
+                    <body>
+                        <h2>Müşteri Onay Özeti</h2>
+                        <pre>${summaryText}</pre>
+                        <script>window.print();</script>
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl flex flex-col animate-in fade-in zoom-in duration-200">
+                <div className="p-4 border-b flex justify-between items-center bg-indigo-50 rounded-t-xl">
+                    <h3 className="font-bold text-indigo-900 flex items-center gap-2">
+                        📋 Yönetici Onay Özeti
+                    </h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
+                </div>
+
+                <div className="p-6">
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 font-mono text-sm text-gray-800 whitespace-pre-wrap leading-relaxed shadow-inner">
+                        {summaryText}
+                    </div>
+
+                    <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <Button variant="secondary" onClick={handleCopy} className="w-full justify-center">
+                            📋 Kopyala
+                        </Button>
+                        <Button variant="ghost" onClick={handleWhatsApp} className="w-full justify-center bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border-green-200 border">
+                            💬 WhatsApp
+                        </Button>
+                        <Button variant="ghost" onClick={handlePrint} className="w-full justify-center bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-200 border">
+                            🖨️ Yazdır
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}                            <div className="flex-1 overflow-y-auto p-2 space-y-2">
                                 {stockItems.length === 0 && !stockLoading && (
                                     <div className="text-center py-8 text-gray-500">
                                         <p>Stokta cihaz bulunamadı veya yüklenmedi.</p>
@@ -843,10 +976,10 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                             <div className="p-3 border-t bg-gray-50 rounded-b-xl text-xs text-gray-500 text-center">
                                 Seçtiğiniz cihaz anında müşteriye atanır ve stoktan düşülür.
                             </div>
-                        </div>
-                    </div>
+                        </div >
+                    </div >
                 )}
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }
