@@ -72,6 +72,15 @@ function getColLetter(index: number): string {
 
 const LAST_COL = getColLetter(COLUMNS.length - 1); // e.g., "AU" for 47 columns
 
+// Column Indices for Fast Access (Direct index access is faster than map lookup in loop)
+const COL_DURUM = COL_INDEX['durum'];
+const COL_ONAY_DURUMU = COL_INDEX['onay_durumu'];
+const COL_SON_ARAMA = COL_INDEX['son_arama_zamani'];
+const COL_SONRAKI_ARAMA = COL_INDEX['sonraki_arama_zamani'];
+const COL_KILITLI = COL_INDEX['kilitli_mi'];
+const COL_SAHIP = COL_INDEX['sahip'];
+
+
 
 function rowToCustomer(row: any[]): Customer {
     const c: any = {};
