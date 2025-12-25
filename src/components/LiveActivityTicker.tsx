@@ -76,14 +76,7 @@ export function LiveActivityTicker() {
         return () => clearInterval(timer);
     }, [messages]);
 
-    const fireConfetti = () => {
-        confetti({
-            particleCount: 100,
-            spread: 70,
-            origin: { y: 0.3 },
-            colors: ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b']
-        });
-    };
+
 
     const currentMessage = messages[currentIndex];
 
