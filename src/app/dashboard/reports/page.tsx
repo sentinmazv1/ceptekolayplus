@@ -159,11 +159,11 @@ export default function ReportsPage() {
                     <Activity className="w-5 h-5 text-indigo-600" />
                     İl Bazlı Performans Özetleri (Top 5)
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                     <CityMiniTable title="Hacim" data={stats.city} sortKey="total" color="blue" />
                     <CityMiniTable title="Teslimat" data={stats.city} sortKey="delivered" color="emerald" showPercent />
-                    <CityMiniTable title="E-Devlet Yok" data={stats.city} sortKey="noEdevlet" color="red" showPercent />
-                    <CityMiniTable title="Ulaşılamayan" data={stats.city} sortKey="unreachable" color="orange" showPercent />
+                    <CityMiniTable title="E-Devlet Paylaşmadı" data={stats.city} sortKey="noEdevlet" color="red" showPercent />
+                    {/* Unreachable removed as per request */}
                     <CityMiniTable title="Kefil" data={stats.city} sortKey="kefil" color="purple" showPercent />
                     <CityMiniTable title="İptal" data={stats.city} sortKey="cancelled" color="gray" showPercent />
                 </div>
