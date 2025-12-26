@@ -499,96 +499,95 @@ export async function getLeadStats() {
                 today_called++;
             }
         }
-    }
 
-    console.log("DEBUG: Generated Hourly Stats:", JSON.stringify(hourly)); // <--- DEBUG LOG
+        console.log("DEBUG: Generated Hourly Stats:", JSON.stringify(hourly)); // <--- DEBUG LOG
 
-    // ... rest of function
+        // ... rest of function
 
-    // Pending Apporval logic (Simplified for consistency)
-    // If status is 'Başvuru alındı', it shows in Admin Panel as Pending, regardless of previous 'onay_durumu'.
-    const isPending = durum === 'Başvuru alındı';
-    if (isPending) pending_approval++;
+        // Pending Apporval logic (Simplified for consistency)
+        // If status is 'Başvuru alındı', it shows in Admin Panel as Pending, regardless of previous 'onay_durumu'.
+        const isPending = durum === 'Başvuru alındı';
+        if (isPending) pending_approval++;
 
-    if (onay_durumu === 'Kefil İstendi' || durum === 'Kefil bekleniyor') waiting_guarantor++;
-    if (durum === 'Teslim edildi') delivered++;
-    if (durum === 'Onaylandı') approved++;
+        if (onay_durumu === 'Kefil İstendi' || durum === 'Kefil bekleniyor') waiting_guarantor++;
+        if (durum === 'Teslim edildi') delivered++;
+        if (durum === 'Onaylandı') approved++;
 
-    // Availability Logic
-    // Skip locked/owned
-    if (kilitli_mi === 'TRUE' || kilitli_mi === true || (sahip && sahip.length > 0)) continue;
+        // Availability Logic
+        // Skip locked/owned
+        if (kilitli_mi === 'TRUE' || kilitli_mi === true || (sahip && sahip.length > 0)) continue;
 
-    let isAvailable = false;
+        let isAvailable = false;
 
-    // 1. Scheduled
-    if (durum === 'Daha sonra aranmak istiyor') {
-        if (sonraki_arama) {
-            const scheduleTime = parseSheetDate(sonraki_arama);
-            if (scheduleTime && scheduleTime <= nowTime) {
-                waiting_scheduled++;
-                isAvailable = true;
+        // 1. Scheduled
+        if (durum === 'Daha sonra aranmak istiyor') {
+            if (sonraki_arama) {
+                const scheduleTime = parseSheetDate(sonraki_arama);
+                if (scheduleTime && scheduleTime <= nowTime) {
+                    waiting_scheduled++;
+                    isAvailable = true;
+                }
             }
         }
-    }
-    // 2. New
-    else if (durum === 'Yeni') {
-        waiting_new++;
-        isAvailable = true;
-    }
-    // 3. Retry - REMOVED from availability count (Phase 64)
-    else if (durum === 'Ulaşılamadı' || durum === 'Meşgul/Hattı kapalı' || durum === 'Cevap Yok') {
-        // We still count them for the DASHBOARD STATS (waiting_retry), 
-        // but we do NOT set isAvailable = true.
-        // Because "Available" means "Available for Auto-Pull".
-        if (!son_arama) {
-            waiting_retry++;
-            // isAvailable = true; // REMOVED
-        } else {
-            const lastCall = new Date(son_arama).getTime();
-            if (nowTime - lastCall > TWO_HOURS) {
-                waiting_retry++;
-                isAvailable = true; // RE-ENABLED (Phase 72)
-            } else {
-                // Even if not cooled down, we track them as waiting retry generally?
-                // Actually original logic only counted them if cooled down.
-                // Let's keep counting them as "waiting_retry" if satisfied, 
-                // but NOT add to 'available'.
-            }
-        }
-        // Actually, to be consistent with "waiting_retry" usually meaning "Ready to call",
-        // let's keep the logic for `waiting_retry` increment, but remove `isAvailable = true`.
-
-        // Wait, looking at original code:
-        /*
-         if (!son_arama) {
-            waiting_retry++;
+        // 2. New
+        else if (durum === 'Yeni') {
+            waiting_new++;
             isAvailable = true;
-        } ...
-        */
-        // So `waiting_retry` was effectively "Ready Retry".
-        // We should probably still count them if they are ready, so the admin sees them,
-        // but just don't make them `isAvailable`.
+        }
+        // 3. Retry - REMOVED from availability count (Phase 64)
+        else if (durum === 'Ulaşılamadı' || durum === 'Meşgul/Hattı kapalı' || durum === 'Cevap Yok') {
+            // We still count them for the DASHBOARD STATS (waiting_retry), 
+            // but we do NOT set isAvailable = true.
+            // Because "Available" means "Available for Auto-Pull".
+            if (!son_arama) {
+                waiting_retry++;
+                // isAvailable = true; // REMOVED
+            } else {
+                const lastCall = new Date(son_arama).getTime();
+                if (nowTime - lastCall > TWO_HOURS) {
+                    waiting_retry++;
+                    isAvailable = true; // RE-ENABLED (Phase 72)
+                } else {
+                    // Even if not cooled down, we track them as waiting retry generally?
+                    // Actually original logic only counted them if cooled down.
+                    // Let's keep counting them as "waiting_retry" if satisfied, 
+                    // but NOT add to 'available'.
+                }
+            }
+            // Actually, to be consistent with "waiting_retry" usually meaning "Ready to call",
+            // let's keep the logic for `waiting_retry` increment, but remove `isAvailable = true`.
+
+            // Wait, looking at original code:
+            /*
+             if (!son_arama) {
+                waiting_retry++;
+                isAvailable = true;
+            } ...
+            */
+            // So `waiting_retry` was effectively "Ready Retry".
+            // We should probably still count them if they are ready, so the admin sees them,
+            // but just don't make them `isAvailable`.
+        }
+
+        if (isAvailable) available++;
     }
 
-    if (isAvailable) available++;
-}
+    total_scheduled = statusCounts['Daha sonra aranmak istiyor'] || 0;
 
-total_scheduled = statusCounts['Daha sonra aranmak istiyor'] || 0;
-
-return {
-    available,
-    waiting_new,
-    waiting_scheduled,
-    total_scheduled,
-    waiting_retry,
-    pending_approval,
-    waiting_guarantor,
-    delivered,
-    approved, // Use the explicit counter, NOT statusCounts['Onaylandı']
-    today_called,
-    statusCounts,
-    hourly
-};
+    return {
+        available,
+        waiting_new,
+        waiting_scheduled,
+        total_scheduled,
+        waiting_retry,
+        pending_approval,
+        waiting_guarantor,
+        delivered,
+        approved, // Use the explicit counter, NOT statusCounts['Onaylandı']
+        today_called,
+        statusCounts,
+        hourly
+    };
 }
 
 export async function updateLead(customer: Customer, userEmail: string) {
