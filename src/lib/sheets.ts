@@ -116,36 +116,38 @@ function customerToRow(c: Partial<Customer>): any[] {
     return row;
 }
 
+import { parse, isValid } from 'date-fns';
+
 function parseSheetDate(dateStr: string | undefined): number | null {
-    if (!dateStr) return null;
+    if (!dateStr || !dateStr.trim()) return null;
+    const cleanStr = dateStr.trim();
 
-    // Trim
-    let cleanStr = dateStr.trim();
-    if (!cleanStr) return null;
-
-    // 1. Try standard Date parsing (ISO 8601, etc.)
+    // 1. Try standard JS Date (ISO 8601, etc.)
     const d = new Date(cleanStr);
     if (!isNaN(d.getTime())) return d.getTime();
 
-    // 2. Try DD.MM.YYYY or DD/MM/YYYY or DD-MM-YYYY
-    // Supports optional time: HH:mm or HH:mm:ss
-    // Regex: ^(\d{1,2})[./-](\d{1,2})[./-](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?
-    const trMatch = cleanStr.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+    // 2. Try strict formats with date-fns
+    const formats = [
+        'dd.MM.yyyy HH:mm:ss',
+        'dd.MM.yyyy HH:mm',
+        'dd.MM.yyyy',
+        'dd/MM/yyyy HH:mm:ss',
+        'dd/MM/yyyy HH:mm',
+        'dd/MM/yyyy',
+        'dd-MM-yyyy HH:mm:ss',
+        'dd-MM-yyyy HH:mm',
+        'dd-MM-yyyy',
+        'yyyy-MM-dd HH:mm:ss',
+        'yyyy-MM-dd'
+    ];
 
-    if (trMatch) {
-        const day = parseInt(trMatch[1], 10);
-        const month = parseInt(trMatch[2], 10) - 1; // Months are 0-indexed
-        const year = parseInt(trMatch[3], 10);
-        const hour = trMatch[4] ? parseInt(trMatch[4], 10) : 0;
-        const minute = trMatch[5] ? parseInt(trMatch[5], 10) : 0;
-        // We ignore seconds for parsing basic date object usually, or use them if needed. 
-        // Date constructor supports (year, month, index, hour, minute, second)
-        const second = trMatch[6] ? parseInt(trMatch[6], 10) : 0;
-
-        const d2 = new Date(year, month, day, hour, minute, second);
-        if (!isNaN(d2.getTime())) return d2.getTime();
+    const now = new Date();
+    for (const fmt of formats) {
+        const parsed = parse(cleanStr, fmt, now);
+        if (isValid(parsed)) return parsed.getTime();
     }
 
+    console.warn(`[parseSheetDate] Failed to parse: "${cleanStr}"`);
     return null;
 }
 
