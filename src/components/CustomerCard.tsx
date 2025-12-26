@@ -325,10 +325,22 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                             // 2. Update last call time in background
                                             try {
                                                 const now = new Date();
-                                                const istanbulOffset = 3 * 60; // Turkey is GMT+3
-                                                const localTime = new Date(now.getTime() + (istanbulOffset * 60000));
+                                                // Create standardized TR/Local Date String compatible with parsed stats
+                                                // We want: YYYY-MM-DD HH:mm:ss
+                                                const trDate = new Intl.DateTimeFormat('en-CA', {
+                                                    timeZone: 'Europe/Istanbul',
+                                                    year: 'numeric',
+                                                    month: '2-digit',
+                                                    day: '2-digit',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit',
+                                                    second: '2-digit',
+                                                    hour12: false
+                                                }).format(now).replace(',', '');
 
-                                                const newData = { ...data, son_arama_zamani: now.toISOString() };
+                                                // en-CA format: "2024-12-26, 22:30:00" -> replace removal -> "2024-12-26 22:30:00"
+
+                                                const newData = { ...data, son_arama_zamani: trDate };
 
                                                 // Optimistic UI Update
                                                 setData(newData);
