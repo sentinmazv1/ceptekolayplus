@@ -177,7 +177,7 @@ export default function ReportsPage() {
             <div className="mb-8 break-inside-avoid">
                 <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                     <Activity className="w-5 h-5 text-indigo-600" />
-                    İl Bazlı Performans Özetleri (Top 5)
+                    İl Bazlı Performans Özetleri (Top 10)
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                     <CityMiniTable title="Hacim" data={stats.city} sortKey="total" color="blue" />
@@ -428,7 +428,7 @@ function CityMiniTable({ title, data, sortKey, color, showPercent }: {
         .map(([name, stats]: [string, any]) => ({ name, ...stats }))
         .filter(c => c[sortKey] > 0)
         .sort((a, b) => b[sortKey] - a[sortKey])
-        .slice(0, 5); // STRICTLY TOP 5
+        .slice(0, 10); // STRICTLY TOP 10
 
     const colorClasses: any = {
         blue: 'text-blue-700 bg-blue-50',
