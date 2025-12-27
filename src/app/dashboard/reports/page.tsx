@@ -360,18 +360,51 @@ export default function ReportsPage() {
                 <ChartCard title="Ret ve İptal Nedenleri" className="md:col-span-2">
                     <div className="h-[300px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={Object.entries(stats.rejection || {}).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)} layout="horizontal" margin={{ bottom: 20 }}>
+                            <BarChart
+                                data={Object.entries(stats.rejection || {})
+                                    .map(([name, value]) => ({ name, value }))
+                                    .sort((a, b) => b.value - a.value)
+                                }
+                                layout="horizontal"
+                                margin={{ bottom: 20 }}
+                            >
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EFF6FF" />
-                                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#6B7280' }} interval={0} angle={-15} textAnchor="end" />
+                                <XAxis
+                                    dataKey="name"
+                                    tick={({ x, y, payload }) => {
+                                        const total = Object.values(stats.rejection || {}).reduce((a, b) => a + b, 0);
+                                        const val = stats.rejection[payload.value] || 0;
+                                        const percent = total > 0 ? ((val / total) * 100).toFixed(1) : '0';
+
+                                        return (
+                                            <g transform={`translate(${x},${y})`}>
+                                                <text x={0} y={0} dy={10} textAnchor="end" fill="#6B7280" fontSize={10} transform="rotate(-15)">
+                                                    {payload.value.length > 15 ? payload.value.slice(0, 15) + '...' : payload.value}
+                                                    {` (%${percent})`}
+                                                </text>
+                                            </g>
+                                        );
+                                    }}
+                                    interval={0}
+                                    height={60}
+                                />
                                 <YAxis hide />
                                 <RechartsTooltip
                                     cursor={{ fill: '#F9FAFB' }}
                                     contentStyle={{ borderRadius: '8px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                    formatter={(value: any, name: string, props: any) => {
+                                        const numVal = Number(value);
+                                        const total = Object.values(stats.rejection || {}).reduce((a, b) => a + b, 0);
+                                        const percent = total > 0 ? ((numVal / total) * 100).toFixed(1) : '0';
+                                        return [`${numVal} (%${percent})`, name];
+                                    }}
                                 />
                                 <Bar dataKey="value" fill="#EF4444" radius={[4, 4, 0, 0]} barSize={40}>
-                                    {Object.entries(stats.rejection || {}).map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry[0].includes('İptal') || entry[0] === 'Fiyat Yüksek' ? '#F59E0B' : '#EF4444'} />
-                                    ))}
+                                    {Object.entries(stats.rejection || {})
+                                        .sort((a, b) => b[1] - a[1]) // Ensure sort order matches
+                                        .map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry[0].includes('İptal') || entry[0] === 'Fiyat Yüksek' ? '#F59E0B' : '#EF4444'} />
+                                        ))}
                                 </Bar>
                             </BarChart>
                         </ResponsiveContainer>
