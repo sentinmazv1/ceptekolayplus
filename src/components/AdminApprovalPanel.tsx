@@ -235,6 +235,17 @@ export function AdminApprovalPanel() {
                                         {new Date(lead.created_at).toLocaleDateString('tr-TR')}
                                     </span>
                                 </div>
+                                {lead.avukat_sorgu_durumu && (
+                                    <div className="mb-2">
+                                        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${lead.avukat_sorgu_durumu === 'OLUMLU' ? 'bg-green-100 text-green-700' :
+                                                lead.avukat_sorgu_durumu === 'OLUMSUZ' ? 'bg-red-100 text-red-700' :
+                                                    lead.avukat_sorgu_durumu === 'BEKLİYOR' ? 'bg-yellow-100 text-yellow-700' :
+                                                        'bg-gray-100 text-gray-700'
+                                            }`}>
+                                            Avukat: {lead.avukat_sorgu_durumu}
+                                        </span>
+                                    </div>
+                                )}
 
                                 <div className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
                                     <Button
