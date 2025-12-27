@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
-    PieChart, Pie, Cell, AreaChart, Area, LineChart, Line
+    PieChart, Pie, Cell, AreaChart, Area, LineChart, Line, LabelList
 } from 'recharts';
 import {
     Loader2, ArrowLeft, Users, Phone,
@@ -117,6 +117,20 @@ export default function ReportsPage() {
     const salesRate = stats.totalCalled > 0
         ? ((stats.totalDelivered / stats.totalCalled) * 100).toFixed(1)
         : '0';
+
+    // Rejection Data Preparation with Percentages
+    const rejectionTotal = Object.values(stats.rejection || {}).reduce((a, b) => a + b, 0);
+    const rejectionData = Object.entries(stats.rejection || {})
+        .map(([name, value]) => {
+            const percent = rejectionTotal > 0 ? ((value / rejectionTotal) * 100).toFixed(1) : '0';
+            return {
+                name,
+                value,
+                percentStr: `%${percent}`,
+                fullLabel: `${name} (%${percent})` // For XAxis
+            };
+        })
+        .sort((a, b) => b.value - a.value);
 
     return (
         <div className="min-h-screen bg-gray-50/50 p-6 md:p-8 pb-20 print:bg-white print:p-0">
@@ -361,26 +375,24 @@ export default function ReportsPage() {
                     <div className="h-[300px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
-                                data={Object.entries(stats.rejection || {})
-                                    .map(([name, value]) => ({ name, value }))
-                                    .sort((a, b) => b.value - a.value)
-                                }
+                                data={rejectionData}
                                 layout="horizontal"
-                                margin={{ bottom: 20 }}
+                                margin={{ bottom: 20, top: 20 }} // Add top margin for labels
                             >
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EFF6FF" />
                                 <XAxis
                                     dataKey="name"
                                     tick={({ x, y, payload }) => {
-                                        const total = Object.values(stats.rejection || {}).reduce((a, b) => a + b, 0);
-                                        const val = stats.rejection[payload.value] || 0;
-                                        const percent = total > 0 ? ((val / total) * 100).toFixed(1) : '0';
+                                        // We can find the full label from data if needed, or just use payload.value
+                                        // Since we want the axis to be clean or detailed?
+                                        // User asked for "permanent data", let's keep the axis somewhat standard
+                                        // but maybe less cluttered if the bar has the label?
+                                        // Let's use the standard name on Axis, and value+percent on Bar.
 
                                         return (
                                             <g transform={`translate(${x},${y})`}>
                                                 <text x={0} y={0} dy={10} textAnchor="end" fill="#6B7280" fontSize={10} transform="rotate(-15)">
                                                     {payload.value.length > 15 ? payload.value.slice(0, 15) + '...' : payload.value}
-                                                    {` (%${percent})`}
                                                 </text>
                                             </g>
                                         );
@@ -393,18 +405,19 @@ export default function ReportsPage() {
                                     cursor={{ fill: '#F9FAFB' }}
                                     contentStyle={{ borderRadius: '8px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                                     formatter={(value: any, name: any, props: any) => {
-                                        const numVal = Number(value);
-                                        const total = Object.values(stats.rejection || {}).reduce((a, b) => a + b, 0);
-                                        const percent = total > 0 ? ((numVal / total) * 100).toFixed(1) : '0';
-                                        return [`${numVal} (%${percent})`, name];
+                                        // Just show the raw value, the user can see percent on bar
+                                        // Or show both consistency.
+                                        const item = props.payload;
+                                        return [`${value} (${item.percentStr})`, name];
                                     }}
                                 />
                                 <Bar dataKey="value" fill="#EF4444" radius={[4, 4, 0, 0]} barSize={40}>
-                                    {Object.entries(stats.rejection || {})
-                                        .sort((a, b) => b[1] - a[1]) // Ensure sort order matches
-                                        .map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry[0].includes('İptal') || entry[0] === 'Fiyat Yüksek' ? '#F59E0B' : '#EF4444'} />
-                                        ))}
+                                    {/* Colors */}
+                                    {rejectionData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.name.includes('İptal') || entry.name === 'Fiyat Yüksek' ? '#F59E0B' : '#EF4444'} />
+                                    ))}
+                                    {/* Permanent Label on Top */}
+                                    <LabelList dataKey="percentStr" position="top" fill="#374151" fontSize={11} fontWeight="bold" />
                                 </Bar>
                             </BarChart>
                         </ResponsiveContainer>
