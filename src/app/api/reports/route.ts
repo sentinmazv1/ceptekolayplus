@@ -98,7 +98,8 @@ export async function GET(req: NextRequest) {
             totalCalled: 0,        // NEW: "Bugüne kadar arananlar"
             remainingToCall: 0,    // NEW: "Kalan aranacaklar"
             totalDelivered: 0,     // NEW: "Teslim edilenler"
-            totalApproved: 0       // NEW: "Onaylananlar" (for Sales Rate calculation)
+            totalApproved: 0,       // NEW: "Onaylananlar" (for Sales Rate calculation)
+            hourly: {} as Record<number, number> // NEW: Hourly stats
         };
 
         // Get today's date string in Turkey timezone
@@ -139,6 +140,34 @@ export async function GET(req: NextRequest) {
                 if (callDay === today) {
                     stats.todayCalled++;
                 }
+
+                // Hourly Stats
+                try {
+                    // Try parsing
+                    let d: Date | null = null;
+                    // Usually string is "yyyy-mm-dd hh:mm:ss" or ISO
+                    // Date() parses both fine in recent JS environments
+                    d = new Date(lastCalled);
+
+                    // Basic check just in case, fall back to regex if needed?
+                    // But date-fns is not imported here to keep it light.
+                    // Given our CustomerCard improvement, formatting should be standard now.
+
+                    if (d && !isNaN(d.getTime())) {
+                        const hourStr = new Intl.DateTimeFormat('en-US', {
+                            timeZone: 'Europe/Istanbul',
+                            hour: 'numeric',
+                            hour12: false
+                        }).format(d);
+
+                        const h = parseInt(hourStr, 10);
+                        if (!isNaN(h)) {
+                            stats.hourly[h] = (stats.hourly[h] || 0) + 1;
+                        }
+                    }
+                } catch (e) {
+                    // ignore parse error
+                }
             }
 
             // 2. Approval & Delivery Stats
@@ -174,20 +203,6 @@ export async function GET(req: NextRequest) {
             if (isRemaining) {
                 stats.remainingToCall++;
             }
-            // Removed old date-based logic to ensure mathematical consistency with Total
-            /*
-            if (!lastCalled) {
-                stats.remainingToCall++;
-            }
-            */
-            // Original Pool Logic was:
-            /*
-            if (locked !== 'TRUE' && locked !== true && !owner) {
-                if (status === 'Yeni') stats.remainingToCall++;
-                // ...
-            }
-            */
-            // We are changing this to strict "Not Called" to satisfy the report math check.
 
             // 7. City Stats (Detailed)
             if (city) {
@@ -213,10 +228,7 @@ export async function GET(req: NextRequest) {
                 else if (status === 'E-Devlet paylaşmak istemedi') cStats.noEdevlet++;
                 else if (['Ulaşılamadı', 'Meşgul/Hattı kapalı', 'Cevap Yok'].includes(status)) cStats.unreachable++;
                 else if (status === 'Kefil bekleniyor' || approval === 'Kefil İstendi') cStats.kefil++;
-                else if (['İptal/Vazgeçti', 'Reddetti'].includes(status)) cStats.cancelled++; // Grouping 'Reddetti' (User Rejected) with Cancelled as they are similar outcome for this report? Or keep separate? "Vazgeçen" usually implies İptal. 'Reddetti' implies 'Offer refused'. Keep them detailed?
-                // User asked for "Vazgeçen". 'İptal/Vazgeçti' is the main one. 'Reddetti' is usually 'Fiyatı beğenmedi'.
-                // Let's put 'Reddetti' in Rejected for now, or Cancelled?
-                // Let's put 'İptal/Vazgeçti' to cancelled. 'Reddetti' to rejected.
+                else if (['İptal/Vazgeçti', 'Reddetti'].includes(status)) cStats.cancelled++;
                 else if (status === 'Uygun değil' || approval === 'Reddedildi' || status === 'Reddetti') cStats.rejected++;
                 else cStats.other++;
             }
