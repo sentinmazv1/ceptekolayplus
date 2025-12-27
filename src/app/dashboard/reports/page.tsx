@@ -29,7 +29,7 @@ interface ReportStats {
     status: Record<string, number>;
     channel: Record<string, number>;
     daily: Record<string, number>;
-    hourly: Record<string, number>; // New
+    hourly: Record<string, Record<number, number>>; // Date keys -> Hour keys -> Count
     funnel: {
         total: number;
         sale: number;
@@ -47,6 +47,18 @@ export default function ReportsPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState<ReportStats | null>(null);
+
+    // Initialize with today's date in YYYY-MM-DD format (Turkey Time)
+    const [selectedDate, setSelectedDate] = useState<string>(() => {
+        const now = new Date();
+        const trDateFormatter = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Europe/Istanbul',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+        return trDateFormatter.format(now);
+    });
 
     useEffect(() => {
         fetch('/api/reports')
@@ -84,10 +96,18 @@ export default function ReportsPage() {
     const productData = Object.entries(stats.product || {}).sort((a, b) => b[1] - a[1]).slice(0, 10);
 
     // Hourly Data (0-23)
-    const hourlyData = Array.from({ length: 24 }, (_, i) => ({
-        hour: `${String(i).padStart(2, '0')}:00`,
-        count: stats.hourly?.[i] || 0
-    }));
+    // Filter by selected Date
+    const hourlyData = Array.from({ length: 24 }, (_, i) => {
+        const hourKey = i;
+        // Safety check for stats.hourly being undefined or selectedDate not found
+        const dateStats = stats.hourly ? stats.hourly[selectedDate] : undefined;
+        const count = dateStats ? (dateStats[hourKey] || 0) : 0;
+
+        return {
+            hour: `${String(i).padStart(2, '0')}:00`,
+            count: count
+        };
+    });
 
     // Daily Trend
     const dailyData = Object.entries(stats.daily || {}).map(([date, count]) => ({ date, count }));
@@ -173,8 +193,19 @@ export default function ReportsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 break-inside-avoid">
                 {/* Hourly Intensity Heatmap */}
                 <ChartCard title="Saatlik Çalışma Yoğunluğu" className="lg:col-span-2">
+                    {/* Date Picker Header */}
+                    <div className="mb-4 flex items-center justify-between">
+                        <span className="text-xs text-gray-500">Seçili Tarih:</span>
+                        <input
+                            type="date"
+                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2"
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                        />
+                    </div>
+
                     <div className="h-[300px]">
-                        {stats.hourly && Object.values(stats.hourly).some(v => v > 0) ? (
+                        {stats.hourly && Object.keys(stats.hourly).length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={hourlyData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
