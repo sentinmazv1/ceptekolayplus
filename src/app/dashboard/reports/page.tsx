@@ -392,7 +392,7 @@ export default function ReportsPage() {
                                 <RechartsTooltip
                                     cursor={{ fill: '#F9FAFB' }}
                                     contentStyle={{ borderRadius: '8px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                    formatter={(value: any, name: string, props: any) => {
+                                    formatter={(value: any, name: any, props: any) => {
                                         const numVal = Number(value);
                                         const total = Object.values(stats.rejection || {}).reduce((a, b) => a + b, 0);
                                         const percent = total > 0 ? ((numVal / total) * 100).toFixed(1) : '0';
