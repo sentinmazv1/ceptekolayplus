@@ -118,7 +118,7 @@ function customerToRow(c: Partial<Customer>): any[] {
 
 import { parse, isValid } from 'date-fns';
 
-function parseSheetDate(dateStr: string | undefined): number | null {
+export function parseSheetDate(dateStr: string | undefined): number | null {
     if (!dateStr || !dateStr.trim()) return null;
     const cleanStr = dateStr.trim();
 

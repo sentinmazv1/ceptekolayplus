@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSheetsClient } from '@/lib/google';
-import { COLUMNS } from '@/lib/sheets';
+import { COLUMNS, parseSheetDate } from '@/lib/sheets';
 // Helper using Intl for robustness
 const trFormatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Europe/Istanbul',
