@@ -40,23 +40,33 @@ function parseSheetDateDebug(dateStr: string | undefined): { parsed: number | nu
 export async function GET() {
     try {
         const client = getSheetsClient();
+
+        // Fetch ALL rows in relevant columns to find the latest data
         const response = await client.spreadsheets.values.get({
             spreadsheetId: process.env.GOOGLE_SHEET_ID,
-            range: 'Customers!A2:Z100', // Fetch first 100 rows, limited columns
+            range: 'Customers!A:O',
         });
 
         const rows = response.data.values || [];
         const sonAramaIndex = COLUMNS.indexOf('son_arama_zamani');
 
+        // Server Time Info
+        const serverDate = new Date();
         const trFormatter = new Intl.DateTimeFormat('en-CA', {
             timeZone: 'Europe/Istanbul',
             year: 'numeric',
             month: '2-digit',
-            day: '2-digit'
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
         });
-        const todayStr = trFormatter.format(new Date());
+        const todayStr = trFormatter.format(serverDate).slice(0, 10); // YYYY-MM-DD
 
-        const debugLog = rows.map((row, i) => {
+        // Get Last 50 rows (The most recent ones)
+        const lastRows = rows.slice(-50);
+        const startRowIndex = rows.length - lastRows.length + 1; // 1-indexed
+
+        const debugLog = lastRows.map((row, i) => {
             const raw = row[sonAramaIndex];
             const result = parseSheetDateDebug(raw);
 
@@ -67,7 +77,7 @@ export async function GET() {
             if (result.parsed) {
                 const d = new Date(result.parsed);
                 // Logic from sheets.ts
-                dateStr = trFormatter.format(d);
+                dateStr = trFormatter.format(d).slice(0, 10);
                 isToday = dateStr === todayStr;
 
                 const hourStr = new Intl.DateTimeFormat('en-US', {
@@ -79,7 +89,7 @@ export async function GET() {
             }
 
             return {
-                row: i + 2,
+                row: startRowIndex + i,
                 raw_value: raw,
                 parsed_timestamp: result.parsed,
                 logic_check: {
@@ -90,10 +100,11 @@ export async function GET() {
                 },
                 reason: result.reason
             };
-        }).filter(item => item.raw_value); // Only show rows with data
+        }).filter(item => item.raw_value).reverse(); // Newest (bottom) first
 
         return NextResponse.json({
-            column_index: sonAramaIndex,
+            server_time_raw: serverDate.toISOString(),
+            server_today_tr: todayStr,
             total_rows_scanned: rows.length,
             debug_log: debugLog
         });
