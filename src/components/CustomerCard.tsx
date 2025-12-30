@@ -1098,16 +1098,34 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                             {/* Template Shortcuts */}
                             <div className="mb-4 flex flex-wrap gap-2">
                                 <button
-                                    onClick={() => setSmsMessage("Başvurunuzla ilgili size ulaşamadık. Müsait olduğunuzda dönüşünüzü bekleriz. Sevgiler.")}
-                                    className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-gray-700"
+                                    onClick={() => setSmsMessage(`Müjde! ${data.ad_soyad}, başvurunuz ${data.kredi_limiti || 'belirlenen'} TL limit ile ONAYLANMIŞTIR! 🎉 Ürününüzü teslim almak için sizi en kısa sürede mağazamıza bekliyoruz. Şimdiden iyi günlerde kullanın.`)}
+                                    className="text-xs bg-green-50 border border-green-200 hover:bg-green-100 px-2 py-1 rounded text-green-700 transition"
                                 >
-                                    Ulaşılamadı
+                                    ✅ Onaylandı
                                 </button>
                                 <button
-                                    onClick={() => setSmsMessage(`Sayın ${data.ad_soyad}, eksik evraklarınız bulunmaktadır. Lütfen iletişime geçiniz.`)}
-                                    className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-gray-700"
+                                    onClick={() => setSmsMessage(`Değerli Müşterimiz ${data.ad_soyad}, başvurunuzun olumlu sonuçlanabilmesi için kefil desteğine ihtiyaç duyulmuştur. Detaylı bilgi için 0551 346 6735 numaralı hattımızdan bize ulaşabilir veya mağazamızı ziyaret edebilirsiniz.`)}
+                                    className="text-xs bg-orange-50 border border-orange-200 hover:bg-orange-100 px-2 py-1 rounded text-orange-700 transition"
                                 >
-                                    Eksik Evrak
+                                    👥 Kefil İstendi
+                                </button>
+                                <button
+                                    onClick={() => setSmsMessage(`Sayın ${data.ad_soyad}, başvurunuzla ilgili size ulaşmaya çalıştık ancak ulaşamadık. Müsait olduğunuzda 0551 346 6735 numaramızdan veya WhatsApp hattımızdan bize dönüş yapmanızı rica ederiz. Sevgiler.`)}
+                                    className="text-xs bg-gray-50 border border-gray-200 hover:bg-gray-100 px-2 py-1 rounded text-gray-700 transition"
+                                >
+                                    📞 Ulaşılamadı
+                                </button>
+                                <button
+                                    onClick={() => setSmsMessage(`Sayın ${data.ad_soyad}, başvurunuzu tamamlayabilmemiz için bazı eksik evraklarınız bulunmaktadır. 0551 346 6735 WhatsApp hattımızdan bilgi alarak işlemlerinizi hızlandırabilirsiniz.`)}
+                                    className="text-xs bg-blue-50 border border-blue-200 hover:bg-blue-100 px-2 py-1 rounded text-blue-700 transition"
+                                >
+                                    📄 Eksik Evrak
+                                </button>
+                                <button
+                                    onClick={() => setSmsMessage(`Sayın ${data.ad_soyad}, başvurunuzla ilgili işlemler durdurulmuş ve kaydınız iptal edilmiştir. İhtiyaçlarınız için kapımız size her zaman açık. Tekrar görüşmek dileğiyle.`)}
+                                    className="text-xs bg-red-50 border border-red-200 hover:bg-red-100 px-2 py-1 rounded text-red-700 transition"
+                                >
+                                    ❌ İptal
                                 </button>
                             </div>
 
