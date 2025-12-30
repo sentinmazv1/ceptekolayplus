@@ -194,7 +194,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
             });
             const json = await res.json();
             if (res.ok && json.success) {
-                alert('SMS başarıyla gönderildi!');
+                alert(`SMS başarıyla gönderildi! (Kod: ${json.result})`);
                 setIsSmsModalOpen(false);
                 setSmsMessage('');
                 fetchLogs(); // Refresh logs to show the sent SMS
