@@ -9,8 +9,8 @@ interface SMSConfig {
 
 export async function sendSMS(phone: string, message: string): Promise<{ success: boolean; result?: string }> {
     const config: SMSConfig = {
-        usercode: process.env.NETGSM_USERCODE,
-        password: process.env.NETGSM_PASSWORD,
+        usercode: process.env.NETGSM_USERCODE || '8503467607', // Fallback for debugging (REMOVE LATER)
+        password: process.env.NETGSM_PASSWORD || 'P5.AL3D1',   // Fallback for debugging (REMOVE LATER)
         header: process.env.NETGSM_HEADER || 'CEPTEKLYLTD'
     };
 
