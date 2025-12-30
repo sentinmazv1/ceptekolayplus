@@ -19,9 +19,9 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'Phone and message are required' }, { status: 400 });
         }
 
-        const sent = await sendSMS(phone, message);
+        const { success, result } = await sendSMS(phone, message);
 
-        if (sent) {
+        if (success) {
             // Log it
             if (customerId) {
                 await logAction({
@@ -34,9 +34,9 @@ export async function POST(req: NextRequest) {
                     new_value: message
                 });
             }
-            return NextResponse.json({ success: true });
+            return NextResponse.json({ success: true, result });
         } else {
-            return NextResponse.json({ success: false, message: 'NetGSM Provider Error' }, { status: 500 });
+            return NextResponse.json({ success: false, message: `NetGSM Hatası: ${result}` }, { status: 500 });
         }
     } catch (error: any) {
         console.error('Manual SMS Error:', error);

@@ -7,7 +7,7 @@ interface SMSConfig {
     header?: string; // e.g., "CEPTEKOLAY"
 }
 
-export async function sendSMS(phone: string, message: string): Promise<boolean> {
+export async function sendSMS(phone: string, message: string): Promise<{ success: boolean; result?: string }> {
     const config: SMSConfig = {
         usercode: process.env.NETGSM_USERCODE,
         password: process.env.NETGSM_PASSWORD,
@@ -21,7 +21,7 @@ export async function sendSMS(phone: string, message: string): Promise<boolean> 
         console.log(`Header: ${config.header}`);
         console.log(`Message: ${message}`);
         console.log('------------------------');
-        return true; // Simulate success
+        return { success: true, result: 'SIMULATION' };
     }
 
     // NetGSM API Implementation
@@ -29,41 +29,28 @@ export async function sendSMS(phone: string, message: string): Promise<boolean> 
     try {
         console.log(`[NetGSM] Sending SMS to ${phone}...`);
 
-        // Clean phone number (remove leading 0 if present, though NetGSM usually handles it, best to be standard)
-        // NetGSM expects 10 digits usually (5xxxxxxxxx) but also accepts 05xxxxxxxxx. 
-        // Let's keep it as is or ensure it matches their requirement.
-        // Assuming input is 0555... or 555...
-
         const url = new URL('https://api.netgsm.com.tr/sms/send/get');
         url.searchParams.append('usercode', config.usercode);
         url.searchParams.append('password', config.password);
         url.searchParams.append('gsmno', phone);
         url.searchParams.append('message', message);
         url.searchParams.append('msgheader', config.header || 'CEPTEKOLAY');
-        url.searchParams.append('filter', '0'); // 0: No filter (commercial), 11: IYS filter logic if needed? Usually 0 for transactional if allowed.
-        // startdate, stopdate can be empty for immediate
+        url.searchParams.append('filter', '0');
 
         const response = await fetch(url.toString(), { method: 'GET' });
         const result = await response.text();
-
-        // NetGSM returns:
-        // "00 123456789" -> Success (Code + JobID)
-        // "20" -> Message text too long
-        // "30" -> Credentials error
-        // "40" -> Sender name error
-        // "70" -> Parameter error
 
         console.log(`[NetGSM] Response: ${result}`);
 
         if (result.startsWith('00')) {
             console.log('[NetGSM] SMS Sent Successfully');
-            return true;
+            return { success: true, result };
         } else {
             console.error(`[NetGSM] Failed to send. Error Code: ${result}`);
-            return false;
+            return { success: false, result };
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error('[NetGSM] HTTP Request Error:', error);
-        return false;
+        return { success: false, result: error.message };
     }
 }
