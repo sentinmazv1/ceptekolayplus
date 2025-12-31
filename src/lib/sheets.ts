@@ -520,7 +520,11 @@ export async function getLeadStats() {
         const isPending = durum === 'Başvuru alındı';
         if (isPending) pending_approval++;
 
-        if (onay_durumu === 'Kefil İstendi' || durum === 'Kefil bekleniyor') waiting_guarantor++;
+        // Robust check for Kefil status (case insensitive)
+        const od = onay_durumu?.trim().toLocaleLowerCase('tr-TR') || '';
+        const d = durum?.trim().toLocaleLowerCase('tr-TR') || '';
+
+        if (od === 'kefil i̇stendi' || od === 'kefil istendi' || d === 'kefil bekleniyor') waiting_guarantor++;
         if (durum === 'Teslim edildi') delivered++;
         if (durum === 'Onaylandı') approved++;
 
