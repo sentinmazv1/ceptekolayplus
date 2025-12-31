@@ -1098,34 +1098,52 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                             {/* Template Shortcuts */}
                             <div className="mb-4 flex flex-wrap gap-2">
                                 <button
-                                    onClick={() => setSmsMessage(`Müjde! ${data.ad_soyad}, başvurunuz ${data.kredi_limiti || 'belirlenen'} TL limit ile ONAYLANMIŞTIR! 🎉 Ürününüzü teslim almak için sizi en kısa sürede mağazamıza bekliyoruz. Şimdiden iyi günlerde kullanın.`)}
+                                    onClick={() => setSmsMessage(`Müjde! ${data.ad_soyad}, başvurunuz ${data.kredi_limiti || 'belirlenen'} TL limit ile ONAYLANMISTIR! Urununuzu teslim almak icin sizi en kisa surede magazamiza bekliyoruz. Simdiden iyi gunlerde kullanin. CEPTE KOLAY`)}
                                     className="text-xs bg-green-50 border border-green-200 hover:bg-green-100 px-2 py-1 rounded text-green-700 transition"
                                 >
-                                    ✅ Onaylandı
+                                    Onaylandı
                                 </button>
                                 <button
-                                    onClick={() => setSmsMessage(`Değerli Müşterimiz ${data.ad_soyad}, başvurunuzun olumlu sonuçlanabilmesi için kefil desteğine ihtiyaç duyulmuştur. Detaylı bilgi için 0551 346 6735 numaralı hattımızdan bize ulaşabilir veya mağazamızı ziyaret edebilirsiniz.`)}
+                                    onClick={() => setSmsMessage(`Değerli Müşterimiz ${data.ad_soyad}, başvurunuzun olumlu sonuçlanabilmesi için kefil desteğine ihtiyaç duyulmuştur. Detaylı bilgi için 0551 346 6735 numaralı hattımızdan bize ulaşabilir veya mağazamızı ziyaret edebilirsiniz. CEPTE KOLAY`)}
                                     className="text-xs bg-orange-50 border border-orange-200 hover:bg-orange-100 px-2 py-1 rounded text-orange-700 transition"
                                 >
-                                    👥 Kefil İstendi
+                                    Kefil İstendi
                                 </button>
                                 <button
-                                    onClick={() => setSmsMessage(`Sayın ${data.ad_soyad}, başvurunuzla ilgili size ulaşmaya çalıştık ancak ulaşamadık. Müsait olduğunuzda 0551 346 6735 numaramızdan veya WhatsApp hattımızdan bize dönüş yapmanızı rica ederiz. Sevgiler.`)}
+                                    onClick={() => setSmsMessage(`Sayın ${data.ad_soyad}, başvurunuzla ilgili size ulaşmaya çalıştık ancak ulaşamadık. Müsait olduğunuzda 0551 346 6735 numaramızdan veya WhatsApp hattımızdan bize dönüş yapmanızı rica ederiz. CEPTE KOLAY`)}
                                     className="text-xs bg-gray-50 border border-gray-200 hover:bg-gray-100 px-2 py-1 rounded text-gray-700 transition"
                                 >
-                                    📞 Ulaşılamadı
+                                    Ulaşılamadı
                                 </button>
                                 <button
-                                    onClick={() => setSmsMessage(`Sayın ${data.ad_soyad}, başvurunuzu tamamlayabilmemiz için bazı eksik evraklarınız bulunmaktadır. 0551 346 6735 WhatsApp hattımızdan bilgi alarak işlemlerinizi hızlandırabilirsiniz.`)}
+                                    onClick={() => setSmsMessage(`Sayın ${data.ad_soyad}, başvurunuzu tamamlayabilmemiz için bazı eksik evraklarınız bulunmaktadır. 0551 346 6735 WhatsApp hattımızdan bilgi alarak işlemlerinizi hızlandırabilirsiniz. CEPTE KOLAY`)}
                                     className="text-xs bg-blue-50 border border-blue-200 hover:bg-blue-100 px-2 py-1 rounded text-blue-700 transition"
                                 >
-                                    📄 Eksik Evrak
+                                    Eksik Evrak
                                 </button>
                                 <button
-                                    onClick={() => setSmsMessage(`Sayın ${data.ad_soyad}, başvurunuzla ilgili işlemler durdurulmuş ve kaydınız iptal edilmiştir. İhtiyaçlarınız için kapımız size her zaman açık. Tekrar görüşmek dileğiyle.`)}
+                                    onClick={() => setSmsMessage(`Sayın ${data.ad_soyad}, başvurunuzla ilgili işlemler durdurulmuş ve kaydınız iptal edilmiştir. İhtiyaçlarınız için kapımız size her zaman açık. CEPTE KOLAY`)}
                                     className="text-xs bg-red-50 border border-red-200 hover:bg-red-100 px-2 py-1 rounded text-red-700 transition"
                                 >
-                                    ❌ İptal
+                                    İptal
+                                </button>
+                                <button
+                                    onClick={() => setSmsMessage(`Sayın ${data.ad_soyad}, ${data.talep_edilen_urun || 'Cihaz'} urununuz teslim edilmistir. IMEI: ${data.urun_imei || '...'}, Seri No: ${data.urun_seri_no || '...'}. Iyi gunlerde kullanmanizi dileriz. CEPTE KOLAY`)}
+                                    className="text-xs bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 px-2 py-1 rounded text-indigo-700 transition"
+                                >
+                                    Teslim Edildi
+                                </button>
+                                <button
+                                    onClick={() => setSmsMessage(`Magaza Konumumuz: https://maps.app.goo.gl/VTBYugiDdTCAbnwB6 CEPTE KOLAY`)}
+                                    className="text-xs bg-purple-50 border border-purple-200 hover:bg-purple-100 px-2 py-1 rounded text-purple-700 transition"
+                                >
+                                    Konum
+                                </button>
+                                <button
+                                    onClick={() => setSmsMessage(`Odeme yapabileceginiz IBAN bilgimiz: TR58 0001 0008 0498 1915 2750 01 - Alici: Cepte Kolay. CEPTE KOLAY`)}
+                                    className="text-xs bg-teal-50 border border-teal-200 hover:bg-teal-100 px-2 py-1 rounded text-teal-700 transition"
+                                >
+                                    IBAN
                                 </button>
                             </div>
 
