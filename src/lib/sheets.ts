@@ -670,7 +670,7 @@ export async function logAction(entry: LogEntry) {
     });
 }
 
-export async function getLogs(customerId: string): Promise<LogEntry[]> {
+export async function getLogs(customerId?: string): Promise<LogEntry[]> {
     const client = getSheetsClient();
     const response = await client.spreadsheets.values.get({
         spreadsheetId: SHEET_ID,
@@ -678,7 +678,7 @@ export async function getLogs(customerId: string): Promise<LogEntry[]> {
     });
 
     const rows = response.data.values || [];
-    return rows
+    let logs = rows
         .map(row => ({
             log_id: row[0],
             timestamp: row[1],
@@ -688,9 +688,13 @@ export async function getLogs(customerId: string): Promise<LogEntry[]> {
             old_value: row[5],
             new_value: row[6],
             note: row[7]
-        }))
-        .filter(log => log.customer_id === customerId)
-        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        }));
+
+    if (customerId) {
+        logs = logs.filter(log => log.customer_id === customerId);
+    }
+
+    return logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 }
 
 export async function deleteCustomer(id: string, userEmail: string) {

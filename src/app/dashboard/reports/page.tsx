@@ -11,6 +11,7 @@ import {
     Package, CheckCircle, Share2, ClipboardList, TrendingUp, Clock, Activity, Download
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import TeamPerformanceReport from '@/components/TeamPerformanceReport';
 
 interface ReportStats {
     city: Record<string, {
@@ -424,6 +425,9 @@ export default function ReportsPage() {
                     </div>
                 </ChartCard>
             </div>
+
+            {/* NEW: Team Performance Report */}
+            <TeamPerformanceReport />
 
             {/* Footer Signature */}
             <div className="mt-12 pt-8 border-t border-gray-200 text-center text-gray-400 text-xs hidden print:block">
