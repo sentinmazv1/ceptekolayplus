@@ -62,7 +62,7 @@ export default function Dashboard() {
                 // Per user request "popup", let's strictly imply a visible element.
                 // We'll set a state for 'sourceNotification'
                 setSourceNotification(json.lead.source);
-                setTimeout(() => setSourceNotification(null), 5000); // Hide after 5s
+                // Removed timeout to ensure user sees the popup and clicks OK
             }
             fetchStats(); // Update stats after pulling
         } catch (err: any) {
@@ -93,14 +93,34 @@ export default function Dashboard() {
     return (
         <div className="flex flex-col h-full relative">
             {/* Source Notification Toast */}
+            {/* Source Notification Modal Popup */}
             {sourceNotification && (
-                <div className="fixed bottom-4 left-4 z-50 animate-in slide-in-from-left-5 duration-300">
-                    <div className="bg-gray-900 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 border border-gray-700">
-                        <span className="text-2xl">ℹ️</span>
-                        <div>
-                            <p className="text-sm text-gray-400 uppercase tracking-wider font-bold">Müşteri Kaynağı</p>
-                            <p className="text-lg font-medium">{sourceNotification}</p>
+                <div className="fixed inset-0 z-[60] flex items-center justify-center animate-in fade-in duration-200">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        onClick={() => setSourceNotification(null)}
+                    />
+
+                    {/* Popup Card */}
+                    <div className="relative bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center transform scale-100 animate-in zoom-in-95 duration-200">
+                        <div className="mx-auto w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
+                            <span className="text-3xl">
+                                {sourceNotification.includes('Yeni') ? '🆕' :
+                                    sourceNotification.includes('Randevu') ? '📅' : '♻️'}
+                            </span>
                         </div>
+
+                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Müşteri Kaynağı</h3>
+                        <p className="text-2xl font-bold text-gray-900 mb-6">{sourceNotification}</p>
+
+                        <Button
+                            className="w-full"
+                            size="lg"
+                            onClick={() => setSourceNotification(null)}
+                        >
+                            Tamam, Anlaşıldı
+                        </Button>
                     </div>
                 </div>
             )}
