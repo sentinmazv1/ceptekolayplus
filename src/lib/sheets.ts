@@ -604,15 +604,13 @@ export async function updateLead(customer: Customer, userEmail: string) {
 
     const now = new Date().toISOString();
 
-    // LOGIC UPDATE: Unreachable/Retry statuses should release ownership
-    // so they go back to the pool (or secondary pool).
+    // LOGIC UPDATE: Only release ownership for 'Yanlış numara' or explicit pool return.
+    // 'Ulaşılamadı', 'Meşgul', 'Cevap Yok', 'Kefil bekleniyor' should remain OWNED by the Rep 
+    // so they can see them in their stats and retry list.
     const releaseStatuses = [
-        'Ulaşılamadı',
-        'Meşgul/Hattı kapalı',
-        'Cevap Yok',
         'Yanlış numara',
-        'Uygun değil',
-        'Kefil bekleniyor'
+        // 'Uygun değil', // Maybe keep this? Usually implies drop. Let's keep 'Uygun değil' as release if it's a hard reject.
+        'Uygun değil'
     ];
 
     const shouldRelease = releaseStatuses.includes(customer.durum);
