@@ -146,10 +146,22 @@ export default function ReportsPage() {
                         <p className="text-sm text-gray-500">Performans ve Operasyonel Metrikler</p>
                     </div>
                 </div>
-                <Button onClick={handlePrint} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200">
-                    <Share2 className="w-4 h-4 mr-2" />
-                    PDF Olarak İndir
-                </Button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => window.location.href = '/api/backup'}
+                        className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-200 transition-colors flex items-center gap-2 font-medium"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                        Verileri Yedekle
+                    </button>
+                    <button
+                        onClick={() => window.print()}
+                        className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 font-medium"
+                    >
+                        <Printer className="w-4 h-4" />
+                        Yazdır / PDF
+                    </button>
+                </div>
             </div>
 
             {/* PRINT HEADER (Visible only on print) */}

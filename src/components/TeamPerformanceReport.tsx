@@ -20,6 +20,8 @@ interface PerformanceStat {
     email: string;
     totalLeads: number;
     salesCount: number;
+    approvedCount: number;
+    deliveredCount: number;
     callsCount: number;
     smsCount: number;
 }
@@ -97,8 +99,9 @@ export default function TeamPerformanceReport() {
                                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                             />
                             <Legend />
-                            <Bar dataKey="callsCount" name="Arama/İşlem" fill="#8884d8" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="salesCount" name="Satış" fill="#82ca9d" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="callsCount" name="İşlem/Arama" fill="#8884d8" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="approvedCount" name="Onaylanan" fill="#82ca9d" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="deliveredCount" name="Teslim Edilen (Satış)" fill="#059669" radius={[4, 4, 0, 0]} />
                             <Bar dataKey="smsCount" name="SMS" fill="#ffc658" radius={[4, 4, 0, 0]} />
                         </BarChart>
                     </ResponsiveContainer>
@@ -159,7 +162,12 @@ export default function TeamPerformanceReport() {
                                 </th>
                                 <th className="p-4 text-xs font-bold text-gray-500 uppercase text-right">
                                     <div className="flex items-center justify-end gap-1">
-                                        <Activity className="w-3 h-3" /> Satış
+                                        <Activity className="w-3 h-3" /> Onay
+                                    </div>
+                                </th>
+                                <th className="p-4 text-xs font-bold text-gray-500 uppercase text-right">
+                                    <div className="flex items-center justify-end gap-1">
+                                        <Briefcase className="w-3 h-3" /> Teslim (Net)
                                     </div>
                                 </th>
                                 <th className="p-4 text-xs font-bold text-gray-500 uppercase text-right">Verimlilik</th>
@@ -182,13 +190,14 @@ export default function TeamPerformanceReport() {
                                     <td className="p-4 text-right text-gray-600 font-medium">{stat.totalLeads}</td>
                                     <td className="p-4 text-right text-gray-600 font-medium">{stat.callsCount}</td>
                                     <td className="p-4 text-right text-gray-600 font-medium">{stat.smsCount}</td>
-                                    <td className="p-4 text-right text-green-600 font-bold bg-green-50/50">{stat.salesCount}</td>
+                                    <td className="p-4 text-right text-blue-600 font-medium">{stat.approvedCount || 0}</td>
+                                    <td className="p-4 text-right text-green-700 font-bold bg-green-50/50">{stat.deliveredCount || 0}</td>
                                     <td className="p-4 text-right">
-                                        <span className={`px-2 py-1 rounded text-xs font-bold ${(stat.salesCount / (stat.callsCount || 1)) > 0.05
+                                        <span className={`px-2 py-1 rounded text-xs font-bold ${(stat.deliveredCount / (stat.callsCount || 1)) > 0.05
                                             ? 'bg-green-100 text-green-700'
-                                            : 'bg-yellow-100 text-yellow-700'
+                                            : 'bg-gray-100 text-gray-500'
                                             }`}>
-                                            %{((stat.salesCount / (stat.callsCount || 1)) * 100).toFixed(1)}
+                                            %{Math.round(((stat.deliveredCount || 0) / (stat.callsCount || 1)) * 100)}
                                         </span>
                                     </td>
                                 </tr>
