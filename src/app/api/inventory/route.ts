@@ -37,6 +37,20 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
         }
 
+
+        // Duplicate Check
+        const existingItems = await getInventoryItems();
+        const duplicate = existingItems.find(i =>
+            (i.imei && i.imei === body.imei) ||
+            (i.seri_no && i.seri_no === body.seri_no && body.seri_no.length > 0)
+        );
+
+        if (duplicate) {
+            return NextResponse.json({
+                message: `Duplicate entry found. IMEI/Serial already exists (Marka: ${duplicate.marka}).`
+            }, { status: 409 });
+        }
+
         const newItem = await addInventoryItem({
             ...body,
             durum: 'STOKTA', // Defaults to In Stock
