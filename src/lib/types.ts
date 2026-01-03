@@ -116,6 +116,17 @@ export interface Customer {
   acik_icra_detay?: string;
   email?: string;
   iptal_nedeni?: string;
+  satilan_urunler?: string; // JSON string of SoldItem[]
+}
+
+export interface SoldItem {
+  imei: string;
+  seri_no: string;
+  marka: string;
+  model: string;
+  satis_tarihi: string;
+  fiyat?: number;
+  garanti_baslangic?: string;
 }
 
 export interface LogEntry {

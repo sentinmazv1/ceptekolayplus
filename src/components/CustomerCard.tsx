@@ -156,10 +156,21 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
             const json = await res.json();
             if (res.ok) {
                 // Update local state with new values
+                const currentItems = data.satilan_urunler ? JSON.parse(data.satilan_urunler) : [];
+                const newItem = {
+                    imei: item.imei,
+                    seri_no: item.seri_no,
+                    marka: item.marka,
+                    model: item.model,
+                    satis_tarihi: new Date().toISOString()
+                };
+                const updatedItems = [...currentItems, newItem];
+
                 setData(prev => ({
                     ...prev,
                     urun_imei: item.imei,
                     urun_seri_no: item.seri_no,
+                    satilan_urunler: JSON.stringify(updatedItems),
                     durum: 'Teslim edildi', // Optional: Auto update status
                     teslim_tarihi: new Date().toISOString()
                 }));
@@ -975,9 +986,42 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                         className="text-xs bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-100 hover:bg-indigo-100 flex items-center gap-1 font-medium transition-colors"
                                     >
                                         <Package className="w-3 h-3" />
-                                        Stoktan Seç
+                                        Stoktan Ekle
                                     </button>
                                 </div>
+
+                                {/* Sold Items List */}
+                                {data.satilan_urunler && (
+                                    <div className="mb-4 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+                                        <table className="w-full text-xs text-left">
+                                            <thead className="bg-gray-100 text-gray-600 font-semibold border-b">
+                                                <tr>
+                                                    <th className="px-3 py-2">Marka / Model</th>
+                                                    <th className="px-3 py-2">IMEI</th>
+                                                    <th className="px-3 py-2">Seri No</th>
+                                                    <th className="px-3 py-2">Tarih</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-200">
+                                                {(() => {
+                                                    try {
+                                                        const items = JSON.parse(data.satilan_urunler) as any[];
+                                                        return items.map((item, idx) => (
+                                                            <tr key={idx} className="hover:bg-white">
+                                                                <td className="px-3 py-2 font-medium text-gray-800">{item.marka} {item.model}</td>
+                                                                <td className="px-3 py-2 text-gray-600 font-mono">{item.imei}</td>
+                                                                <td className="px-3 py-2 text-gray-500">{item.seri_no}</td>
+                                                                <td className="px-3 py-2 text-gray-500">{new Date(item.satis_tarihi).toLocaleDateString('tr-TR')}</td>
+                                                            </tr>
+                                                        ));
+                                                    } catch (e) {
+                                                        return <tr><td colSpan={4} className="p-2 text-red-500">Ürün listesi hatalı.</td></tr>;
+                                                    }
+                                                })()}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
 
                                 {/* Admin Note Display */}
                                 {data.admin_notu && (
@@ -988,21 +1032,25 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                 )}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <Input
-                                        label="Ürün Seri No"
+                                        label="Ürün Seri No (Manuel / Son Eklenen)"
                                         value={data.urun_seri_no || ''}
                                         onChange={(e) => handleChange('urun_seri_no', e.target.value)}
                                         placeholder="Örn: ABC123456789"
                                     />
                                     <Input
-                                        label="IMEI Numarası"
+                                        label="IMEI Numarası (Manuel / Son Eklenen)"
                                         value={data.urun_imei || ''}
                                         onChange={(e) => handleChange('urun_imei', e.target.value)}
                                         placeholder="Örn: 123456789012345"
                                         maxLength={15}
                                     />
                                 </div>
-                                <div className="mt-3 text-xs text-gray-500 bg-blue-50 p-3 rounded-lg">
-                                    💡 <strong>Bilgi:</strong> Ürün seri numarası ve IMEI'yi girdikten sonra durumu "Teslim edildi" yaparak teslimatı tamamlayabilirsiniz.
+                                <div className="mt-3 text-xs text-gray-500 bg-blue-50 p-3 rounded-lg flex gap-2">
+                                    <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                                    <span>
+                                        <strong>Birden fazla ürün ekleyebilirsiniz.</strong> "Stoktan Ekle" butonu ile eklenen her ürün listeye dahil edilir.
+                                        Manuel giriş yaparsanız sadece son ürün bilgisini güncellersiniz (Eski yöntem).
+                                    </span>
                                 </div>
                             </div>
                         )}
