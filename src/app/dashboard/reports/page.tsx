@@ -37,6 +37,7 @@ interface ReportStats {
         sale: number;
     };
     todayCalled: number;
+    todayCalledByPerson: Record<string, number>;
     totalCalled: number;
     remainingToCall: number;
     totalDelivered: number;
@@ -257,6 +258,37 @@ export default function ReportsPage() {
                         )}
                     </div>
                     <p className="text-xs text-gray-400 text-center mt-2">Gün içindeki arama ve işlem yoğunluğu (00:00 - 23:00)</p>
+                </ChartCard>
+
+                {/* Daily Distribution Pie */}
+                <ChartCard title="Bugün Arama Dağılımı (Kişi Bazlı)">
+                    <div className="h-[300px] flex items-center justify-center">
+                        {stats.todayCalled > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={Object.entries(stats.todayCalledByPerson || {}).map(([name, value]) => ({ name: name.split('@')[0], value }))}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={80}
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                        label={({ name, value }) => `${name} (${value})`}
+                                    >
+                                        {Object.entries(stats.todayCalledByPerson || {}).map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <RechartsTooltip />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="flex h-full items-center justify-center text-gray-400 text-sm">
+                                Bugün henüz arama yapılmadı.
+                            </div>
+                        )}
+                    </div>
                 </ChartCard>
 
                 {/* Daily Trend Area */}

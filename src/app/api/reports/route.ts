@@ -88,6 +88,7 @@ export async function GET(req: NextRequest) {
                 sale: 0,
             },
             todayCalled: 0,
+            todayCalledByPerson: {} as Record<string, number>,
             todayApproved: 0,
             totalCalled: 0,
             remainingToCall: 0,
@@ -131,6 +132,9 @@ export async function GET(req: NextRequest) {
                 const callDay = getDayKey(lastCalled);
                 if (callDay === today) {
                     stats.todayCalled++;
+                    // Track who made the call (or rather, who owns it now - simple proxy)
+                    const owner = getColSafe(row, 'sahip') || 'Bilinmiyor';
+                    stats.todayCalledByPerson[owner] = (stats.todayCalledByPerson[owner] || 0) + 1;
                 }
 
                 // Hourly Stats grouped by Date
