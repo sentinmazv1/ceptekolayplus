@@ -39,7 +39,9 @@ export async function GET(req: NextRequest) {
         if (startDate) {
             const start = new Date(startDate).getTime();
             leads = leads.filter(l => {
-                const leadDate = new Date(l.created_at || l.updated_at).getTime(); // Fallback to whatever date is available
+                const dateStr = l.created_at || l.updated_at || '';
+                if (!dateStr) return false;
+                const leadDate = new Date(dateStr).getTime();
                 return leadDate >= start;
             });
         }
@@ -49,15 +51,17 @@ export async function GET(req: NextRequest) {
             end.setHours(23, 59, 59, 999);
             const endTime = end.getTime();
             leads = leads.filter(l => {
-                const leadDate = new Date(l.created_at || l.updated_at).getTime();
+                const dateStr = l.created_at || l.updated_at || '';
+                if (!dateStr) return false;
+                const leadDate = new Date(dateStr).getTime();
                 return leadDate <= endTime;
             });
         }
 
         // Sort by most recent first
         leads.sort((a, b) => {
-            const dateA = new Date(a.updated_at || a.created_at).getTime();
-            const dateB = new Date(b.updated_at || b.created_at).getTime();
+            const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
+            const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
             return dateB - dateA;
         });
 
