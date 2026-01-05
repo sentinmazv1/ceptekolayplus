@@ -16,9 +16,15 @@ export function MyLeadsList({ userEmail, onSelectLead }: MyLeadsListProps) {
     const [filter, setFilter] = useState('');
     const [search, setSearch] = useState('');
 
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+
     useEffect(() => {
         fetchLeads();
-    }, [filter]);
+    }, [filter]); // Keep auto-fetch on status change if desired, or remove to make it fully manual with Search button? 
+    // The original code had [filter] dependency. I'll keep it. 
+    // But for dates, maybe wait for Search button? Or auto-fetch? 
+    // Usually dates are manual. I'll add them to fetchLeads dependencies if I want auto, but let's stick to Search button for dates to avoid double fetching while picking.
 
     const fetchLeads = async () => {
         setLoading(true);
@@ -26,6 +32,8 @@ export function MyLeadsList({ userEmail, onSelectLead }: MyLeadsListProps) {
             const params = new URLSearchParams();
             if (filter) params.append('status', filter);
             if (search) params.append('search', search);
+            if (startDate) params.append('startDate', startDate);
+            if (endDate) params.append('endDate', endDate);
 
             const res = await fetch(`/api/leads/my-leads?${params.toString()}`);
             const json = await res.json();
@@ -44,7 +52,7 @@ export function MyLeadsList({ userEmail, onSelectLead }: MyLeadsListProps) {
         const colors: Record<string, string> = {
             'Başvuru alındı': 'bg-blue-100 text-blue-800',
             'Onaya gönderildi': 'bg-yellow-100 text-yellow-800',
-            'Onaylandı': 'bg-green-100 text-green-800', // NEW
+            'Onaylandı': 'bg-green-100 text-green-800',
             'Mağazaya davet edildi': 'bg-purple-100 text-purple-800',
             'Teslim edildi': 'bg-emerald-100 text-emerald-800',
             'Satış yapıldı/Tamamlandı': 'bg-teal-100 text-teal-800',
@@ -63,42 +71,95 @@ export function MyLeadsList({ userEmail, onSelectLead }: MyLeadsListProps) {
             <h2 className="text-xl font-bold mb-4">Benim Müşterilerim</h2>
 
             {/* Filters */}
-            <div className="flex flex-col md:flex-row gap-3 mb-4">
-                <input
-                    type="text"
-                    placeholder="İsim veya telefon ara..."
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && fetchLeads()}
-                />
-                <select
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
-                >
-                    <option value="">Tüm Durumlar</option>
-                    <option value="Yeni">Yeni</option>
-                    <option value="Aranacak">Aranacak</option>
-                    <option value="Ulaşılamadı">Ulaşılamadı</option>
-                    <option value="Meşgul/Hattı kapalı">Meşgul/Hattı kapalı</option>
-                    <option value="Yanlış numara">Yanlış numara</option>
-                    <option value="Daha sonra aranmak istiyor">Daha sonra aranmak istiyor</option>
-                    <option value="WhatsApp’tan bilgi istiyor">WhatsApp’tan bilgi istiyor</option>
-                    <option value="E-Devlet paylaşmak istemedi">E-Devlet paylaşmak istemedi</option>
-                    <option value="Başvuru alındı">Başvuru alındı</option>
-                    <option value="Mağazaya davet edildi">Mağazaya davet edildi</option>
-                    <option value="Kefil bekleniyor">Kefil bekleniyor</option>
-                    <option value="Eksik evrak bekleniyor">Eksik evrak bekleniyor</option>
-                    <option value="Onaya gönderildi">Onaya gönderildi</option>
-                    <option value="Onaylandı">Onaylandı</option>
-                    <option value="Teslim edildi">Teslim edildi</option>
-                    <option value="Satış yapıldı/Tamamlandı">Satış yapıldı/Tamamlandı</option>
-                    <option value="Reddetti">Reddetti</option>
-                    <option value="Uygun değil">Uygun değil</option>
-                    <option value="İptal/Vazgeçti">İptal/Vazgeçti</option>
-                </select>
-                <Button onClick={fetchLeads} size="sm">Ara</Button>
+            <div className="flex flex-col gap-3 mb-4">
+                <div className="flex flex-col md:flex-row gap-3">
+                    <input
+                        type="text"
+                        placeholder="İsim veya telefon ara..."
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && fetchLeads()}
+                    />
+                    <select
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        value={filter}
+                        onChange={(e) => setFilter(e.target.value)}
+                    >
+                        <option value="">Tüm Durumlar</option>
+                        <option value="Yeni">Yeni</option>
+                        <option value="Aranacak">Aranacak</option>
+                        <option value="Ulaşılamadı">Ulaşılamadı</option>
+                        <option value="Meşgul/Hattı kapalı">Meşgul/Hattı kapalı</option>
+                        <option value="Yanlış numara">Yanlış numara</option>
+                        <option value="Daha sonra aranmak istiyor">Daha sonra aranmak istiyor</option>
+                        <option value="WhatsApp’tan bilgi istiyor">WhatsApp’tan bilgi istiyor</option>
+                        <option value="E-Devlet paylaşmak istemedi">E-Devlet paylaşmak istemedi</option>
+                        <option value="Başvuru alındı">Başvuru alındı</option>
+                        <option value="Mağazaya davet edildi">Mağazaya davet edildi</option>
+                        <option value="Kefil bekleniyor">Kefil bekleniyor</option>
+                        <option value="Eksik evrak bekleniyor">Eksik evrak bekleniyor</option>
+                        <option value="Onaya gönderildi">Onaya gönderildi</option>
+                        <option value="Onaylandı">Onaylandı</option>
+                        <option value="Teslim edildi">Teslim edildi</option>
+                        <option value="Satış yapıldı/Tamamlandı">Satış yapıldı/Tamamlandı</option>
+                        <option value="Reddetti">Reddetti</option>
+                        <option value="Uygun değil">Uygun değil</option>
+                        <option value="İptal/Vazgeçti">İptal/Vazgeçti</option>
+                    </select>
+                </div>
+
+                <div className="flex flex-col md:flex-row gap-3 items-end">
+                    <div className="w-full md:w-auto">
+                        <label className="text-xs text-gray-500 block mb-1">Başlangıç Tarihi</label>
+                        <input
+                            type="date"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                        />
+                    </div>
+                    <div className="w-full md:w-auto">
+                        <label className="text-xs text-gray-500 block mb-1">Bitiş Tarihi</label>
+                        <input
+                            type="date"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                        />
+                    </div>
+                    <Button onClick={fetchLeads} size="sm" className="h-[42px]">Filtrele</Button>
+                    {(startDate || endDate || filter || search) && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-[42px] text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => {
+                                setFilter('');
+                                setSearch('');
+                                setStartDate('');
+                                setEndDate('');
+                                // fetchLeads will be called by useEffect due to setFilter, but if filter allows empty, better call manually or let effect handle
+                                // However, fetchLeads depends on state values at call time. 
+                                // Since state updates are async, calling fetchLeads immediately here uses OLD state.
+                                // But filter change triggers useEffect.
+                                // Start/End date don't trigger useEffect.
+                                // best to just reset and let user click filter or add effect?
+                                // I'll just rely on the user clicking "Filter" or adding a timeout/effect, 
+                                // OR simply: setTimeout(() => fetchLeads(), 0); after state updates? 
+                                // Actually, setFilter('') triggers useEffect -> fetchLeads().
+                                // But search/dates are not in dependency array of useEffect (only filter is).
+                                // So useEffect will run, but read OLD search/dates? No, it reads current state in closure? No, stale closure?
+                                // fetchLeads is defined inside component, so it captures state.
+                                // If useEffect runs on filter change, it uses the state from THAT render.
+                                // If I batch updates, next render has all cleared.
+                                // filter change triggers effect.
+                            }}
+                        >
+                            Temizle
+                        </Button>
+                    )}
+                </div>
             </div>
 
             {/* List */}

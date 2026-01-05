@@ -33,6 +33,27 @@ export async function GET(req: NextRequest) {
             );
         }
 
+        const startDate = searchParams.get('startDate');
+        const endDate = searchParams.get('endDate');
+
+        if (startDate) {
+            const start = new Date(startDate).getTime();
+            leads = leads.filter(l => {
+                const leadDate = new Date(l.created_at || l.updated_at).getTime(); // Fallback to whatever date is available
+                return leadDate >= start;
+            });
+        }
+
+        if (endDate) {
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            const endTime = end.getTime();
+            leads = leads.filter(l => {
+                const leadDate = new Date(l.created_at || l.updated_at).getTime();
+                return leadDate <= endTime;
+            });
+        }
+
         // Sort by most recent first
         leads.sort((a, b) => {
             const dateA = new Date(a.updated_at || a.created_at).getTime();
