@@ -108,10 +108,6 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
     const [whatsAppMessage, setWhatsAppMessage] = useState('');
     const [whatsAppLoading, setWhatsAppLoading] = useState(false);
 
-    // WhatsApp Modal State
-    const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
-    const [whatsAppMessage, setWhatsAppMessage] = useState('');
-    const [whatsAppLoading, setWhatsAppLoading] = useState(false);
 
 
     const fetchLogs = async () => {
