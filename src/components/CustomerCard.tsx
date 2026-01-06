@@ -102,6 +102,11 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
     const [smsMessage, setSmsMessage] = useState('');
     const [smsLoading, setSmsLoading] = useState(false);
 
+    // WhatsApp Modal State
+    const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
+    const [whatsAppMessage, setWhatsAppMessage] = useState('');
+    const [whatsAppLoading, setWhatsAppLoading] = useState(false);
+
 
     const fetchLogs = async () => {
         setLogsLoading(true);
@@ -219,6 +224,44 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
             alert('SMS gönderilirken hata oluştu.');
         } finally {
             setSmsLoading(false);
+        }
+    };
+
+    const handleSendWhatsApp = async () => {
+        if (!whatsAppMessage) return;
+        setWhatsAppLoading(true);
+
+        // 1. Open WhatsApp URL info
+        // Format: https://wa.me/905551234567?text=...
+        let phone = data.telefon || '';
+        // Basic sanitization
+        phone = phone.replace(/\D/g, '');
+        // Ensure 90 prefix for Turkey if not present, but usually wa.me handles local format if opened from local IP? 
+        // Safer to enforce international format for Turkey (90)
+        if (phone.startsWith('0')) phone = phone.substring(1);
+        if (!phone.startsWith('90')) phone = '90' + phone;
+
+        const url = `https://wa.me/${phone}?text=${encodeURIComponent(whatsAppMessage)}`;
+        window.open(url, '_blank');
+
+        // 2. Log Action in Background
+        try {
+            await fetch(`/api/logs/${data.id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'SEND_WHATSAPP',
+                    note: `Message: "${whatsAppMessage.substring(0, 50)}..."`
+                })
+            });
+            setIsWhatsAppModalOpen(false);
+            setWhatsAppMessage('');
+            // Small delay to allow potential DB latency before fetch, though logs are sheets so it's slow anyway
+            setTimeout(fetchLogs, 1000);
+        } catch (error) {
+            console.error('Log Error:', error);
+        } finally {
+            setWhatsAppLoading(false);
         }
     };
 
@@ -363,12 +406,20 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                             </button>
                         )}
                         {!isNew && (
-                            <button
-                                onClick={() => setIsSmsModalOpen(true)}
-                                className="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full hover:bg-green-200 transition-colors flex items-center gap-1"
-                            >
-                                <MessageSquare className="w-3 h-3" /> SMS Gönder
-                            </button>
+                            <>
+                                <button
+                                    onClick={() => setIsWhatsAppModalOpen(true)}
+                                    className="bg-green-600 text-white text-xs px-3 py-1 rounded-full hover:bg-green-700 transition-colors flex items-center gap-1 shadow-sm"
+                                >
+                                    <MessageSquare className="w-3 h-3" /> WhatsApp
+                                </button>
+                                <button
+                                    onClick={() => setIsSmsModalOpen(true)}
+                                    className="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full hover:bg-green-200 transition-colors flex items-center gap-1"
+                                >
+                                    <MessageSquare className="w-3 h-3" /> SMS Gönder
+                                </button>
+                            </>
                         )}
                     </div>
                     <div className="flex items-center gap-3">
@@ -426,12 +477,14 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                     <div key={log.log_id} className="p-4 text-sm hover:bg-white transition-colors">
                                         <div className="flex justify-between items-start mb-1">
                                             <span className={`font-semibold px-2 py-0.5 rounded text-xs ${log.action === 'SEND_SMS' ? 'bg-green-100 text-green-700' :
-                                                log.action === 'UPDATE_STATUS' ? 'bg-blue-100 text-blue-700' :
-                                                    'bg-gray-200 text-gray-700'
+                                                log.action === 'SEND_WHATSAPP' ? 'bg-teal-100 text-teal-700' :
+                                                    log.action === 'UPDATE_STATUS' ? 'bg-blue-100 text-blue-700' :
+                                                        'bg-gray-200 text-gray-700'
                                                 }`}>
                                                 {log.action === 'SEND_SMS' ? '📩 SMS Gönderildi' :
-                                                    log.action === 'UPDATE_STATUS' ? '🔄 Durum Değişimi' :
-                                                        log.action === 'PULL_LEAD' ? '📥 Havuzdan Alma' : log.action}
+                                                    log.action === 'SEND_WHATSAPP' ? '💬 WhatsApp' :
+                                                        log.action === 'UPDATE_STATUS' ? '🔄 Durum Değişimi' :
+                                                            log.action === 'PULL_LEAD' ? '📥 Havuzdan Alma' : log.action}
                                             </span>
                                             <span className="text-gray-400 text-xs">{new Date(log.timestamp).toLocaleString('tr-TR')}</span>
                                         </div>
