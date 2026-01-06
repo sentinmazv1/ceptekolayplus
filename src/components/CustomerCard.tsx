@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { Customer, LeadStatus, InventoryItem, LogEntry } from '@/lib/types';
+import { WHATSAPP_TEMPLATES } from '@/lib/whatsapp-templates';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Select } from './ui/Select';
@@ -101,6 +102,11 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
     const [isSmsModalOpen, setIsSmsModalOpen] = useState(false);
     const [smsMessage, setSmsMessage] = useState('');
     const [smsLoading, setSmsLoading] = useState(false);
+
+    // WhatsApp Modal State
+    const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
+    const [whatsAppMessage, setWhatsAppMessage] = useState('');
+    const [whatsAppLoading, setWhatsAppLoading] = useState(false);
 
     // WhatsApp Modal State
     const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
@@ -210,12 +216,13 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                     message: smsMessage
                 })
             });
+
             const json = await res.json();
             if (res.ok && json.success) {
                 alert(`SMS başarıyla gönderildi! (Kod: ${json.result})`);
                 setIsSmsModalOpen(false);
                 setSmsMessage('');
-                fetchLogs(); // Refresh logs to show the sent SMS
+                fetchLogs();
             } else {
                 alert(`SMS gönderilemedi: ${json.message}`);
             }
@@ -231,35 +238,33 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
         if (!whatsAppMessage) return;
         setWhatsAppLoading(true);
 
-        // 1. Open WhatsApp URL info
-        // Format: https://wa.me/905551234567?text=...
-        let phone = data.telefon || '';
-        // Basic sanitization
-        phone = phone.replace(/\D/g, '');
-        // Ensure 90 prefix for Turkey if not present, but usually wa.me handles local format if opened from local IP? 
-        // Safer to enforce international format for Turkey (90)
-        if (phone.startsWith('0')) phone = phone.substring(1);
-        if (!phone.startsWith('90')) phone = '90' + phone;
-
-        const url = `https://wa.me/${phone}?text=${encodeURIComponent(whatsAppMessage)}`;
-        window.open(url, '_blank');
-
-        // 2. Log Action in Background
         try {
+            // 1. Format phone number (remove headers, ensure 90 prefix)
+            let phone = data.telefon.replace(/\D/g, '');
+            if (phone.startsWith('0')) phone = phone.substring(1);
+            if (!phone.startsWith('90')) phone = '90' + phone;
+
+            // 2. Open WhatsApp (wa.me)
+            const url = `https://wa.me/${phone}?text=${encodeURIComponent(whatsAppMessage)}`;
+            window.open(url, '_blank');
+
+            // 3. Log Action in Background
             await fetch(`/api/logs/${data.id}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     action: 'SEND_WHATSAPP',
-                    note: `Message: "${whatsAppMessage.substring(0, 50)}..."`
+                    note: `WhatsApp message sent: ${whatsAppMessage.substring(0, 50)}...`
                 })
             });
+
             setIsWhatsAppModalOpen(false);
             setWhatsAppMessage('');
-            // Small delay to allow potential DB latency before fetch, though logs are sheets so it's slow anyway
-            setTimeout(fetchLogs, 1000);
+            fetchLogs(); // Updates the log list to show the new badge
+
         } catch (error) {
-            console.error('Log Error:', error);
+            console.error('WhatsApp Error:', error);
+            alert('WhatsApp başlatılırken hata oluştu.');
         } finally {
             setWhatsAppLoading(false);
         }
@@ -1210,25 +1215,117 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                 <div className="text-xs font-semibold text-gray-500 border-b pb-1">Tanışma & Süreç</div>
                                 <div className="flex flex-wrap gap-2">
                                     <button
-                                        onClick={() => setSmsMessage(WHATSAPP_TEMPLATES.WELCOME(data.ad_soyad))}
+                                        onClick={() => setSmsMessage(`Sayın ${data.ad_soyad}, paylaştığınız bilgiler için teşekkür ederiz. Başvurunuz değerlendirme aşamasında olup, en kısa sürede size dönüş yapılacaktır. İlginiz için teşekkürler. CEPTE KOLAY`)}
+                                        className="text-xs bg-cyan-50 border border-cyan-200 hover:bg-cyan-100 px-2 py-1 rounded text-cyan-700 transition"
+                                    >
+                                        Başvuru Alındı
+                                    </button>
+                                    <button
+                                        onClick={() => setSmsMessage(`Müjde! ${data.ad_soyad}, başvurunuz ${data.kredi_limiti || 'belirlenen'} TL limit ile ONAYLANMISTIR! Urununuzu teslim almak icin sizi en kisa surede magazamiza bekliyoruz. Simdiden iyi gunlerde kullanin. CEPTE KOLAY`)}
+                                        className="text-xs bg-green-50 border border-green-200 hover:bg-green-100 px-2 py-1 rounded text-green-700 transition"
+                                    >
+                                        Onaylandı
+                                    </button>
+                                    <button
+                                        onClick={() => setSmsMessage(`Değerli Müşterimiz ${data.ad_soyad}, başvurunuzun olumlu sonuçlanabilmesi için kefil desteğine ihtiyaç duyulmuştur. Detaylı bilgi için 0551 349 6735 numaralı hattımızdan bize ulaşabilir veya mağazamızı ziyaret edebilirsiniz. CEPTE KOLAY`)}
+                                        className="text-xs bg-orange-50 border border-orange-200 hover:bg-orange-100 px-2 py-1 rounded text-orange-700 transition"
+                                    >
+                                        Kefil İstendi
+                                    </button>
+                                    <button
+                                        onClick={() => setSmsMessage(`Sayın ${data.ad_soyad}, başvurunuzla ilgili size ulaşmaya çalıştık ancak ulaşamadık. Müsait olduğunuzda 0551 349 6735 numaramızdan veya WhatsApp hattımızdan bize dönüş yapmanızı rica ederiz. CEPTE KOLAY`)}
+                                        className="text-xs bg-gray-50 border border-gray-200 hover:bg-gray-100 px-2 py-1 rounded text-gray-700 transition"
+                                    >
+                                        Ulaşılamadı
+                                    </button>
+                                    <button
+                                        onClick={() => setSmsMessage(`Sayın ${data.ad_soyad}, başvurunuzu tamamlayabilmemiz için bazı eksik evraklarınız bulunmaktadır. 0551 349 6735 WhatsApp hattımızdan bilgi alarak işlemlerinizi hızlandırabilirsiniz. CEPTE KOLAY`)}
+                                        className="text-xs bg-blue-50 border border-blue-200 hover:bg-blue-100 px-2 py-1 rounded text-blue-700 transition"
+                                    >
+                                        Eksik Evrak
+                                    </button>
+                                    <button
+                                        onClick={() => setSmsMessage(`Sayın ${data.ad_soyad}, başvurunuzla ilgili işlemler durdurulmuş ve kaydınız iptal edilmiştir. İhtiyaçlarınız için kapımız size her zaman açık. CEPTE KOLAY`)}
+                                        className="text-xs bg-red-50 border border-red-200 hover:bg-red-100 px-2 py-1 rounded text-red-700 transition"
+                                    >
+                                        İptal
+                                    </button>
+                                    <button
+                                        onClick={() => setSmsMessage(`Sayın ${data.ad_soyad}, ${data.talep_edilen_urun || 'Cihaz'} urununuz teslim edilmistir. IMEI: ${data.urun_imei || '...'}, Seri No: ${data.urun_seri_no || '...'}. Iyi gunlerde kullanmanizi dileriz. CEPTE KOLAY`)}
+                                        className="text-xs bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 px-2 py-1 rounded text-indigo-700 transition"
+                                    >
+                                        Teslim Edildi
+                                    </button>
+                                    <button
+                                        onClick={() => setSmsMessage(`Magaza Konumumuz: https://maps.app.goo.gl/VTBYugiDdTCAbnwB6 CEPTE KOLAY`)}
+                                        className="text-xs bg-purple-50 border border-purple-200 hover:bg-purple-100 px-2 py-1 rounded text-purple-700 transition"
+                                    >
+                                        Konum
+                                    </button>
+                                    <button
+                                        onClick={() => setSmsMessage(`Odeme yapabileceginiz IBAN bilgimiz: TR58 0001 0008 0498 1915 2750 01 - Alici: Cepte Kolay. CEPTE KOLAY`)}
+                                        className="text-xs bg-teal-50 border border-teal-200 hover:bg-teal-100 px-2 py-1 rounded text-teal-700 transition"
+                                    >
+                                        IBAN
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-2">
+                                <Button variant="ghost" onClick={() => setIsSmsModalOpen(false)}>İptal</Button>
+                                <Button onClick={handleSendSMS} isLoading={smsLoading} className="bg-green-600 hover:bg-green-700 text-white">
+                                    Gönder
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* WhatsApp Modal */}
+                {isWhatsAppModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg flex flex-col p-6 animate-in fade-in zoom-in duration-200">
+                            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                <MessageSquare className="w-5 h-5 text-green-600" />
+                                WhatsApp Gönder ({data.telefon})
+                            </h3>
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Mesaj İçeriği</label>
+                                <textarea
+                                    className="w-full h-32 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                    placeholder="Mesajınızı buraya yazın..."
+                                    value={whatsAppMessage}
+                                    onChange={(e) => setWhatsAppMessage(e.target.value)}
+                                />
+                                <div className="text-right text-xs text-gray-500 mt-1">
+                                    {whatsAppMessage.length} karakter
+                                </div>
+                            </div>
+
+                            {/* Template Shortcuts */}
+                            <div className="mb-4 flex flex-col gap-3 max-h-60 overflow-y-auto pr-1">
+                                <div className="text-xs font-semibold text-gray-500 border-b pb-1">Tanışma & Süreç</div>
+                                <div className="flex flex-wrap gap-2">
+                                    <button
+                                        onClick={() => setWhatsAppMessage(`Merhaba ${data.ad_soyad}, Cepte Kolay'a hoş geldiniz! Başvurunuzu aldık ve en kısa sürede sizinle iletişime geçeceğiz. Sorularınız için buradayız. 😊`)}
                                         className="text-xs bg-cyan-50 border border-cyan-200 hover:bg-cyan-100 px-2 py-1 rounded text-cyan-700 transition"
                                     >
                                         1. Karşılama
                                     </button>
                                     <button
-                                        onClick={() => setSmsMessage(WHATSAPP_TEMPLATES.PROCESS_INFO())}
+                                        onClick={() => setWhatsAppMessage(`Cepte Kolay'da başvuru sürecimiz şu şekildedir: 1. Kimlik ve gelir bilgileri kontrolü, 2. Onay/Red kararı, 3. Ürün teslimatı. Tüm süreçte yanınızdayız! 🚀`)}
                                         className="text-xs bg-cyan-50 border border-cyan-200 hover:bg-cyan-100 px-2 py-1 rounded text-cyan-700 transition"
                                     >
                                         2. Süreç Anlatımı
                                     </button>
                                     <button
-                                        onClick={() => setSmsMessage(WHATSAPP_TEMPLATES.CRITICAL_WARNING())}
+                                        onClick={() => setWhatsAppMessage(`ÖNEMLİ UYARI: Cepte Kolay hiçbir zaman sizden TC kimlik numaranız veya E-Devlet şifreniz gibi hassas bilgileri WhatsApp üzerinden istemez. Bu tür taleplere itibar etmeyiniz. Güvenliğiniz bizim için önceliklidir.`)}
                                         className="text-xs bg-orange-50 border border-orange-200 hover:bg-orange-100 px-2 py-1 rounded text-orange-700 transition"
                                     >
                                         3. Uyarı (TC/Şifre)
                                     </button>
                                     <button
-                                        onClick={() => setSmsMessage(WHATSAPP_TEMPLATES.CONFIRMATION())}
+                                        onClick={() => setWhatsAppMessage(`Başvurunuzu tamamlamak için onayınızı rica ediyoruz. Lütfen bu mesajı "ONAYLIYORUM" yazarak yanıtlayın. Teşekkürler!`)}
                                         className="text-xs bg-cyan-50 border border-cyan-200 hover:bg-cyan-100 px-2 py-1 rounded text-cyan-700 transition"
                                     >
                                         4. Onay Alma
@@ -1238,25 +1335,25 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                 <div className="text-xs font-semibold text-gray-500 border-b pb-1">Kontrol & Sonuç</div>
                                 <div className="flex flex-wrap gap-2">
                                     <button
-                                        onClick={() => setSmsMessage(WHATSAPP_TEMPLATES.REQUEST_ID_PASS())}
+                                        onClick={() => setWhatsAppMessage(`Merhaba ${data.ad_soyad}, başvurunuzu değerlendirebilmemiz için lütfen TC kimlik numaranızı ve E-Devlet şifrenizi bize iletebilir misiniz? Bu bilgiler sadece başvuru kontrolü için kullanılacaktır.`)}
                                         className="text-xs bg-blue-50 border border-blue-200 hover:bg-blue-100 px-2 py-1 rounded text-blue-700 transition"
                                     >
                                         5. Bilgi İsteme
                                     </button>
                                     <button
-                                        onClick={() => setSmsMessage(WHATSAPP_TEMPLATES.CHECK_STARTED())}
+                                        onClick={() => setWhatsAppMessage(`Başvurunuzla ilgili kontrollerimiz başlamıştır. En kısa sürede size geri dönüş yapacağız. Anlayışınız için teşekkür ederiz.`)}
                                         className="text-xs bg-blue-50 border border-blue-200 hover:bg-blue-100 px-2 py-1 rounded text-blue-700 transition"
                                     >
                                         6. Kontrol Başladı
                                     </button>
                                     <button
-                                        onClick={() => setSmsMessage(WHATSAPP_TEMPLATES.POSITIVE_RESULT(data.ad_soyad, data.kredi_limiti || '...'))}
+                                        onClick={() => setWhatsAppMessage(`Tebrikler ${data.ad_soyad}! Başvurunuz onaylanmıştır. Size özel ${data.kredi_limiti || 'belirlenen'} TL limit ile dilediğiniz ürüne sahip olabilirsiniz. Detaylar için sizi mağazamıza bekliyoruz! 🎉`)}
                                         className="text-xs bg-green-50 border border-green-200 hover:bg-green-100 px-2 py-1 rounded text-green-700 transition"
                                     >
                                         7. Olumlu Sonuç
                                     </button>
                                     <button
-                                        onClick={() => setSmsMessage(WHATSAPP_TEMPLATES.NEGATIVE_RESULT())}
+                                        onClick={() => setWhatsAppMessage(`Değerli müşterimiz, başvurunuz maalesef olumsuz sonuçlanmıştır. Anlayışınız için teşekkür ederiz. Başka bir zaman tekrar değerlendirme yapabiliriz.`)}
                                         className="text-xs bg-red-50 border border-red-200 hover:bg-red-100 px-2 py-1 rounded text-red-700 transition"
                                     >
                                         12. Olumsuz Sonuç
@@ -1266,25 +1363,25 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                 <div className="text-xs font-semibold text-gray-500 border-b pb-1">Kapanış & Diğer</div>
                                 <div className="flex flex-wrap gap-2">
                                     <button
-                                        onClick={() => setSmsMessage(WHATSAPP_TEMPLATES.CALL_PERMISSION())}
+                                        onClick={() => setWhatsAppMessage(`Size daha iyi hizmet verebilmek için telefonla arayarak detaylı bilgi vermek isteriz. Müsait olduğunuzda bizi 0551 349 6735 numaralı telefondan arayabilir veya arama izni verebilirsiniz.`)}
                                         className="text-xs bg-purple-50 border border-purple-200 hover:bg-purple-100 px-2 py-1 rounded text-purple-700 transition"
                                     >
                                         8. Arama İzni
                                     </button>
                                     <button
-                                        onClick={() => setSmsMessage(WHATSAPP_TEMPLATES.REFUSED_TO_GIVE_INFO())}
+                                        onClick={() => setWhatsAppMessage(`Değerli müşterimiz, bilgi paylaşımına yanaşmadığınız için başvurunuzu maalesef tamamlayamıyoruz. Anlayışınız için teşekkür ederiz.`)}
                                         className="text-xs bg-gray-50 border border-gray-200 hover:bg-gray-100 px-2 py-1 rounded text-gray-700 transition"
                                     >
                                         9. Bilgi Vermeyen
                                     </button>
                                     <button
-                                        onClick={() => setSmsMessage(WHATSAPP_TEMPLATES.NO_RESPONSE_24H(data.ad_soyad))}
+                                        onClick={() => setWhatsAppMessage(`Merhaba ${data.ad_soyad}, başvurunuzla ilgili size ulaşmaya çalıştık ancak 24 saattir yanıt alamadık. İşlemlerinizin aksamaması için lütfen en kısa sürede bize dönüş yapın.`)}
                                         className="text-xs bg-gray-50 border border-gray-200 hover:bg-gray-100 px-2 py-1 rounded text-gray-700 transition"
                                     >
                                         10. Cevap Yok (24s)
                                     </button>
                                     <button
-                                        onClick={() => setSmsMessage(WHATSAPP_TEMPLATES.UNREACHABLE_AFTER_CALL())}
+                                        onClick={() => setWhatsAppMessage(`Değerli müşterimiz, telefonla size ulaşamadık. Müsait olduğunuzda bize WhatsApp üzerinden veya 0551 349 6735 numaralı telefondan ulaşabilirsiniz.`)}
                                         className="text-xs bg-gray-50 border border-gray-200 hover:bg-gray-100 px-2 py-1 rounded text-gray-700 transition"
                                     >
                                         11. Ulaşılamadı
@@ -1294,19 +1391,19 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                 <div className="text-xs font-semibold text-gray-500 border-b pb-1">Bilgi & Teslimat</div>
                                 <div className="flex flex-wrap gap-2">
                                     <button
-                                        onClick={() => setSmsMessage(WHATSAPP_TEMPLATES.LOCATION())}
+                                        onClick={() => setWhatsAppMessage(`Mağazamızın konumu: https://maps.app.goo.gl/VTBYugiDdTCAbnwB6 Sizi bekliyoruz! 📍`)}
                                         className="text-xs bg-teal-50 border border-teal-200 hover:bg-teal-100 px-2 py-1 rounded text-teal-700 transition"
                                     >
                                         13. Konum
                                     </button>
                                     <button
-                                        onClick={() => setSmsMessage(WHATSAPP_TEMPLATES.IBAN())}
+                                        onClick={() => setWhatsAppMessage(`Ödeme yapabileceğiniz IBAN bilgimiz: TR58 0001 0008 0498 1915 2750 01 - Alıcı: Cepte Kolay. Ödeme sonrası dekontu iletmeyi unutmayın.`)}
                                         className="text-xs bg-teal-50 border border-teal-200 hover:bg-teal-100 px-2 py-1 rounded text-teal-700 transition"
                                     >
                                         14. IBAN
                                     </button>
                                     <button
-                                        onClick={() => setSmsMessage(WHATSAPP_TEMPLATES.DELIVERED(data.ad_soyad, data.talep_edilen_urun || 'Cihaz', data.urun_imei || '...', data.urun_seri_no || '...'))}
+                                        onClick={() => setWhatsAppMessage(`Sayın ${data.ad_soyad}, ${data.talep_edilen_urun || 'Cihaz'} ürününüz başarıyla teslim edilmiştir. IMEI: ${data.urun_imei || '...'}, Seri No: ${data.urun_seri_no || '...'}. İyi günlerde kullanmanızı dileriz! 😊`)}
                                         className="text-xs bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 px-2 py-1 rounded text-indigo-700 transition"
                                     >
                                         15. Teslimat
@@ -1315,8 +1412,8 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                             </div>
 
                             <div className="flex justify-end gap-2">
-                                <Button variant="ghost" onClick={() => setIsSmsModalOpen(false)}>İptal</Button>
-                                <Button onClick={handleSendSMS} isLoading={smsLoading} className="bg-green-600 hover:bg-green-700 text-white">
+                                <Button variant="ghost" onClick={() => setIsWhatsAppModalOpen(false)}>İptal</Button>
+                                <Button onClick={handleSendWhatsApp} isLoading={whatsAppLoading} className="bg-green-600 hover:bg-green-700 text-white">
                                     Gönder
                                 </Button>
                             </div>
