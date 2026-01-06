@@ -22,6 +22,16 @@ import {
     ChevronDown,
     ChevronUp
 } from 'lucide-react';
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    Cell
+} from 'recharts';
 import { Customer, LeadStatus } from '@/lib/types';
 import { CustomerListView } from './CustomerListView';
 
@@ -134,7 +144,8 @@ export function DashboardStats({ initialStats }: { initialStats?: any }) {
             textColor: 'text-blue-600',
             bgColor: 'bg-blue-50',
             desc: 'Aranmayı bekleyen',
-            status: 'HAVUZ'
+            status: 'HAVUZ',
+            hexColor: '#3b82f6' // blue-500
         },
         {
             title: 'Randevulu',
@@ -144,7 +155,8 @@ export function DashboardStats({ initialStats }: { initialStats?: any }) {
             textColor: 'text-purple-600',
             bgColor: 'bg-purple-50',
             desc: 'İleri tarihli görüşme',
-            status: 'Daha sonra aranmak istiyor'
+            status: 'Daha sonra aranmak istiyor',
+            hexColor: '#a855f7' // purple-500
         },
         {
             title: 'Onay Bekleniyor',
@@ -154,7 +166,8 @@ export function DashboardStats({ initialStats }: { initialStats?: any }) {
             textColor: 'text-orange-600',
             bgColor: 'bg-orange-50',
             desc: 'Yönetici onayı bekliyor',
-            status: 'Başvuru alındı' as LeadStatus
+            status: 'Başvuru alındı' as LeadStatus,
+            hexColor: '#f97316' // orange-500
         },
         {
             title: 'Kefil Bekleyen',
@@ -164,7 +177,8 @@ export function DashboardStats({ initialStats }: { initialStats?: any }) {
             textColor: 'text-amber-600',
             bgColor: 'bg-amber-50',
             desc: 'Kefil evrakları bekleniyor',
-            status: 'Kefil bekleniyor' as LeadStatus
+            status: 'Kefil bekleniyor' as LeadStatus,
+            hexColor: '#f59e0b' // amber-500
         },
         {
             title: 'Onaylananlar',
@@ -174,7 +188,8 @@ export function DashboardStats({ initialStats }: { initialStats?: any }) {
             textColor: 'text-green-600',
             bgColor: 'bg-green-50',
             desc: 'Onaylanmış başvurular',
-            status: 'Onaylandı' as LeadStatus
+            status: 'Onaylandı' as LeadStatus,
+            hexColor: '#22c55e' // green-500
         },
         {
             title: 'Teslim Edilen',
@@ -184,7 +199,8 @@ export function DashboardStats({ initialStats }: { initialStats?: any }) {
             textColor: 'text-emerald-600',
             bgColor: 'bg-emerald-50',
             desc: 'Başarıyla tamamlanan',
-            status: 'Teslim edildi' as LeadStatus
+            status: 'Teslim edildi' as LeadStatus,
+            hexColor: '#10b981' // emerald-500
         }
     ];
 
@@ -313,28 +329,42 @@ export function DashboardStats({ initialStats }: { initialStats?: any }) {
 
             {/* Chart - Only show when list is not expanded */}
             {!expandedStatus && (
-                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-6">İşlem Hacmi Dağılımı</h3>
-                    <div className="flex items-end justify-between h-40 gap-2 md:gap-8">
-                        {mainCards.map((card, idx) => {
-                            const heightPercent = maxVal > 0 ? Math.max((card.count / maxVal) * 100, 5) : 5;
-                            return (
-                                <div key={idx} className="flex flex-col items-center flex-1 group h-full justify-end">
-                                    <div className="relative w-full flex flex-col items-center justify-end h-full">
-                                        <div
-                                            className={`w-full max-w-[60px] rounded-t-lg transition-all duration-500 group-hover:opacity-80 ${card.color}`}
-                                            style={{ height: `${heightPercent}%` }}
-                                        ></div>
-                                        <span className="absolute -top-6 text-xs font-bold text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            {card.count}
-                                        </span>
-                                    </div>
-                                    <span className="text-xs text-gray-500 mt-3 font-medium text-center truncate w-full">
-                                        {card.title}
-                                    </span>
-                                </div>
-                            );
-                        })}
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm min-h-[500px]">
+                    <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5 text-indigo-600" />
+                        İşlem Hacmi ve Durum Dağılımı
+                    </h3>
+                    <div className="w-full h-[400px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                                data={mainCards}
+                                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                            >
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
+                                <XAxis
+                                    dataKey="title"
+                                    stroke="#888888"
+                                    fontSize={12}
+                                    tickLine={false}
+                                    axisLine={false}
+                                />
+                                <YAxis
+                                    stroke="#888888"
+                                    fontSize={12}
+                                    tickLine={false}
+                                    axisLine={false}
+                                />
+                                <Tooltip
+                                    cursor={{ fill: '#f3f4f6' }}
+                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                />
+                                <Bar dataKey="count" name="Adet" radius={[8, 8, 0, 0]} barSize={60}>
+                                    {mainCards.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.hexColor || '#8884d8'} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
             )}
