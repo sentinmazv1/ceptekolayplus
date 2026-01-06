@@ -240,8 +240,8 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
             if (phone.startsWith('0')) phone = phone.substring(1);
             if (!phone.startsWith('90')) phone = '90' + phone;
 
-            // 2. Open WhatsApp (wa.me)
-            const url = `https://wa.me/${phone}?text=${encodeURIComponent(whatsAppMessage)}`;
+            // 2. Open WhatsApp App directly
+            const url = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(whatsAppMessage)}`;
             window.open(url, '_blank');
 
             // 3. Log Action in Background
