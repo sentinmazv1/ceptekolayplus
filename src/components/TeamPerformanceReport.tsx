@@ -114,23 +114,27 @@ export default function TeamPerformanceReport() {
                         Müşteri Yük Dağılımı (Portföy)
                     </h3>
                     <ResponsiveContainer width="100%" height={350}>
-                        <PieChart>
-                            <Pie
-                                data={pieData}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={false}
-                                label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
-                                outerRadius={120}
-                                fill="#8884d8"
-                                dataKey="value"
-                            >
-                                {pieData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                            </Pie>
-                            <Tooltip />
-                        </PieChart>
+                        <BarChart
+                            layout="vertical"
+                            data={stats}
+                            margin={{ top: 20, right: 30, left: 40, bottom: 5 }}
+                        >
+                            <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.3} />
+                            <XAxis type="number" stroke="#888888" fontSize={12} />
+                            <YAxis
+                                dataKey="email"
+                                type="category"
+                                tickFormatter={(val) => val.split('@')[0]}
+                                stroke="#888888"
+                                fontSize={12}
+                                width={100}
+                            />
+                            <Tooltip
+                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                            />
+                            <Legend />
+                            <Bar dataKey="totalLeads" name="Portföy Adedi" fill="#8884d8" radius={[0, 4, 4, 0]} barSize={20} />
+                        </BarChart>
                     </ResponsiveContainer>
                 </div>
             </div>
