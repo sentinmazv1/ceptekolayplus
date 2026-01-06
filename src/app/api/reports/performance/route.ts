@@ -68,7 +68,7 @@ export async function GET(request: Request) {
                 userStats[user].smsCount++;
             }
 
-            if (log.action === 'PULL_LEAD') {
+            if (log.action === 'PULL_LEAD' || log.action === 'SEND_WHATSAPP') {
                 userStats[user].callsCount++;
             }
             // Should we count status updates as calls? 
