@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSheetsClient, logAction } from '@/lib/sheets';
+import { getSheetsClient } from '@/lib/google';
+import { logAction } from '@/lib/sheets';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
