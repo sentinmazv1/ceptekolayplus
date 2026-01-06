@@ -1416,16 +1416,13 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                         </div>
                     </div>
                 )}
-            </div>
-        </div>
-    )
-}
 
-<ApprovalSummaryModal
-    isOpen={isApprovalModalOpen}
-    onClose={() => setIsApprovalModalOpen(false)}
-    customer={data}
-/>
+
+                <ApprovalSummaryModal
+                    isOpen={isApprovalModalOpen}
+                    onClose={() => setIsApprovalModalOpen(false)}
+                    customer={data}
+                />
             </div >
         </div >
     );
