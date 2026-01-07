@@ -346,7 +346,7 @@ export function AdminApprovalPanel() {
                                         </div>
                                         <div className="flex items-center justify-between">
                                             <span className="text-gray-500">Ürün:</span>
-                                            <span className="font-medium text-gray-900 truncate max-w-[150px]" title={lead.istenen_urun}>{lead.istenen_urun || '-'}</span>
+                                            <span className="font-medium text-gray-900 truncate max-w-[150px]" title={lead.talep_edilen_urun}>{lead.talep_edilen_urun || '-'}</span>
                                         </div>
                                         {lead.admin_notu && (
                                             <div className="bg-white p-2 rounded border border-green-100 text-xs text-gray-600 italic mt-2 line-clamp-2" title={lead.admin_notu}>
