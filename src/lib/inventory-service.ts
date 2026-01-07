@@ -20,7 +20,25 @@ export const INVENTORY_COLUMNS = [
     'fiyat_15_taksit'
 ] as const;
 
-// ... (helpers remain dynamic)
+// Helper to map Row to Object
+function rowToInventoryItem(row: any[]): InventoryItem {
+    const item: any = {};
+    INVENTORY_COLUMNS.forEach((col, idx) => {
+        item[col] = row[idx] || undefined;
+    });
+    return item as InventoryItem;
+}
+
+// Helper to map Object to Row
+function inventoryItemToRow(item: Partial<InventoryItem>): any[] {
+    const row = new Array(INVENTORY_COLUMNS.length).fill('');
+    INVENTORY_COLUMNS.forEach((col, idx) => {
+        if (item[col as keyof InventoryItem] !== undefined) {
+            row[idx] = item[col as keyof InventoryItem];
+        }
+    });
+    return row;
+}
 
 export async function getInventoryItems(status?: InventoryStatus): Promise<InventoryItem[]> {
     const client = getSheetsClient();
