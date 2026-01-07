@@ -265,23 +265,32 @@ export default function ReportsPage() {
                     <div className="h-[300px] flex items-center justify-center">
                         {stats.todayCalled > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart
                                         data={Object.entries(stats.todayCalledByPerson || {}).map(([name, value]) => ({ name: name.split('@')[0], value }))}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={80}
-                                        paddingAngle={5}
-                                        dataKey="value"
-                                        label={({ name, value }) => `${name} (${value})`}
+                                        margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
                                     >
-                                        {Object.entries(stats.todayCalledByPerson || {}).map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <RechartsTooltip />
-                                </PieChart>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EFF6FF" />
+                                        <XAxis
+                                            dataKey="name"
+                                            tick={{ fontSize: 11, fill: '#6B7280' }}
+                                            axisLine={false}
+                                            tickLine={false}
+                                            interval={0}
+                                        />
+                                        <YAxis hide />
+                                        <RechartsTooltip
+                                            cursor={{ fill: '#F9FAFB' }}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                        />
+                                        <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={40}>
+                                            {Object.entries(stats.todayCalledByPerson || {}).map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                            <LabelList dataKey="value" position="top" fill="#374151" fontSize={12} fontWeight="bold" />
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
                             </ResponsiveContainer>
                         ) : (
                             <div className="flex h-full items-center justify-center text-gray-400 text-sm">
