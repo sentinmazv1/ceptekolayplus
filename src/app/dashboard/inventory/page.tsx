@@ -18,12 +18,18 @@ export default function InventoryPage() {
     const [filterStatus, setFilterStatus] = useState<'ALL' | 'STOKTA' | 'SATILDI'>('STOKTA');
     const [stockCountMode, setStockCountMode] = useState(false);
 
+    const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+
     // Form State
     const [formData, setFormData] = useState({
         marka: '',
         model: '',
         seri_no: '',
-        imei: ''
+        imei: '',
+        fiyat_3_taksit: '',
+        fiyat_6_taksit: '',
+        fiyat_12_taksit: '',
+        fiyat_15_taksit: ''
     });
     const [submitting, setSubmitting] = useState(false);
 
@@ -45,23 +51,47 @@ export default function InventoryPage() {
         }
     };
 
-    const handleAddSubmit = async (e: React.FormEvent) => {
+    const openAddModal = () => {
+        setEditingItem(null);
+        setFormData({ marka: '', model: '', seri_no: '', imei: '', fiyat_3_taksit: '', fiyat_6_taksit: '', fiyat_12_taksit: '', fiyat_15_taksit: '' });
+        setShowModal(true);
+    };
+
+    const openEditModal = (item: InventoryItem) => {
+        setEditingItem(item);
+        setFormData({
+            marka: item.marka,
+            model: item.model,
+            seri_no: item.seri_no,
+            imei: item.imei,
+            fiyat_3_taksit: item.fiyat_3_taksit?.toString() || '',
+            fiyat_6_taksit: item.fiyat_6_taksit?.toString() || '',
+            fiyat_12_taksit: item.fiyat_12_taksit?.toString() || '',
+            fiyat_15_taksit: item.fiyat_15_taksit?.toString() || ''
+        });
+        setShowModal(true);
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
         try {
-            const res = await fetch('/api/inventory', {
-                method: 'POST',
+            const url = '/api/inventory';
+            const method = editingItem ? 'PUT' : 'POST';
+            const body = editingItem ? { ...formData, id: editingItem.id } : formData;
+
+            const res = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(body)
             });
 
             if (res.ok) {
                 setShowModal(false);
-                setFormData({ marka: '', model: '', seri_no: '', imei: '' });
                 fetchInventory(); // Refresh
             } else {
                 const err = await res.json();
-                alert(err.message || 'Ekleme başarısız');
+                alert(err.message || 'İşlem başarısız');
             }
         } catch (error) {
             alert('Hata oluştu');
@@ -116,7 +146,7 @@ export default function InventoryPage() {
 
                     {session?.user.role === 'ADMIN' && (
                         <button
-                            onClick={() => setShowModal(true)}
+                            onClick={openAddModal}
                             className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 font-medium"
                         >
                             <Plus className="w-4 h-4" />
@@ -194,13 +224,14 @@ export default function InventoryPage() {
                                 <th className="px-6 py-3">12 Taksit</th>
                                 <th className="px-6 py-3">15 Taksit</th>
                                 <th className="px-6 py-3">Tarih</th>
+                                {session?.user.role === 'ADMIN' && <th className="px-6 py-3 print:hidden">İşlem</th>}
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan={10} className="text-center py-8">Yükleniyor...</td></tr>
+                                <tr><td colSpan={11} className="text-center py-8">Yükleniyor...</td></tr>
                             ) : filteredItems.length === 0 ? (
-                                <tr><td colSpan={10} className="text-center py-8 text-gray-500">Kayıt bulunamadı.</td></tr>
+                                <tr><td colSpan={11} className="text-center py-8 text-gray-500">Kayıt bulunamadı.</td></tr>
                             ) : (
                                 filteredItems.map((item) => (
                                     <tr key={item.id} className="border-b hover:bg-gray-50 transition-colors">
@@ -235,6 +266,15 @@ export default function InventoryPage() {
                                                 }`}>
                                                 {item.durum}
                                             </span>
+                                            {item.durum === 'SATILDI' && item.musteri_id && (
+                                                <div
+                                                    onClick={() => router.push(`/dashboard/customers/${item.musteri_id}`)}
+                                                    className="text-xs text-blue-600 hover:text-blue-800 hover:underline cursor-pointer mt-1 flex items-center gap-1 print:hidden"
+                                                >
+                                                    <User className="w-3 h-3" />
+                                                    Müşteriyi Gör
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-gray-500 whitespace-nowrap">
                                             {item.ekleyen?.split('@')[0]}
@@ -277,6 +317,20 @@ export default function InventoryPage() {
                                         <td className="px-6 py-4 text-gray-500">
                                             {new Date(item.giris_tarihi).toLocaleDateString('tr-TR')}
                                         </td>
+
+                                        {session?.user.role === 'ADMIN' && (
+                                            <td className="px-6 py-4 print:hidden">
+                                                <button
+                                                    onClick={() => openEditModal(item)}
+                                                    className="text-indigo-600 hover:text-indigo-800 p-2 rounded hover:bg-indigo-50 transition-colors"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                                                        <path d="m15 5 4 4" />
+                                                    </svg>
+                                                </button>
+                                            </td>
+                                        )}
                                     </tr>
                                 ))
                             )}
@@ -285,16 +339,16 @@ export default function InventoryPage() {
                 </div>
             </div>
 
-            {/* Add Modal */}
+            {/* Add/Edit Modal */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 print:hidden">
                     <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl p-6 animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold text-gray-900">Yeni Cihaz & Fiyat Ekle</h2>
+                            <h2 className="text-xl font-bold text-gray-900">{editingItem ? 'Cihaz Düzenle' : 'Yeni Cihaz Ekle'}</h2>
                             <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">✕</button>
                         </div>
 
-                        <form onSubmit={handleAddSubmit} className="space-y-6">
+                        <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Marka</label>

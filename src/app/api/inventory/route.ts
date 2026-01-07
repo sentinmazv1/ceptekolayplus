@@ -1,8 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getInventoryItems, addInventoryItem } from '@/lib/inventory-service';
+import { getInventoryItems, addInventoryItem, updateInventoryItem } from '@/lib/inventory-service';
 import { InventoryStatus } from '@/lib/types';
+
+export async function PUT(req: NextRequest) {
+    const session = await getServerSession(authOptions);
+
+    if (!session || session.user.role !== 'ADMIN') {
+        return NextResponse.json({ message: 'Unauthorized' }, { status: 403 });
+    }
+
+    try {
+        const body = await req.json();
+        const { id, ...updates } = body;
+
+        if (!id) {
+            return NextResponse.json({ message: 'Missing item ID' }, { status: 400 });
+        }
+
+        const updatedItem = await updateInventoryItem(id, updates);
+        return NextResponse.json({ item: updatedItem });
+    } catch (error) {
+        return NextResponse.json({ message: 'Failed to update item' }, { status: 500 });
+    }
+}
 
 export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions);
