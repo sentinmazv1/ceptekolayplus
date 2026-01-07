@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import {
     Phone,
     Calendar,
@@ -39,23 +41,24 @@ interface Stats {
     available: number;
     waiting_new: number;
     waiting_scheduled: number;
-    total_scheduled?: number; // New optional
+    total_scheduled?: number;
     waiting_retry: number;
     pending_approval: number;
     waiting_guarantor: number;
     delivered: number;
     approved: number;
-    today_called?: number; // New optional
+    today_called?: number;
 }
 
 interface StatusMetric {
     label: string;
-    status?: string; // Optional if not a direct status mapping
-    metricKey?: keyof Stats; // Optional mapping to direct stat key
+    status?: string;
+    metricKey?: keyof Stats;
     icon: any;
     color: string;
     textColor: string;
     bgColor: string;
+    hexColor?: string;
 }
 
 const STAT_CARDS: StatusMetric[] = [
@@ -68,6 +71,8 @@ const STAT_CARDS: StatusMetric[] = [
 ];
 
 export function DashboardStats({ initialStats }: { initialStats?: any }) {
+    const router = useRouter();
+    const { data: session } = useSession();
     const [stats, setStats] = useState<Stats | null>(initialStats || null);
     const [loading, setLoading] = useState(!initialStats);
     const [expandedStatus, setExpandedStatus] = useState<string | null>(null);
@@ -83,7 +88,7 @@ export function DashboardStats({ initialStats }: { initialStats?: any }) {
             if (res.ok) {
                 const data = await res.json();
                 setStats(data);
-                setStatusCounts(data.statusCounts || {}); // NEW
+                setStatusCounts(data.statusCounts || {});
             }
         } catch (error) {
             console.error('Failed to fetch stats', error);
@@ -103,6 +108,18 @@ export function DashboardStats({ initialStats }: { initialStats?: any }) {
     }, [initialStats]);
 
     const handleStatusClick = async (status: string) => {
+        // Redirect Admins to the dedicated Approvals page for these specific statuses
+        if (session?.user?.role === 'ADMIN') {
+            if (status === 'Onaylandı') {
+                router.push('/dashboard/approvals?tab=approved');
+                return;
+            }
+            if (status === 'Başvuru alındı') {
+                router.push('/dashboard/approvals?tab=pending');
+                return;
+            }
+        }
+
         if (expandedStatus === status) {
             setExpandedStatus(null);
             setFilteredCustomers([]);
@@ -145,7 +162,7 @@ export function DashboardStats({ initialStats }: { initialStats?: any }) {
             bgColor: 'bg-blue-50',
             desc: 'Aranmayı bekleyen',
             status: 'HAVUZ',
-            hexColor: '#3b82f6' // blue-500
+            hexColor: '#3b82f6'
         },
         {
             title: 'Randevulu',
@@ -156,7 +173,7 @@ export function DashboardStats({ initialStats }: { initialStats?: any }) {
             bgColor: 'bg-purple-50',
             desc: 'İleri tarihli görüşme',
             status: 'Daha sonra aranmak istiyor',
-            hexColor: '#a855f7' // purple-500
+            hexColor: '#a855f7'
         },
         {
             title: 'Onay Bekleniyor',
@@ -167,7 +184,7 @@ export function DashboardStats({ initialStats }: { initialStats?: any }) {
             bgColor: 'bg-orange-50',
             desc: 'Yönetici onayı bekliyor',
             status: 'Başvuru alındı' as LeadStatus,
-            hexColor: '#f97316' // orange-500
+            hexColor: '#f97316'
         },
         {
             title: 'Kefil Bekleyen',
@@ -178,7 +195,7 @@ export function DashboardStats({ initialStats }: { initialStats?: any }) {
             bgColor: 'bg-amber-50',
             desc: 'Kefil evrakları bekleniyor',
             status: 'Kefil bekleniyor' as LeadStatus,
-            hexColor: '#f59e0b' // amber-500
+            hexColor: '#f59e0b'
         },
         {
             title: 'Onaylananlar',
@@ -189,7 +206,7 @@ export function DashboardStats({ initialStats }: { initialStats?: any }) {
             bgColor: 'bg-green-50',
             desc: 'Onaylanmış başvurular',
             status: 'Onaylandı' as LeadStatus,
-            hexColor: '#22c55e' // green-500
+            hexColor: '#22c55e'
         },
         {
             title: 'Teslim Edilen',
@@ -200,7 +217,7 @@ export function DashboardStats({ initialStats }: { initialStats?: any }) {
             bgColor: 'bg-emerald-50',
             desc: 'Başarıyla tamamlanan',
             status: 'Teslim edildi' as LeadStatus,
-            hexColor: '#10b981' // emerald-500
+            hexColor: '#10b981'
         }
     ];
 
@@ -220,16 +237,6 @@ export function DashboardStats({ initialStats }: { initialStats?: any }) {
         { label: 'Uygun değil', status: 'Uygun değil', icon: AlertCircle, color: 'bg-orange-500', textColor: 'text-orange-600', bgColor: 'bg-orange-50' },
         { label: 'İptal/Vazgeçti', status: 'İptal/Vazgeçti', icon: XCircle, color: 'bg-gray-500', textColor: 'text-gray-600', bgColor: 'bg-gray-50' },
     ];
-
-    const maxVal = Math.max(
-        stats.today_called || 0,
-        stats.available,
-        stats.total_scheduled || 0,
-        stats.pending_approval,
-        stats.waiting_guarantor,
-        stats.delivered,
-        10
-    );
 
     return (
         <div className="mb-8">

@@ -8,7 +8,10 @@ import { Loader2, CheckCircle, XCircle, AlertTriangle, ArrowLeft } from 'lucide-
 import { CustomerCard } from './CustomerCard';
 
 
+import { useSearchParams } from 'next/navigation';
+
 export function AdminApprovalPanel() {
+    const searchParams = useSearchParams();
     const [leads, setLeads] = useState<Customer[]>([]);
     const [approvedLeads, setApprovedLeads] = useState<Customer[]>([]); // New state for approved
     const [loading, setLoading] = useState(true);
@@ -22,6 +25,15 @@ export function AdminApprovalPanel() {
     const [modalAction, setModalAction] = useState<'approve' | 'reject' | 'guarantor'>('approve');
     const [selectedLead, setSelectedLead] = useState<Customer | null>(null);
     const [formData, setFormData] = useState({ kredi_limiti: '', admin_notu: '' });
+
+    useEffect(() => {
+        const tabParam = searchParams.get('tab');
+        if (tabParam === 'approved') {
+            setActiveTab('approved');
+        } else {
+            setActiveTab('pending');
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         if (activeTab === 'pending') {
