@@ -362,7 +362,12 @@ export function AdminApprovalPanel() {
                                         </div>
                                         {lead.admin_notu && (
                                             <div className="bg-white p-2 rounded border border-green-100 text-xs text-gray-600 italic mt-2 line-clamp-2" title={lead.admin_notu}>
-                                                "{lead.admin_notu}"
+                                                <span className="font-semibold text-green-700">Admin:</span> {lead.admin_notu}
+                                            </div>
+                                        )}
+                                        {lead.arama_not_kisa && (
+                                            <div className="bg-white p-2 rounded border border-blue-100 text-xs text-gray-600 italic mt-1 line-clamp-2" title={lead.arama_not_kisa}>
+                                                <span className="font-semibold text-blue-700">Kısa Not:</span> {lead.arama_not_kisa}
                                             </div>
                                         )}
                                     </div>
