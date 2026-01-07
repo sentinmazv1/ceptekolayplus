@@ -13,28 +13,14 @@ export const INVENTORY_COLUMNS = [
     'giris_tarihi',
     'cikis_tarihi',
     'musteri_id',
-    'ekleyen'
+    'ekleyen',
+    'fiyat_3_taksit',
+    'fiyat_6_taksit',
+    'fiyat_12_taksit',
+    'fiyat_15_taksit'
 ] as const;
 
-// Helper to map Row to Object
-function rowToInventoryItem(row: any[]): InventoryItem {
-    const item: any = {};
-    INVENTORY_COLUMNS.forEach((col, idx) => {
-        item[col] = row[idx] || undefined;
-    });
-    return item as InventoryItem;
-}
-
-// Helper to map Object to Row
-function inventoryItemToRow(item: Partial<InventoryItem>): any[] {
-    const row = new Array(INVENTORY_COLUMNS.length).fill('');
-    INVENTORY_COLUMNS.forEach((col, idx) => {
-        if (item[col as keyof InventoryItem] !== undefined) {
-            row[idx] = item[col as keyof InventoryItem];
-        }
-    });
-    return row;
-}
+// ... (helpers remain dynamic)
 
 export async function getInventoryItems(status?: InventoryStatus): Promise<InventoryItem[]> {
     const client = getSheetsClient();
@@ -42,7 +28,7 @@ export async function getInventoryItems(status?: InventoryStatus): Promise<Inven
     try {
         const response = await client.spreadsheets.values.get({
             spreadsheetId: SHEET_ID,
-            range: 'Inventory!A2:J', // Assumes J is the last column
+            range: 'Inventory!A2:N', // Extended to N for pricing columns
         });
 
         const rows = response.data.values || [];
@@ -69,7 +55,7 @@ export async function addInventoryItem(item: Omit<InventoryItem, 'id'>) {
 
     await client.spreadsheets.values.append({
         spreadsheetId: SHEET_ID,
-        range: 'Inventory!A:J',
+        range: 'Inventory!A:N',
         valueInputOption: 'USER_ENTERED',
         requestBody: {
             values: [row]

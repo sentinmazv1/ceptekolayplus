@@ -189,14 +189,18 @@ export default function InventoryPage() {
                                 <th className="px-6 py-3">IMEI / Seri No</th>
                                 <th className="px-6 py-3">Durum</th>
                                 <th className="px-6 py-3">Ekleyen</th>
+                                <th className="px-6 py-3">3 Taksit</th>
+                                <th className="px-6 py-3">6 Taksit</th>
+                                <th className="px-6 py-3">12 Taksit</th>
+                                <th className="px-6 py-3">15 Taksit</th>
                                 <th className="px-6 py-3">Tarih</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan={6} className="text-center py-8">Yükleniyor...</td></tr>
+                                <tr><td colSpan={10} className="text-center py-8">Yükleniyor...</td></tr>
                             ) : filteredItems.length === 0 ? (
-                                <tr><td colSpan={6} className="text-center py-8 text-gray-500">Kayıt bulunamadı.</td></tr>
+                                <tr><td colSpan={10} className="text-center py-8 text-gray-500">Kayıt bulunamadı.</td></tr>
                             ) : (
                                 filteredItems.map((item) => (
                                     <tr key={item.id} className="border-b hover:bg-gray-50 transition-colors">
@@ -231,19 +235,45 @@ export default function InventoryPage() {
                                                 }`}>
                                                 {item.durum}
                                             </span>
-                                            {item.durum === 'SATILDI' && item.musteri_id && (
-                                                <div
-                                                    onClick={() => router.push(`/dashboard/customers/${item.musteri_id}`)}
-                                                    className="text-xs text-blue-600 hover:text-blue-800 hover:underline cursor-pointer mt-1 flex items-center gap-1 print:hidden"
-                                                >
-                                                    <User className="w-3 h-3" />
-                                                    Müşteriyi Gör
-                                                </div>
-                                            )}
                                         </td>
-                                        <td className="px-6 py-4 text-gray-500">
+                                        <td className="px-6 py-4 text-gray-500 whitespace-nowrap">
                                             {item.ekleyen?.split('@')[0]}
                                         </td>
+
+                                        {/* Pricing Columns */}
+                                        <td className="px-6 py-4 text-right">
+                                            {item.fiyat_3_taksit ? (
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-gray-900">{Number(item.fiyat_3_taksit).toLocaleString('tr-TR')} ₺</span>
+                                                    <span className="text-xs text-gray-500">{(Number(item.fiyat_3_taksit) / 3).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/ay</span>
+                                                </div>
+                                            ) : '-'}
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            {item.fiyat_6_taksit ? (
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-gray-900">{Number(item.fiyat_6_taksit).toLocaleString('tr-TR')} ₺</span>
+                                                    <span className="text-xs text-gray-500">{(Number(item.fiyat_6_taksit) / 6).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/ay</span>
+                                                </div>
+                                            ) : '-'}
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            {item.fiyat_12_taksit ? (
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-gray-900">{Number(item.fiyat_12_taksit).toLocaleString('tr-TR')} ₺</span>
+                                                    <span className="text-xs text-gray-500">{(Number(item.fiyat_12_taksit) / 12).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/ay</span>
+                                                </div>
+                                            ) : '-'}
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            {item.fiyat_15_taksit ? (
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-gray-900">{Number(item.fiyat_15_taksit).toLocaleString('tr-TR')} ₺</span>
+                                                    <span className="text-xs text-gray-500">{(Number(item.fiyat_15_taksit) / 15).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/ay</span>
+                                                </div>
+                                            ) : '-'}
+                                        </td>
+
                                         <td className="px-6 py-4 text-gray-500">
                                             {new Date(item.giris_tarihi).toLocaleDateString('tr-TR')}
                                         </td>
@@ -258,70 +288,121 @@ export default function InventoryPage() {
             {/* Add Modal */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 print:hidden">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl p-6 animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold text-gray-900">Yeni Cihaz Ekle</h2>
+                            <h2 className="text-xl font-bold text-gray-900">Yeni Cihaz & Fiyat Ekle</h2>
                             <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">✕</button>
                         </div>
 
-                        <form onSubmit={handleAddSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Marka</label>
-                                <select
-                                    className="w-full border rounded-lg p-2"
-                                    value={formData.marka}
-                                    onChange={(e) => setFormData({ ...formData, marka: e.target.value })}
-                                    required
-                                >
-                                    <option value="">Seçiniz...</option>
-                                    <option value="Apple">Apple</option>
-                                    <option value="Samsung">Samsung</option>
-                                    <option value="Xiaomi">Xiaomi</option>
-                                    <option value="Huawei">Huawei</option>
-                                    <option value="Honor">Honor</option>
-                                    <option value="Tecno">Tecno</option>
-                                    <option value="Infinix">Infinix</option>
-                                    <option value="Omix">Omix</option>
-                                    <option value="Realme">Realme</option>
-                                    <option value="Vivo">Vivo</option>
-                                    <option value="General Mobile">General Mobile</option>
-                                    <option value="Reeder">Reeder</option>
-                                    <option value="TCL">TCL</option>
-                                    <option value="Diğer">Diğer</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
-                                <input
-                                    className="w-full border rounded-lg p-2"
-                                    placeholder="Örn: iPhone 15 Pro 128GB"
-                                    value={formData.model}
-                                    onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">IMEI (15 Hane)</label>
-                                <input
-                                    className="w-full border rounded-lg p-2"
-                                    placeholder="123456789012345"
-                                    value={formData.imei}
-                                    onChange={(e) => setFormData({ ...formData, imei: e.target.value })}
-                                    required
-                                    maxLength={15}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Seri No</label>
-                                <input
-                                    className="w-full border rounded-lg p-2"
-                                    placeholder="Seri Numarası"
-                                    value={formData.seri_no}
-                                    onChange={(e) => setFormData({ ...formData, seri_no: e.target.value })}
-                                />
+                        <form onSubmit={handleAddSubmit} className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Marka</label>
+                                    <select
+                                        className="w-full border rounded-lg p-2"
+                                        value={formData.marka}
+                                        onChange={(e) => setFormData({ ...formData, marka: e.target.value })}
+                                        required
+                                    >
+                                        <option value="">Seçiniz...</option>
+                                        <option value="Apple">Apple</option>
+                                        <option value="Samsung">Samsung</option>
+                                        <option value="Xiaomi">Xiaomi</option>
+                                        <option value="Huawei">Huawei</option>
+                                        <option value="Honor">Honor</option>
+                                        <option value="Tecno">Tecno</option>
+                                        <option value="Infinix">Infinix</option>
+                                        <option value="Omix">Omix</option>
+                                        <option value="Realme">Realme</option>
+                                        <option value="Vivo">Vivo</option>
+                                        <option value="General Mobile">General Mobile</option>
+                                        <option value="Reeder">Reeder</option>
+                                        <option value="TCL">TCL</option>
+                                        <option value="Diğer">Diğer</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
+                                    <input
+                                        className="w-full border rounded-lg p-2"
+                                        placeholder="Örn: iPhone 15 Pro 128GB"
+                                        value={formData.model}
+                                        onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">IMEI (15 Hane)</label>
+                                    <input
+                                        className="w-full border rounded-lg p-2"
+                                        placeholder="123456789012345"
+                                        value={formData.imei}
+                                        onChange={(e) => setFormData({ ...formData, imei: e.target.value })}
+                                        required
+                                        maxLength={15}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Seri No</label>
+                                    <input
+                                        className="w-full border rounded-lg p-2"
+                                        placeholder="Seri Numarası"
+                                        value={formData.seri_no}
+                                        onChange={(e) => setFormData({ ...formData, seri_no: e.target.value })}
+                                    />
+                                </div>
                             </div>
 
-                            <div className="flex justify-end gap-3 mt-6">
+                            <div className="border-t pt-4">
+                                <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                    <div className="w-1 h-4 bg-indigo-600 rounded"></div>
+                                    Fiyatlandırma (Toplam Tutar Giriniz)
+                                </h3>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">3 Taksit (Toplam)</label>
+                                        <input
+                                            type="number"
+                                            className="w-full border rounded-lg p-2 text-right"
+                                            placeholder="0.00"
+                                            value={(formData as any).fiyat_3_taksit || ''}
+                                            onChange={(e) => setFormData({ ...formData, fiyat_3_taksit: e.target.value } as any)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">6 Taksit (Toplam)</label>
+                                        <input
+                                            type="number"
+                                            className="w-full border rounded-lg p-2 text-right"
+                                            placeholder="0.00"
+                                            value={(formData as any).fiyat_6_taksit || ''}
+                                            onChange={(e) => setFormData({ ...formData, fiyat_6_taksit: e.target.value } as any)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">12 Taksit (Toplam)</label>
+                                        <input
+                                            type="number"
+                                            className="w-full border rounded-lg p-2 text-right"
+                                            placeholder="0.00"
+                                            value={(formData as any).fiyat_12_taksit || ''}
+                                            onChange={(e) => setFormData({ ...formData, fiyat_12_taksit: e.target.value } as any)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">15 Taksit (Toplam)</label>
+                                        <input
+                                            type="number"
+                                            className="w-full border rounded-lg p-2 text-right"
+                                            placeholder="0.00"
+                                            value={(formData as any).fiyat_15_taksit || ''}
+                                            onChange={(e) => setFormData({ ...formData, fiyat_15_taksit: e.target.value } as any)}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-4">
                                 <button
                                     type="button"
                                     onClick={() => setShowModal(false)}

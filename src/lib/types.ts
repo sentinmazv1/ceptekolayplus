@@ -153,4 +153,9 @@ export interface InventoryItem {
   cikis_tarihi?: string;
   musteri_id?: string; // Linked customer ID when sold
   ekleyen?: string;
+  // Installment Prices (Total Price for the plan)
+  fiyat_3_taksit?: number;
+  fiyat_6_taksit?: number;
+  fiyat_12_taksit?: number;
+  fiyat_15_taksit?: number;
 }
