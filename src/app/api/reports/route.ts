@@ -106,7 +106,12 @@ export async function GET(req: NextRequest) {
             hourly: {} as Record<string, Record<string, Record<number, number>>>, // Date -> User -> Hour -> Count
         };
 
-        const today = trFormatter.format(new Date());
+        // Determine Target Date (from Query or Today)
+        const queryDate = req.nextUrl.searchParams.get('date');
+        const targetDate = queryDate ? queryDate : trFormatter.format(new Date());
+
+        // Log for debugging
+        // console.log('Report Target Date:', targetDate);
 
         // --- 1. PROCESS CUSTOMERS FOR CORE STATS ---
         rows.forEach(row => {
@@ -169,15 +174,15 @@ export async function GET(req: NextRequest) {
             // TODAY STATS & HOURLY
             if (lastCalled) {
                 const callDay = getDayKey(lastCalled);
-                if (callDay === today) {
+                if (callDay === targetDate) {
                     stats.todayCalled++;
 
-                    // Track Count per Person
+                    // Track Count per Person (Still useful for pie/bar usage if needed)
                     stats.todayCalledByPerson[owner] = (stats.todayCalledByPerson[owner] || 0) + 1;
 
-                    // Init performace object
+                    // Note: We now count 'Performance' calls via LOGS (PULL_LEAD), not here.
+                    // But we still init the object to ensure user exists
                     if (!stats.performance[owner]) stats.performance[owner] = { calls: 0, approvals: 0, paceMinutes: 0, sms: 0, whatsapp: 0 };
-                    stats.performance[owner].calls++;
                 }
 
                 // Hourly (Stacked by User)
@@ -186,15 +191,18 @@ export async function GET(req: NextRequest) {
                     const d = new Date(ts);
                     const dateKey = utcFormatter.format(d); // YYYY-MM-DD Face Value
 
-                    // Hour extracted from Face Value (UTC method on naive timestamp)
-                    const hourStr = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', hour: 'numeric', hour12: false }).format(d);
-                    const h = parseInt(hourStr, 10);
+                    // Only count for the Target Date in the hourly chart to match the view
+                    if (dateKey === targetDate) {
+                        // Hour extracted from Face Value (UTC method on naive timestamp)
+                        const hourStr = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', hour: 'numeric', hour12: false }).format(d);
+                        const h = parseInt(hourStr, 10);
 
-                    if (!isNaN(h)) {
-                        if (!stats.hourly[dateKey]) stats.hourly[dateKey] = {};
-                        if (!stats.hourly[dateKey][owner]) stats.hourly[dateKey][owner] = {};
+                        if (!isNaN(h)) {
+                            if (!stats.hourly[dateKey]) stats.hourly[dateKey] = {};
+                            if (!stats.hourly[dateKey][owner]) stats.hourly[dateKey][owner] = {};
 
-                        stats.hourly[dateKey][owner][h] = (stats.hourly[dateKey][owner][h] || 0) + 1;
+                            stats.hourly[dateKey][owner][h] = (stats.hourly[dateKey][owner][h] || 0) + 1;
+                        }
                     }
                 }
             }
@@ -202,11 +210,8 @@ export async function GET(req: NextRequest) {
             // Approvals count for Performance
             if (approval === 'Onaylandı' || status === 'Onaylandı') {
                 const appDate = getColSafe(row, 'onay_tarihi');
-                const approver = getColSafe(row, 'onaylayan_admin') || 'Sistem';
-                // If approved today, credit specific admin? Or credit Sales Rep who owns it?
-                // "Aktivite Karşılaştırması" usually implies Sales Rep performance.
-                // Let's credit the OWNER of the lead if it was approved today.
-                if (appDate && getDayKey(appDate) === today) {
+                // If approved on target date
+                if (appDate && getDayKey(appDate) === targetDate) {
                     if (!stats.performance[owner]) stats.performance[owner] = { calls: 0, approvals: 0, paceMinutes: 0, sms: 0, whatsapp: 0 };
                     stats.performance[owner].approvals++;
                 }
