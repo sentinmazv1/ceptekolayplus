@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, MessageCircle, Phone, FileText, CheckCircle2, User, Clock, Loader2 } from 'lucide-react';
+import { Activity, MessageCircle, Phone, FileText, CheckCircle2, User, Clock, Loader2, Zap, Smartphone } from 'lucide-react';
 
 interface LogEntry {
     log_id: string;
