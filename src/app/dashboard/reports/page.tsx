@@ -8,7 +8,8 @@ import {
 } from 'recharts';
 import {
     Loader2, ArrowLeft, Users, Phone, Printer,
-    Package, CheckCircle, Share2, ClipboardList, TrendingUp, Clock, Activity, Download, PhoneForwarded
+    Package, CheckCircle, Share2, ClipboardList, TrendingUp, Clock, Activity, Download, PhoneForwarded,
+    CheckCircle2, MessageSquare, MessageCircle
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -171,6 +172,14 @@ export default function ReportsPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <Button
+                        onClick={() => router.push('/dashboard/delivery-reports')}
+                        className="bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-50 px-4 py-2 rounded-lg transition-colors flex items-center gap-2 font-bold shadow-sm"
+                    >
+                        <Package className="w-4 h-4" />
+                        Teslimat Detay Raporu
+                    </Button>
+
                     <button
                         onClick={() => window.print()}
                         className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 font-bold shadow-sm"
