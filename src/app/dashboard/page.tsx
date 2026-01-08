@@ -129,7 +129,7 @@ export default function Dashboard() {
             {/* Main Content Area - Pull Lead Focus & Activity Feed */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start py-8">
                 {/* Left: Action Area (3 Cols) */}
-                <div className="lg:col-span-3 flex flex-col items-center justify-center">
+                <div className="lg:col-span-3 flex flex-col items-center justify-center w-full">
                     {!activeLead ? (
                         <div className="text-center space-y-4 w-full max-w-md mx-auto">
                             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
@@ -179,8 +179,6 @@ export default function Dashboard() {
                             <CustomerCard
                                 initialData={activeLead}
                                 onSave={(updatedLead) => {
-                                    // Once saved, we can either clear active lead or keep it
-                                    // Previous requirement was to return to dashboard
                                     setActiveLead(null);
                                     fetchStats();
                                 }}
@@ -189,8 +187,14 @@ export default function Dashboard() {
                     )}
                 </div>
 
-                {/* VISUAL & STATS SUMMARY (Moved to Bottom) */}
-                <DashboardStats />
+                {/* Right: Activity Feed (1 Col) */}
+                <div className="lg:col-span-1 w-full h-[500px] sticky top-8">
+                    <ActivityFeed />
+                </div>
             </div>
-            );
+
+            {/* VISUAL & STATS SUMMARY */}
+            <DashboardStats />
+        </div>
+    );
 }
