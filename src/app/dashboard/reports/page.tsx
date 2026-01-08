@@ -348,6 +348,71 @@ export default function ReportsPage() {
                         </ResponsiveContainer>
                     </div>
                 </ChartCard>
+
+                {/* TOTAL SUMMARY CARD (Below Chart - Spanning 2 cols) */}
+                <div className="xl:col-span-2 mt-[-1rem]">
+                    {(() => {
+                        const totals = Object.values(stats.performance).reduce((acc, curr) => ({
+                            calls: acc.calls + curr.calls,
+                            approvals: acc.approvals + curr.approvals,
+                            sms: acc.sms + (curr.sms || 0),
+                            whatsapp: acc.whatsapp + (curr.whatsapp || 0),
+                            paceSum: acc.paceSum + (curr.paceMinutes || 0),
+                            paceCount: acc.paceCount + (curr.paceMinutes > 0 ? 1 : 0)
+                        }), { calls: 0, approvals: 0, sms: 0, whatsapp: 0, paceSum: 0, paceCount: 0 });
+
+                        const avgPace = totals.paceCount > 0 ? Math.round(totals.paceSum / totals.paceCount) : 0;
+
+                        return (
+                            <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white p-6 rounded-xl shadow-lg border border-gray-700 flex flex-col items-center justify-between gap-6 print:break-inside-avoid relative overflow-hidden">
+                                {/* Decorative Background Elements */}
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+
+                                <div className="flex items-center gap-4 w-full md:w-auto z-10">
+                                    <div className="p-3 bg-white/10 rounded-full backdrop-blur-sm border border-white/10">
+                                        <Activity className="w-8 h-8 text-indigo-300" />
+                                    </div>
+                                    <div className="text-left">
+                                        <h3 className="text-lg font-bold text-white tracking-tight leading-tight">TOPLAM PERFORMANS</h3>
+                                        <p className="text-xs text-indigo-200 font-medium uppercase tracking-wide">Günlük Özet</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 w-full z-10">
+                                    <div className="flex flex-col items-center p-3 bg-white/5 rounded-lg border border-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors">
+                                        <Phone className="w-5 h-5 text-indigo-300 mb-1 opacity-70" />
+                                        <span className="text-2xl font-black text-white">{totals.calls}</span>
+                                        <span className="text-[9px] font-bold text-indigo-200 uppercase tracking-widest">Arama</span>
+                                    </div>
+
+                                    <div className="flex flex-col items-center p-3 bg-white/5 rounded-lg border border-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors">
+                                        <CheckCircle2 className="w-5 h-5 text-emerald-300 mb-1 opacity-70" />
+                                        <span className="text-2xl font-black text-white">{totals.approvals}</span>
+                                        <span className="text-[9px] font-bold text-emerald-200 uppercase tracking-widest">Onay</span>
+                                    </div>
+
+                                    <div className="flex flex-col items-center p-3 bg-white/5 rounded-lg border border-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors">
+                                        <MessageSquare className="w-5 h-5 text-blue-300 mb-1 opacity-70" />
+                                        <span className="text-2xl font-black text-white">{totals.sms}</span>
+                                        <span className="text-[9px] font-bold text-blue-200 uppercase tracking-widest">SMS</span>
+                                    </div>
+
+                                    <div className="flex flex-col items-center p-3 bg-white/5 rounded-lg border border-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors">
+                                        <MessageCircle className="w-5 h-5 text-green-300 mb-1 opacity-70" />
+                                        <span className="text-2xl font-black text-white">{totals.whatsapp}</span>
+                                        <span className="text-[9px] font-bold text-green-200 uppercase tracking-widest">WP</span>
+                                    </div>
+
+                                    <div className="flex flex-col items-center p-3 bg-white/5 rounded-lg border border-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors col-span-2 md:col-span-1">
+                                        <Clock className="w-5 h-5 text-amber-300 mb-1 opacity-70" />
+                                        <span className="text-2xl font-black text-white">{avgPace}<span className="text-sm font-normal opacity-60 ml-0.5">dk</span></span>
+                                        <span className="text-[9px] font-bold text-amber-200 uppercase tracking-widest">Ort. Hız</span>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })()}
+                </div>
             </div>
 
             {/* --- ROW 3: DETAILED BREAKDOWNS --- */}
