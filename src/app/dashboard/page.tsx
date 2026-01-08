@@ -8,7 +8,7 @@ import ActivityFeed from '@/components/ActivityFeed';
 import { CustomerCard } from '@/components/CustomerCard';
 import { DashboardStats } from '@/components/DashboardStats';
 import { Customer } from '@/lib/types';
-import { Loader2, LogOut, RefreshCcw } from 'lucide-react';
+import { Loader2, LogOut, RefreshCcw, Phone } from 'lucide-react';
 
 export default function Dashboard() {
     const { data: session, status } = useSession();
@@ -131,36 +131,55 @@ export default function Dashboard() {
                 {/* Left: Action Area (3 Cols) */}
                 <div className="lg:col-span-3 flex flex-col items-center justify-center w-full">
                     {!activeLead ? (
-                        <div className="text-center space-y-4 w-full max-w-md mx-auto">
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-                                <h3 className="text-lg font-medium text-gray-900 mb-2">Yeni Görüşme Başlat</h3>
-                                {stats && (
-                                    <div className="grid grid-cols-3 gap-2 mb-4 text-xs">
-                                        <div className="p-2 bg-blue-50 text-blue-700 rounded-lg border border-blue-100 flex flex-col items-center">
-                                            <span className="font-bold text-lg leading-none">{stats.waiting_new}</span>
-                                            <span className="opacity-80">Yeni</span>
-                                        </div>
-                                        <div className="p-2 bg-purple-50 text-purple-700 rounded-lg border border-purple-100 flex flex-col items-center">
-                                            <span className="font-bold text-lg leading-none">{stats.waiting_scheduled}</span>
-                                            <span className="opacity-80">Randevu</span>
-                                        </div>
-                                        <div className="p-2 bg-orange-50 text-orange-700 rounded-lg border border-orange-100 flex flex-col items-center">
-                                            <span className="font-bold text-lg leading-none">{stats.waiting_retry}</span>
-                                            <span className="opacity-80">Tekrar</span>
-                                        </div>
+                        <div className="text-center space-y-6 w-full max-w-lg mx-auto transform transition-all hover:scale-[1.01]">
+                            <div className="bg-white/80 backdrop-blur-md p-8 rounded-3xl shadow-xl border border-white/50 ring-1 ring-gray-100 relative overflow-hidden group">
+                                {/* Decorative Gradient Blobs */}
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-100 rounded-full blur-3xl opacity-50 -mr-16 -mt-16 pointer-events-none"></div>
+                                <div className="absolute bottom-0 left-0 w-24 h-24 bg-purple-100 rounded-full blur-2xl opacity-50 -ml-12 -mb-12 pointer-events-none"></div>
+
+                                <div className="relative z-10">
+                                    <div className="w-16 h-16 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-indigo-200 mb-6 group-hover:rotate-3 transition-transform duration-300">
+                                        <Phone className="w-8 h-8 text-white" />
                                     </div>
-                                )}
-                                <p className="text-gray-500 text-sm mb-4">
-                                    Havuzdan sıradaki en uygun müşteriyi çeker.<br />
-                                    <span className="text-xs text-gray-400">(Önce Randevulu, sonra Yeni, sonra Tekrar)</span>
-                                </p>
-                                <Button size="lg" onClick={pullLead} isLoading={loading} className="w-full md:w-64 h-12 text-lg">
-                                    <RefreshCcw className="w-5 h-5 mr-2" />
-                                    Yeni Müşteri Çek
-                                </Button>
-                                {error && (
-                                    <p className="mt-3 text-red-600 text-sm bg-red-50 p-2 rounded">{error}</p>
-                                )}
+
+                                    <h3 className="text-2xl font-black text-gray-900 mb-2 tracking-tight">Yeni Görüşme Başlat</h3>
+                                    <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+                                        Havuzdan en uygun müşteriyi otomatik olarak çeker ve arama ekranını açar.
+                                    </p>
+
+                                    {stats && (
+                                        <div className="grid grid-cols-3 gap-3 mb-8">
+                                            <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100/50 flex flex-col items-center">
+                                                <span className="font-black text-2xl text-blue-600 leading-none mb-1">{stats.waiting_new}</span>
+                                                <span className="text-[10px] uppercase font-bold text-blue-400 tracking-wider">YENİ</span>
+                                            </div>
+                                            <div className="p-3 bg-purple-50/50 rounded-xl border border-purple-100/50 flex flex-col items-center">
+                                                <span className="font-black text-2xl text-purple-600 leading-none mb-1">{stats.waiting_scheduled}</span>
+                                                <span className="text-[10px] uppercase font-bold text-purple-400 tracking-wider">RANDEVU</span>
+                                            </div>
+                                            <div className="p-3 bg-orange-50/50 rounded-xl border border-orange-100/50 flex flex-col items-center">
+                                                <span className="font-black text-2xl text-orange-600 leading-none mb-1">{stats.waiting_retry}</span>
+                                                <span className="text-[10px] uppercase font-bold text-orange-400 tracking-wider">TEKRAR</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <Button
+                                        size="lg"
+                                        onClick={pullLead}
+                                        isLoading={loading}
+                                        className="w-full h-14 text-lg font-bold bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 shadow-xl shadow-indigo-200 hover:shadow-indigo-300 transition-all active:scale-95 rounded-xl border-t border-indigo-400/20"
+                                    >
+                                        <RefreshCcw className="w-5 h-5 mr-3 animate-[spin_3s_linear_infinite]" />
+                                        Müşteri Çek
+                                    </Button>
+
+                                    {error && (
+                                        <div className="mt-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-center justify-center gap-2">
+                                            <span className="font-bold">Hata:</span> {error}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ) : (
