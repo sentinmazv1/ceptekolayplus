@@ -220,7 +220,7 @@ function DeliveryCustomerCard({ customer }: { customer: any }) {
             {/* 3. Footer: Admin Decision */}
             <div className="border-t border-gray-200 mt-4 p-8 bg-gray-50 print:bg-white print:border-t-2 print:border-gray-800 print:p-4 print:mt-2">
                 <Section title="Yönetici Kararı & Notlar" icon={Gavel}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div>
                             <Field label="Onay Durumu" value={customer.onay_durumu} className="font-bold text-green-700" />
                             <Field label="Onaylanan Limit" value={customer.kredi_limiti ? `${cleanNum(customer.kredi_limiti)} TL` : '-'} className="font-bold text-xl text-gray-900" />
@@ -230,6 +230,12 @@ function DeliveryCustomerCard({ customer }: { customer: any }) {
                             <span className="text-xs text-gray-400 uppercase font-bold block mb-1">Yönetici Notu</span>
                             <p className="text-sm text-gray-800 italic">
                                 {customer.admin_notu || 'Yönetici notu girilmemiş.'}
+                            </p>
+                        </div>
+                        <div className="bg-white p-4 border rounded-lg print:border-gray-400 min-h-[80px]">
+                            <span className="text-xs text-blue-400 uppercase font-bold block mb-1">Kısa Not (Özet)</span>
+                            <p className="text-sm text-gray-800 italic">
+                                {customer.arama_not_kisa || '-'}
                             </p>
                         </div>
                     </div>
