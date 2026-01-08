@@ -298,9 +298,15 @@ export async function GET(req: NextRequest) {
                 const avgMs = totalDiffMs / gaps;
                 const avgMin = Math.round(avgMs / 1000 / 60);
 
-                // Fallback key if user not in main list (though likely is)
                 if (!stats.performance[user]) stats.performance[user] = { calls: 0, approvals: 0, paceMinutes: 0, sms: 0, whatsapp: 0 };
                 stats.performance[user].paceMinutes = avgMin;
+            }
+        });
+
+        // Remove 'Sistem' or 'System' user (Case Insensitive)
+        Object.keys(stats.performance).forEach(key => {
+            if (['sistem', 'system', 'admin'].includes(key.toLowerCase())) {
+                delete stats.performance[key];
             }
         });
 

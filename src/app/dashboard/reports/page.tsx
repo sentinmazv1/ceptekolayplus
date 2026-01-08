@@ -247,7 +247,7 @@ export default function ReportsPage() {
                 <div className="xl:col-span-1 space-y-4">
                     <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                         <Activity className="w-5 h-5 text-indigo-600" />
-                        Ekip Performansı (Bugün)
+                        Ekip Performansı ({new Date(selectedDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })})
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-4">
                         {Object.entries(stats.performance).map(([user, pStats]) => {
@@ -259,7 +259,12 @@ export default function ReportsPage() {
                             return (
                                 <div key={user} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 print:border-gray-800 flex flex-col gap-3 hover:shadow-md transition-shadow">
                                     <div className="pb-2 border-b border-gray-100 flex justify-between items-center">
-                                        <div className="font-bold text-gray-900 truncate text-base" title={user}>{user.split('@')[0]}</div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="bg-gray-100 p-1.5 rounded-full">
+                                                <Users className="w-4 h-4 text-gray-600" />
+                                            </div>
+                                            <div className="font-bold text-gray-900 truncate text-base" title={user}>{user.split('@')[0]}</div>
+                                        </div>
                                         {/* Optional: Add a simple rank or badge here if needed */}
                                     </div>
 
@@ -271,6 +276,15 @@ export default function ReportsPage() {
                                         <div className="text-center p-2 rounded-lg bg-emerald-50/50 border border-emerald-100">
                                             <span className="block text-2xl font-black text-emerald-600">{pStats.approvals}</span>
                                             <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wide">ONAY</span>
+                                        </div>
+                                        {/* Row 2: SMS & WA */}
+                                        <div className="text-center p-2 rounded-lg bg-blue-50/50 border border-blue-100">
+                                            <span className="block text-lg font-black text-blue-600">{pStats.sms || 0}</span>
+                                            <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wide">SMS</span>
+                                        </div>
+                                        <div className="text-center p-2 rounded-lg bg-green-50/50 border border-green-100">
+                                            <span className="block text-lg font-black text-green-600">{pStats.whatsapp || 0}</span>
+                                            <span className="text-[10px] font-bold text-green-400 uppercase tracking-wide">WP</span>
                                         </div>
                                     </div>
 
