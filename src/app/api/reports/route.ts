@@ -261,24 +261,36 @@ export async function GET(req: NextRequest) {
             }
         });
 
-        // --- 2. LOGS PROCESSING FOR PACE (Arama Sıklığı) ---
-        // We only care about Today's "Call" actions or just sequential actions by user
-        // Action: 'SET_NEXT_CALL', 'UPDATE_STATUS' (often implies a call result)
-        // Group logs by User -> Sort by Time -> Calc Deltas
-        const todayLogs = logRows.slice(1).filter(row => {
+        // --- 2. LOGS PROCESSING FOR PACE & METRICS ---
+        // 1. Filter logs by Target Date
+        const targetDateLogs = logRows.slice(1).filter(row => {
             const dateStr = row[1]; // timestamp
-            return getDayKey(dateStr) === today;
+            return getDayKey(dateStr) === targetDate;
         });
 
         const userLogs: Record<string, number[]> = {};
 
-        todayLogs.forEach(row => {
+        targetDateLogs.forEach(row => {
             const user = row[2]; // user_email
             const tsStr = row[1];
+            const action = row[4]; // action column
             const ts = parseSheetDate(tsStr);
-            if (user && ts) {
-                if (!userLogs[user]) userLogs[user] = [];
-                userLogs[user].push(ts);
+
+            if (user) {
+                // Initialize performance object for this user if missing
+                if (!stats.performance[user]) stats.performance[user] = { calls: 0, approvals: 0, paceMinutes: 0, sms: 0, whatsapp: 0 };
+
+                // Count Metrics
+                if (action === 'SEND_SMS') stats.performance[user].sms++;
+                if (action === 'SEND_WHATSAPP') stats.performance[user].whatsapp++;
+                // Count 'Calls' based on 'PULL_LEAD' (Müşteri Çek) as requested
+                if (action === 'PULL_LEAD') stats.performance[user].calls++;
+
+                // For Pace Calculation (using timestamps of actions)
+                if (ts) {
+                    if (!userLogs[user]) userLogs[user] = [];
+                    userLogs[user].push(ts);
+                }
             }
         });
 
@@ -303,8 +315,9 @@ export async function GET(req: NextRequest) {
                 const avgMs = totalDiffMs / gaps;
                 const avgMin = Math.round(avgMs / 1000 / 60);
 
-                if (!stats.performance[user]) stats.performance[user] = { calls: 0, approvals: 0, paceMinutes: 0, sms: 0, whatsapp: 0 };
-                stats.performance[user].paceMinutes = avgMin;
+                if (stats.performance[user]) {
+                    stats.performance[user].paceMinutes = avgMin;
+                }
             }
         });
 
