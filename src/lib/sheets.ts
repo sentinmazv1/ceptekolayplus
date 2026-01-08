@@ -698,6 +698,33 @@ export async function getLogs(customerId?: string): Promise<LogEntry[]> {
     return logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 }
 
+export async function getRecentLogs(limit: number = 50): Promise<LogEntry[]> {
+    const client = getSheetsClient();
+    // Optimization: In a real app, we would find the last row and only fetch the last N rows.
+    // For now, fetching all logs and slicing is acceptable for < 5000 logs.
+    const response = await client.spreadsheets.values.get({
+        spreadsheetId: SHEET_ID,
+        range: 'Logs!A2:H',
+    });
+
+    const rows = response.data.values || [];
+    const logs = rows.map(row => ({
+        log_id: row[0],
+        timestamp: row[1],
+        user_email: row[2],
+        customer_id: row[3],
+        action: row[4] as LogEntry['action'],
+        old_value: row[5],
+        new_value: row[6],
+        note: row[7]
+    }))
+        .filter(log => log.user_email && log.user_email !== 'system' && log.user_email !== 'System' && log.user_email !== 'Sistem') // Filter out system noise
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, limit);
+
+    return logs;
+}
+
 export async function deleteCustomer(id: string, userEmail: string) {
     const client = getSheetsClient();
 
