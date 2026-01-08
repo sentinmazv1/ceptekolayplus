@@ -305,7 +305,7 @@ export default function ReportsPage() {
                                         radius={[0, 0, 0, 0]}
                                         barSize={30}
                                     >
-                                        <LabelList dataKey={user.split('@')[0]} position="center" fill="white" fontSize={10} fontWeight="bold" formatter={(val: number) => val > 0 ? val : ''} />
+                                        <LabelList dataKey={user.split('@')[0]} position="center" fill="white" fontSize={10} fontWeight="bold" formatter={(val: any) => val > 0 ? val : ''} />
                                     </Bar>
                                 ))}
                             </BarChart>
@@ -332,7 +332,7 @@ export default function ReportsPage() {
                                 <YAxis tick={{ fontSize: 10 }} />
                                 <RechartsTooltip />
                                 <Area type="monotone" dataKey="count" stroke="#4F46E5" strokeWidth={3} fillOpacity={1} fill="url(#colorTrend)">
-                                    <LabelList dataKey="count" position="top" offset={10} fontSize={10} fontWeight="bold" formatter={(val: any, index: number) => index % 3 === 0 ? val : ''} />
+                                    <LabelList dataKey="count" position="top" offset={10} fontSize={10} fontWeight="bold" formatter={(val: any) => val} />
                                 </Area>
                             </AreaChart>
                         </ResponsiveContainer>
@@ -380,7 +380,7 @@ export default function ReportsPage() {
                                 <XAxis type="number" hide />
                                 <YAxis dataKey="name" type="category" width={110} tick={{ fontSize: 10, fontWeight: 'bold' }} axisLine={false} tickLine={false} />
                                 <Bar dataKey="count" fill="#EC4899" radius={[0, 4, 4, 0]} barSize={20}>
-                                    <LabelList dataKey="percent" position="right" formatter={(val: string) => `%${val}`} fontSize={11} fontWeight="bold" fill="#374151" />
+                                    <LabelList dataKey="percent" position="right" formatter={(val: any) => `%${val}`} fontSize={11} fontWeight="bold" fill="#374151" />
                                 </Bar>
                             </BarChart>
                         </ResponsiveContainer>
@@ -394,7 +394,7 @@ export default function ReportsPage() {
                                 <XAxis type="number" hide />
                                 <YAxis dataKey="name" type="category" width={110} tick={{ fontSize: 10, fontWeight: 'bold' }} axisLine={false} tickLine={false} />
                                 <Bar dataKey="value" fill="#6366F1" radius={[0, 4, 4, 0]} barSize={20}>
-                                    <LabelList dataKey="percent" position="right" formatter={(val: string) => `%${val}`} fontSize={11} fontWeight="bold" fill="#374151" />
+                                    <LabelList dataKey="percent" position="right" formatter={(val: any) => `%${val}`} fontSize={11} fontWeight="bold" fill="#374151" />
                                 </Bar>
                             </BarChart>
                         </ResponsiveContainer>
