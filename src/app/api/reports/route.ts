@@ -99,7 +99,9 @@ export async function GET(req: NextRequest) {
             performance: {} as Record<string, {
                 calls: number,
                 approvals: number,
-                paceMinutes: number
+                paceMinutes: number,
+                sms: number,
+                whatsapp: number
             }>,
             hourly: {} as Record<string, Record<string, Record<number, number>>>, // Date -> User -> Hour -> Count
         };
@@ -174,7 +176,7 @@ export async function GET(req: NextRequest) {
                     stats.todayCalledByPerson[owner] = (stats.todayCalledByPerson[owner] || 0) + 1;
 
                     // Init performace object
-                    if (!stats.performance[owner]) stats.performance[owner] = { calls: 0, approvals: 0, paceMinutes: 0 };
+                    if (!stats.performance[owner]) stats.performance[owner] = { calls: 0, approvals: 0, paceMinutes: 0, sms: 0, whatsapp: 0 };
                     stats.performance[owner].calls++;
                 }
 
@@ -205,7 +207,7 @@ export async function GET(req: NextRequest) {
                 // "Aktivite Karşılaştırması" usually implies Sales Rep performance.
                 // Let's credit the OWNER of the lead if it was approved today.
                 if (appDate && getDayKey(appDate) === today) {
-                    if (!stats.performance[owner]) stats.performance[owner] = { calls: 0, approvals: 0, paceMinutes: 0 };
+                    if (!stats.performance[owner]) stats.performance[owner] = { calls: 0, approvals: 0, paceMinutes: 0, sms: 0, whatsapp: 0 };
                     stats.performance[owner].approvals++;
                 }
             }
@@ -297,7 +299,7 @@ export async function GET(req: NextRequest) {
                 const avgMin = Math.round(avgMs / 1000 / 60);
 
                 // Fallback key if user not in main list (though likely is)
-                if (!stats.performance[user]) stats.performance[user] = { calls: 0, approvals: 0, paceMinutes: 0 };
+                if (!stats.performance[user]) stats.performance[user] = { calls: 0, approvals: 0, paceMinutes: 0, sms: 0, whatsapp: 0 };
                 stats.performance[user].paceMinutes = avgMin;
             }
         });

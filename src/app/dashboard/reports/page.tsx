@@ -46,7 +46,7 @@ interface ReportStats {
     };
     todayCalled: number;
     todayCalledByPerson: Record<string, number>;
-    performance: Record<string, { calls: number, approvals: number, paceMinutes: number }>;
+    performance: Record<string, { calls: number, approvals: number, paceMinutes: number, sms?: number, whatsapp?: number }>;
     totalCalled: number;
     remainingToCall: number;
     totalDelivered: number;
@@ -73,14 +73,15 @@ export default function ReportsPage() {
     });
 
     useEffect(() => {
-        fetch('/api/reports')
+        setLoading(true);
+        fetch(`/api/reports?date=${selectedDate}`)
             .then(res => res.json())
             .then(data => {
                 if (data.success) setStats(data.stats);
             })
             .catch(err => console.error(err))
             .finally(() => setLoading(false));
-    }, []);
+    }, [selectedDate]);
 
     const handlePrint = () => {
         window.print();
@@ -249,28 +250,49 @@ export default function ReportsPage() {
                         Ekip Performansı (Bugün)
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-4">
-                        {Object.entries(stats.performance).map(([user, pStats]) => (
-                            <div key={user} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 print:border-gray-800">
-                                <div className="flex justify-between items-center mb-3">
-                                    <span className="font-bold text-gray-900 truncate" title={user}>{user.split('@')[0]}</span>
-                                    {pStats.paceMinutes > 0 && (
-                                        <span className="bg-blue-50 text-blue-700 text-xs font-bold px-2 py-1 rounded-full border border-blue-100 print:text-black print:border-black">
-                                            {pStats.paceMinutes} dk / çağrı
-                                        </span>
+                        {Object.entries(stats.performance).map(([user, pStats]) => {
+                            // Pace Color Logic: <10m Green, 10-20m Amber, >20m Red/Gray
+                            const paceColor = pStats.paceMinutes > 0 && pStats.paceMinutes <= 12 ? 'text-emerald-700 bg-emerald-50 border-emerald-200' :
+                                pStats.paceMinutes > 12 && pStats.paceMinutes <= 25 ? 'text-amber-700 bg-amber-50 border-amber-200' :
+                                    'text-red-700 bg-red-50 border-red-200';
+
+                            return (
+                                <div key={user} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 print:border-gray-800 flex flex-col gap-3 hover:shadow-md transition-shadow">
+                                    <div className="pb-2 border-b border-gray-100 flex justify-between items-center">
+                                        <div className="font-bold text-gray-900 truncate text-base" title={user}>{user.split('@')[0]}</div>
+                                        {/* Optional: Add a simple rank or badge here if needed */}
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="text-center p-2 rounded-lg bg-indigo-50/50 border border-indigo-100">
+                                            <span className="block text-2xl font-black text-indigo-600">{pStats.calls}</span>
+                                            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wide">ARAMA</span>
+                                        </div>
+                                        <div className="text-center p-2 rounded-lg bg-emerald-50/50 border border-emerald-100">
+                                            <span className="block text-2xl font-black text-emerald-600">{pStats.approvals}</span>
+                                            <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wide">ONAY</span>
+                                        </div>
+                                    </div>
+
+                                    {pStats.paceMinutes > 0 ? (
+                                        <div className={`flex flex-col gap-1 px-3 py-2 rounded-lg border ${paceColor}`}>
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-1.5">
+                                                    <Clock className="w-3.5 h-3.5" />
+                                                    <span className="text-[10px] font-extrabold uppercase opacity-80">Arama Sıklığı</span>
+                                                </div>
+                                                <span className="text-sm font-black">{pStats.paceMinutes} dk</span>
+                                            </div>
+                                            <div className="text-[10px] font-medium opacity-90 text-right leading-tight">
+                                                Her {pStats.paceMinutes} dakikada bir arama
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-xs text-gray-400 text-center py-2 italic bg-gray-50 rounded-lg">Henüz hız verisi oluşmadı</div>
                                     )}
                                 </div>
-                                <div className="grid grid-cols-2 gap-2 text-center">
-                                    <div className="bg-gray-50 rounded p-2 print:bg-white print:border">
-                                        <div className="text-xl font-extrabold text-indigo-600 print:text-black">{pStats.calls}</div>
-                                        <div className="text-[10px] text-gray-500 font-bold uppercase">Arama</div>
-                                    </div>
-                                    <div className="bg-gray-50 rounded p-2 print:bg-white print:border">
-                                        <div className="text-xl font-extrabold text-green-600 print:text-black">{pStats.approvals}</div>
-                                        <div className="text-[10px] text-gray-500 font-bold uppercase">Onay</div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 
