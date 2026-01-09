@@ -26,6 +26,12 @@ export function AdminApprovalPanel() {
     const [selectedLead, setSelectedLead] = useState<Customer | null>(null);
     const [formData, setFormData] = useState({ kredi_limiti: '', admin_notu: '' });
 
+    // Filter State
+    const [dateRange, setDateRange] = useState({
+        start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0], // First day of current month
+        end: new Date().toISOString().split('T')[0]
+    });
+
     useEffect(() => {
         const tabParam = searchParams.get('tab');
         if (tabParam === 'approved') {
@@ -61,7 +67,11 @@ export function AdminApprovalPanel() {
     const fetchApprovedLeads = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/admin/approved');
+            const query = new URLSearchParams({
+                startDate: dateRange.start,
+                endDate: dateRange.end
+            });
+            const res = await fetch(`/api/admin/approved?${query.toString()}`);
             const json = await res.json();
             if (res.ok) {
                 setApprovedLeads(json.leads || []);
@@ -261,6 +271,38 @@ export function AdminApprovalPanel() {
                     </div>
                 </button>
             </div>
+
+            {/* Date Filters for Approved Tab */}
+            {activeTab === 'approved' && (
+                <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex flex-wrap gap-4 items-center">
+                    <div className="flex items-center gap-2">
+                        <label className="text-sm font-medium text-gray-700">Başlangıç:</label>
+                        <input
+                            type="date"
+                            className="border border-gray-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-green-500 outline-none"
+                            value={dateRange.start}
+                            onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                        />
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <label className="text-sm font-medium text-gray-700">Bitiş:</label>
+                        <input
+                            type="date"
+                            className="border border-gray-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-green-500 outline-none"
+                            value={dateRange.end}
+                            onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                        />
+                    </div>
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={fetchApprovedLeads}
+                        className="ml-auto"
+                    >
+                        Filtrele
+                    </Button>
+                </div>
+            )}
 
             <div className="p-6">
                 {loading ? (

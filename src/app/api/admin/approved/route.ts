@@ -16,16 +16,34 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        // Fetch only leads with "Onaylandı" status
-        const approvedLeads = await getLeads({ durum: 'Onaylandı' });
+        // Date Filtering
+        const { searchParams } = new URL(req.url);
+        const startDate = searchParams.get('startDate');
+        const endDate = searchParams.get('endDate');
 
-        // Sort by update date (newest first) if possible, or created_at
-        // Assuming we want to see recently approved ones first
-        approvedLeads.sort((a, b) => {
-            const dateA = new Date(a.created_at).getTime();
-            const dateB = new Date(b.created_at).getTime();
+        let leads = await getLeads({ durum: 'Onaylandı' });
+
+        if (startDate || endDate) {
+            const start = startDate ? new Date(startDate).getTime() : 0;
+            const end = endDate ? new Date(endDate).getTime() + 86400000 : Infinity; // Add 1 day to include the end date
+
+            leads = leads.filter(lead => {
+                // Use 'onay_tarihi' if reliable, otherwise 'created_at'
+                // Note: 'onay_tarihi' is a string like "2023-10-25" or ISO. Need to be careful.
+                const dateStr = lead.onay_tarihi || lead.created_at;
+                const d = new Date(dateStr).getTime();
+                return d >= start && d < end;
+            });
+        }
+
+        // Sort by 'onay_tarihi' or 'updated_at' or 'created_at' (Newest First)
+        leads.sort((a, b) => {
+            const dateA = new Date(a.onay_tarihi || a.updated_at || a.created_at).getTime();
+            const dateB = new Date(b.onay_tarihi || b.updated_at || b.created_at).getTime();
             return dateB - dateA; // Descending
         });
+
+        const approvedLeads = leads;
 
         console.log(`Found ${approvedLeads.length} approved leads`);
 
