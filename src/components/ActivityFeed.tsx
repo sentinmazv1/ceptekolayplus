@@ -20,6 +20,9 @@ export default function ActivityFeed() {
     const [loading, setLoading] = useState(true);
 
     const fetchActivity = async () => {
+        // Optimization: Don't poll if tab is hidden
+        if (typeof document !== 'undefined' && document.hidden) return;
+
         try {
             const res = await fetch('/api/activity');
             if (res.ok) {
@@ -37,7 +40,7 @@ export default function ActivityFeed() {
 
     useEffect(() => {
         fetchActivity();
-        const interval = setInterval(fetchActivity, 10000); // Poll every 10s for snappier updates
+        const interval = setInterval(fetchActivity, 60000); // Poll every 60s (Optimized from 10s)
         return () => clearInterval(interval);
     }, []);
 

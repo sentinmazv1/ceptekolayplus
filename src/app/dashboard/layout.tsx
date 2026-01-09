@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { Home, LogOut, PlusCircle, Search, User, UserCircle, BarChart2, FileSearch, Package, Loader2, LayoutDashboard, UserPlus, Menu, X, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
-import { LiveActivityTicker } from '@/components/LiveActivityTicker';
+// import { LiveActivityTicker } from '@/components/LiveActivityTicker';
 import { ActiveNotifications } from '@/components/ActiveNotifications';
 
 export default function DashboardLayout({
@@ -327,8 +327,8 @@ export default function DashboardLayout({
                 )}
             </header>
 
-            {/* 🎉 Live Activity Ticker - Gamification! */}
-            <LiveActivityTicker />
+            {/* 🎉 Live Activity Ticker REMOVED for Performance */}
+            {/* <LiveActivityTicker /> */}
 
             {/* 🔔 Persistent Notifications */}
             <ActiveNotifications />

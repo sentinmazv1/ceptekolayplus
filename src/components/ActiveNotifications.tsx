@@ -21,6 +21,9 @@ export function ActiveNotifications() {
 
     // 1. Poll for updates
     const checkNotifications = async () => {
+        // Optimization: Don't poll if tab is hidden
+        if (typeof document !== 'undefined' && document.hidden) return;
+
         try {
             // Fetch my leads that have specific statuses
             const res = await fetch('/api/leads/my-leads?status=active');
@@ -76,7 +79,7 @@ export function ActiveNotifications() {
 
     useEffect(() => {
         checkNotifications();
-        const interval = setInterval(checkNotifications, 15000); // Check every 15s
+        const interval = setInterval(checkNotifications, 60000); // Check every 60s (Optimized from 15s)
         return () => clearInterval(interval);
     }, []);
 
