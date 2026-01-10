@@ -242,8 +242,8 @@ export async function getCustomersByStatus(status: string, user: { email: string
             // Must not be locked or owned
             if (c.kilitli_mi || (c.sahip && c.sahip.length > 0)) return false;
 
-            // 1. New
-            if (c.durum === 'Yeni') return true;
+            // 1. New (or Empty/Automation)
+            if (c.durum === 'Yeni' || !c.durum || c.durum.trim() === '') return true;
 
             // 2. Scheduled
             if (c.durum === 'Daha sonra aranmak istiyor') {
@@ -314,7 +314,10 @@ export async function lockNextLead(userEmail: string): Promise<(Customer & { sou
                     const t = parseSheetDate(c.sonraki_arama_zamani);
                     if (t && t <= nowTime) return true;
                 }
-                if (c.durum === 'Yeni') return true;
+
+                // Allow 'Yeni' AND Empty status (Automation Leads)
+                if (c.durum === 'Yeni' || !c.durum || c.durum.trim() === '') return true;
+
                 if (c.durum === 'Ulaşılamadı' || c.durum === 'Meşgul/Hattı kapalı' || c.durum === 'Cevap Yok') {
                     if (!c.son_arama_zamani) return true;
                     return (nowTime - new Date(c.son_arama_zamani).getTime()) > TWO_HOURS;
@@ -323,9 +326,17 @@ export async function lockNextLead(userEmail: string): Promise<(Customer & { sou
             })
             .sort((a, b) => {
                 const getScore = (c: Customer) => {
+                    // Priority 1: Scheduled (Commitment)
                     if (c.durum === 'Daha sonra aranmak istiyor') return 1;
-                    if (c.durum === 'Yeni') return 2;
-                    return 3;
+
+                    // Priority 2: Automation/Empty Status (Hot Leads from SendPulse)
+                    if (!c.durum || c.durum.trim() === '') return 2;
+
+                    // Priority 3: Standard New
+                    if (c.durum === 'Yeni') return 3;
+
+                    // Priority 4: Retry
+                    return 4;
                 };
                 const sA = getScore(a.customer);
                 const sB = getScore(b.customer);
@@ -381,6 +392,7 @@ export async function lockNextLead(userEmail: string): Promise<(Customer & { sou
                 let source = 'Genel';
                 if (target.customer.durum === 'Daha sonra aranmak istiyor') source = '📅 Randevu';
                 else if (target.customer.durum === 'Yeni') source = '🆕 Yeni Kayıt';
+                else if (!target.customer.durum || target.customer.durum.trim() === '') source = '🤖 Otomasyon';
                 else source = '♻️ Tekrar Arama';
 
                 const finalCustomer: Customer & { source: string } = {
@@ -484,7 +496,8 @@ export async function getLeadStats(user?: { email: string; role: string }) {
                         isAvailable = true;
                     }
                 }
-            } else if (durum === 'Yeni') {
+            } else if (durum === 'Yeni' || !durum || durum.trim() === '') {
+                // Include Empty/Automation leads in pool count
                 isAvailable = true;
                 waiting_new++;
             } else if (durum === 'Ulaşılamadı' || durum === 'Meşgul/Hattı kapalı' || durum === 'Cevap Yok') {

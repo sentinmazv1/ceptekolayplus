@@ -57,6 +57,7 @@ export function MyLeadsList({ userEmail, onSelectLead }: MyLeadsListProps) {
             'Teslim edildi': 'bg-emerald-100 text-emerald-800',
             'Satış yapıldı/Tamamlandı': 'bg-teal-100 text-teal-800',
             'Reddetti': 'bg-red-100 text-red-800',
+            'SMS Atıldı': 'bg-blue-50 text-blue-600 border border-blue-100',
         };
 
         return (
@@ -88,6 +89,7 @@ export function MyLeadsList({ userEmail, onSelectLead }: MyLeadsListProps) {
                     >
                         <option value="">Tüm Durumlar</option>
                         <option value="Yeni">Yeni</option>
+                        <option value="SMS Atıldı">SMS Atıldı</option>
                         <option value="Aranacak">Aranacak</option>
                         <option value="Ulaşılamadı">Ulaşılamadı</option>
                         <option value="Meşgul/Hattı kapalı">Meşgul/Hattı kapalı</option>

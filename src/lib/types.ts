@@ -25,6 +25,7 @@ export type LeadStatus =
   | 'Kefil bekleniyor'
   | 'Teslim edildi'
   | 'Cevap Yok'
+  | 'SMS Atıldı'
   | 'Onaylandı';
 
 export interface Customer {
