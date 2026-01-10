@@ -7,7 +7,7 @@ import { Home, LogOut, PlusCircle, Search, User, UserCircle, BarChart2, FileSear
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
 // import { LiveActivityTicker } from '@/components/LiveActivityTicker';
-import { ActiveNotifications } from '@/components/ActiveNotifications';
+// import { ActiveNotifications } from '@/components/ActiveNotifications';
 
 export default function DashboardLayout({
     children,
@@ -330,8 +330,8 @@ export default function DashboardLayout({
             {/* 🎉 Live Activity Ticker REMOVED for Performance */}
             {/* <LiveActivityTicker /> */}
 
-            {/* 🔔 Persistent Notifications */}
-            <ActiveNotifications />
+            {/* 🔔 Persistent Notifications REMOVED */}
+            {/* <ActiveNotifications /> */}
 
             {/* Page Content */}
             <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">

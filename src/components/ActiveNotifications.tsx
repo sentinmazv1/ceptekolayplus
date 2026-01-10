@@ -79,7 +79,7 @@ export function ActiveNotifications() {
 
     useEffect(() => {
         checkNotifications();
-        const interval = setInterval(checkNotifications, 60000); // Check every 60s (Optimized from 15s)
+        const interval = setInterval(checkNotifications, 120000); // Check every 2 minutes (Optimized from 60s)
         return () => clearInterval(interval);
     }, []);
 

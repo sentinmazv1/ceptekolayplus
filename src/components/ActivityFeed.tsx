@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, MessageCircle, Phone, FileText, CheckCircle2, User, Clock, Loader2, Zap, Smartphone } from 'lucide-react';
+import { Activity, MessageCircle, Phone, FileText, CheckCircle2, User, Clock, Loader2, Zap, Smartphone, RefreshCw } from 'lucide-react';
+
+// ... imports
 
 interface LogEntry {
     log_id: string;
@@ -18,11 +20,12 @@ interface LogEntry {
 export default function ActivityFeed() {
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
 
     const fetchActivity = async () => {
-        // Optimization: Don't poll if tab is hidden
         if (typeof document !== 'undefined' && document.hidden) return;
 
+        setRefreshing(true);
         try {
             const res = await fetch('/api/activity');
             if (res.ok) {
@@ -35,12 +38,13 @@ export default function ActivityFeed() {
             console.error('Activity fetch error:', error);
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
     };
 
     useEffect(() => {
         fetchActivity();
-        const interval = setInterval(fetchActivity, 60000); // Poll every 60s (Optimized from 10s)
+        const interval = setInterval(fetchActivity, 300000); // Poll every 5 minutes
         return () => clearInterval(interval);
     }, []);
 
@@ -132,9 +136,19 @@ export default function ActivityFeed() {
                         <p className="text-[10px] text-gray-400 font-medium">Anlık Ekip Aktiviteleri</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-1.5 px-2 py-1 bg-green-50 rounded-full border border-green-100">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                    <span className="text-[10px] font-bold text-green-600 tracking-wide">ONLİNE</span>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={fetchActivity}
+                        disabled={refreshing}
+                        className={`p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-indigo-600 transition-colors ${refreshing ? 'animate-spin' : ''}`}
+                        title="Yenile"
+                    >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                    </button>
+                    <div className="flex items-center gap-1.5 px-2 py-1 bg-green-50 rounded-full border border-green-100">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                        <span className="text-[10px] font-bold text-green-600 tracking-wide">ONLİNE</span>
+                    </div>
                 </div>
             </div>
 
