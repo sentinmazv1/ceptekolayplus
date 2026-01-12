@@ -7,7 +7,7 @@ import { WHATSAPP_TEMPLATES } from '@/lib/whatsapp-templates';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Select } from './ui/Select';
-import { Loader2, AlertCircle, CheckCircle, Info, Phone, Package, Smartphone, Search, RefreshCw, MessageSquare } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle, Info, Phone, Package, Smartphone, Search, RefreshCw, MessageSquare, Scale } from 'lucide-react';
 import { cityList, getDistrictsByCityCode } from 'turkey-neighbourhoods';
 
 
@@ -266,6 +266,17 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
         }
     };
 
+    const handleLegalRequest = () => {
+        if (!data.tc_kimlik) {
+            alert('Müşterinin TC Kimlik Numarası eksik!');
+            return;
+        }
+
+        const message = `⚖️ *İcra Sorgusu Talebi*\n\n👤 *Müşteri:* ${data.ad_soyad}\n🆔 *TC:* ${data.tc_kimlik}\n\nLütfen sorgulama yapıp bilgi veriniz.`;
+        const url = `https://wa.me/905541665347?text=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
+    };
+
     const handleSave = async () => {
         setError(null);
         setLoading(true);
@@ -408,6 +419,13 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                         )}
                         {!isNew && (
                             <>
+                                <button
+                                    onClick={handleLegalRequest}
+                                    className="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full hover:bg-amber-200 transition-colors flex items-center gap-1 shadow-sm border border-amber-200"
+                                    title="İcra Servisine Whatsapp'tan Sor"
+                                >
+                                    <Scale className="w-3 h-3" /> İcra Servisi
+                                </button>
                                 <button
                                     onClick={() => setIsWhatsAppModalOpen(true)}
                                     className="bg-green-600 text-white text-xs px-3 py-1 rounded-full hover:bg-green-700 transition-colors flex items-center gap-1 shadow-sm"
