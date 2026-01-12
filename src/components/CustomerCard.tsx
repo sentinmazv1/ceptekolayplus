@@ -58,6 +58,18 @@ const CANCELLATION_REASONS = [
 export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCardProps) {
     const { data: session } = useSession();
     const [data, setData] = useState<Customer>(initialData);
+
+    // Sync state when initialData changes (e.g. Navigation in Admin Panel)
+    useEffect(() => {
+        setData(initialData);
+        // Also refresh districts if city changed
+        if (initialData.sehir) {
+            const city = cityList.find(c => c.name === initialData.sehir);
+            if (city) {
+                setDistricts(getDistrictsByCityCode(city.code));
+            }
+        }
+    }, [initialData]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
