@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Customer } from '@/lib/types';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
-import { Loader2, CheckCircle, XCircle, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, AlertTriangle, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { CustomerCard } from './CustomerCard';
 
 
@@ -179,60 +179,125 @@ export function AdminApprovalPanel() {
         else fetchApprovedLeads();
     };
 
+    // Navigation Logic
+    const handleNavigation = (direction: 'prev' | 'next') => {
+        const list = activeTab === 'pending' ? leads : approvedLeads;
+        if (!detailCustomer || list.length === 0) return;
+
+        const currentIndex = list.findIndex(l => l.id === detailCustomer.id);
+        if (currentIndex === -1) return;
+
+        let newIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
+
+        if (newIndex >= 0 && newIndex < list.length) {
+            setDetailCustomer(list[newIndex]);
+        }
+    };
+
+    // Helper to get current index info
+    const getNavigationInfo = () => {
+        const list = activeTab === 'pending' ? leads : approvedLeads;
+        if (!detailCustomer || list.length === 0) return { current: 0, total: 0, hasPrev: false, hasNext: false };
+        const index = list.findIndex(l => l.id === detailCustomer.id);
+        return {
+            current: index + 1,
+            total: list.length,
+            hasPrev: index > 0,
+            hasNext: index < list.length - 1
+        };
+    };
+
     // Detail View
     if (viewMode === 'detail' && detailCustomer) {
+        const nav = getNavigationInfo();
+
         return (
             <div className="bg-white rounded-lg shadow p-6">
-                <div className="mb-4 flex items-center justify-between">
-                    <Button variant="outline" onClick={backToList} className="flex items-center gap-2">
+                {/* Header with Nav and Actions */}
+                <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
+
+                    {/* Left: Back Button */}
+                    <Button variant="outline" size="sm" onClick={backToList} className="flex items-center gap-2 self-start">
                         <ArrowLeft className="w-4 h-4" />
-                        Listeye Dön
+                        <span className="hidden md:inline">Listeye Dön</span>
                     </Button>
-                    <h2 className="text-xl font-bold">Başvuru Detayı</h2>
+
+                    {/* Center: Navigation */}
+                    <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1 self-center">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleNavigation('prev')}
+                            disabled={!nav.hasPrev}
+                            className="h-8 w-8 p-0"
+                            title="Önceki Başvuru"
+                        >
+                            <ChevronLeft className="w-5 h-5" />
+                        </Button>
+                        <span className="text-xs font-medium text-gray-500 w-16 text-center select-none">
+                            {nav.current} / {nav.total}
+                        </span>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleNavigation('next')}
+                            disabled={!nav.hasNext}
+                            className="h-8 w-8 p-0"
+                            title="Sonraki Başvuru"
+                        >
+                            <ChevronRight className="w-5 h-5" />
+                        </Button>
+                    </div>
+
+                    {/* Right: Quick Actions (Only for Pending) */}
+                    <div className="flex items-center gap-2 self-end md:self-auto">
+                        {activeTab === 'pending' ? (
+                            <>
+                                <Button
+                                    size="sm"
+                                    onClick={() => openModal(detailCustomer, 'approve')}
+                                    className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white h-9"
+                                >
+                                    <CheckCircle className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Onayla</span>
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => openModal(detailCustomer, 'guarantor')}
+                                    className="flex items-center gap-1 border-yellow-500 text-yellow-600 hover:bg-yellow-50 h-9"
+                                >
+                                    <AlertTriangle className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Kefil</span>
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    onClick={() => openModal(detailCustomer, 'reject')}
+                                    className="flex items-center gap-1 bg-red-100 text-red-700 hover:bg-red-200 border border-red-200 h-9"
+                                >
+                                    <XCircle className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Reddet</span>
+                                </Button>
+                            </>
+                        ) : (
+                            <div className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium border border-green-200 flex items-center gap-1">
+                                <CheckCircle className="w-3 h-3" /> Onaylandı
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                <CustomerCard
-                    initialData={detailCustomer}
-                    onSave={(updated) => {
-                        setDetailCustomer(updated);
-                        // No separate fetch needed here, will refresh on back
-                    }}
-                />
-
-                {/* Show actions only if pending */}
-                {activeTab === 'pending' && (
-                    <div className="mt-6 p-4 bg-gray-50 rounded-lg border-t border-gray-200">
-                        <h3 className="font-semibold text-gray-900 mb-3">Yönetici İşlemleri</h3>
-                        <div className="flex flex-wrap gap-2">
-                            <Button
-                                size="sm"
-                                onClick={() => openModal(detailCustomer, 'approve')}
-                                className="flex items-center gap-1"
-                            >
-                                <CheckCircle className="w-4 h-4" />
-                                Onayla
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => openModal(detailCustomer, 'guarantor')}
-                                className="flex items-center gap-1"
-                            >
-                                <AlertTriangle className="w-4 h-4" />
-                                Kefil İste
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="secondary"
-                                onClick={() => openModal(detailCustomer, 'reject')}
-                                className="flex items-center gap-1"
-                            >
-                                <XCircle className="w-4 h-4" />
-                                Reddet
-                            </Button>
-                        </div>
-                    </div>
-                )}
+                <div className="mt-2">
+                    <h2 className="text-xl font-bold mb-4 hidden">Başvuru Detayı</h2>
+                    <CustomerCard
+                        initialData={detailCustomer}
+                        onSave={(updated) => {
+                            setDetailCustomer(updated);
+                            // Refresh list silently
+                            if (activeTab === 'pending') fetchPendingApprovals();
+                        }}
+                    />
+                </div>
             </div>
         );
     }
