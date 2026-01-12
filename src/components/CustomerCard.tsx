@@ -272,7 +272,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
             return;
         }
 
-        const message = `⚖️ *İcra Sorgusu Talebi*\n\n👤 *Müşteri:* ${data.ad_soyad}\n🆔 *TC:* ${data.tc_kimlik}\n\nLütfen sorgulama yapıp bilgi veriniz.`;
+        const message = `Müşteri: ${data.ad_soyad}\nTC: ${data.tc_kimlik}`;
         const url = `https://wa.me/905541665347?text=${encodeURIComponent(message)}`;
         window.open(url, '_blank');
     };
