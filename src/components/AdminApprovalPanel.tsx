@@ -298,6 +298,56 @@ export function AdminApprovalPanel() {
                         }}
                     />
                 </div>
+
+                {/* Modal for Detail View */}
+                {modalOpen && selectedLead && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                            <h3 className="text-lg font-bold mb-4">
+                                {modalAction === 'approve' && 'Başvuruyu Onayla'}
+                                {modalAction === 'reject' && 'Başvuruyu Reddet'}
+                                {modalAction === 'guarantor' && 'Kefil İste'}
+                            </h3>
+
+                            <p className="text-sm text-gray-600 mb-4">
+                                <strong>{selectedLead.ad_soyad}</strong> için işlemi tamamlayın.
+                            </p>
+
+                            {modalAction === 'approve' && (
+                                <Input
+                                    label="Kredi Limiti *"
+                                    type="text"
+                                    placeholder="Örn: 50000 TL"
+                                    value={formData.kredi_limiti}
+                                    onChange={(e) => setFormData({ ...formData, kredi_limiti: e.target.value })}
+                                    className="mb-4"
+                                />
+                            )}
+
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Not {modalAction === 'approve' ? '(Opsiyonel)' : '(Zorunlu)'}
+                                </label>
+                                <textarea
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[80px]"
+                                    placeholder={modalAction === 'reject' ? 'Red sebebini yazın' : 'Notunuzu yazın'}
+                                    value={formData.admin_notu}
+                                    onChange={(e) => setFormData({ ...formData, admin_notu: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="flex gap-2 justify-end">
+                                <Button variant="outline" onClick={closeModal}>İptal</Button>
+                                <Button
+                                    onClick={modalAction === 'approve' ? handleApprove : handleRejectOrGuarantor}
+                                    isLoading={processing === selectedLead.id}
+                                >
+                                    Onayla
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }
