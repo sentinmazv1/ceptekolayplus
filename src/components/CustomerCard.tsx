@@ -1463,6 +1463,7 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
 
     const generateSummary = () => {
         let summary = `*Adı :* ${customer.ad_soyad || '-'}
+*Telefon :* ${customer.telefon || '-'}
 *Doğum Tarihi :* ${customer.dogum_tarihi || '-'}
 *Talep Edilen Ürün :* ${customer.talep_edilen_urun || '-'}
 *Şehri :* ${customer.sehir || '-'} / ${customer.ilce || '-'}
@@ -1520,21 +1521,52 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
     };
 
     const handlePrint = () => {
-        const printWindow = window.open('', '', 'width=600,height=600');
+        const printWindow = window.open('', '', 'width=800,height=800');
         if (printWindow) {
             printWindow.document.write(`
                 <html>
                     <head>
                         <title>Onay Özeti - ${customer.ad_soyad}</title>
                         <style>
-                            body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
-                            h2 { border-bottom: 2px solid #333; padding-bottom: 10px; }
-                            pre { white-space: pre-wrap; background: #f4f4f4; padding: 15px; border-radius: 5px; font-size: 14px; }
+                            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; line-height: 1.5; color: #333; max-width: 800px; margin: 0 auto; }
+                            h2 { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+                            .summary-box { white-space: pre-wrap; background: #fff; padding: 0; font-size: 14px; border: none; }
+                            .manual-section { margin-top: 30px; border: 1px solid #ccc; padding: 15px; border-radius: 5px; min-height: 150px; }
+                            .manual-label { font-weight: bold; margin-bottom: 10px; display: block; border-bottom: 1px dashed #ccc; padding-bottom: 5px; }
+                            .grid { display: flex; gap: 20px; margin-top: 30px; }
+                            .col { flex: 1; border: 1px solid #ccc; padding: 15px; border-radius: 5px; height: 100px; }
+                            .date-area { margin-top: 10px; text-align: right; font-size: 12px; }
+                            
+                            @media print {
+                                body { padding: 0; }
+                                .manual-section { break-inside: avoid; }
+                            }
                         </style>
                     </head>
                     <body>
                         <h2>Müşteri Onay Özeti</h2>
-                        <pre>${summaryText}</pre>
+                        <div class="date-area">Çıktı Tarihi: ${new Date().toLocaleDateString('tr-TR')} ${new Date().toLocaleTimeString('tr-TR')}</div>
+                        
+                        <div class="summary-box">${summaryText}</div>
+
+                        <div class="manual-section">
+                            <span class="manual-label">✍️ Değerlendirme / Notlar (Elle Doldurulacak Alan)</span>
+                            <!-- Empty space for writing -->
+                        </div>
+
+                        <div class="grid">
+                            <div class="col">
+                                <span class="manual-label">Satış Temsilcisi</span>
+                                <div style="margin-top: 40px; border-top: 1px dotted #999; width: 80%; margin-left: auto; margin-right: auto;"></div>
+                                <div style="text-align: center; font-size: 10px;">İmza</div>
+                            </div>
+                            <div class="col">
+                                <span class="manual-label">Yönetici / Onay</span>
+                                <div style="margin-top: 40px; border-top: 1px dotted #999; width: 80%; margin-left: auto; margin-right: auto;"></div>
+                                <div style="text-align: center; font-size: 10px;">İmza</div>
+                            </div>
+                        </div>
+
                         <script>window.print();</script>
                     </body>
                 </html>
