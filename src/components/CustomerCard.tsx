@@ -1557,7 +1557,8 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                         <div class="grid">
                             <div class="col">
                                 <span class="manual-label">Satış Temsilcisi</span>
-                                <div style="margin-top: 40px; border-top: 1px dotted #999; width: 80%; margin-left: auto; margin-right: auto;"></div>
+                                <div style="text-align: center; font-weight: bold; margin-top: 10px; margin-bottom: 30px; font-size: 12px;">${customer.sahip || ''}</div>
+                                <div style="border-top: 1px dotted #999; width: 80%; margin-left: auto; margin-right: auto;"></div>
                                 <div style="text-align: center; font-size: 10px;">İmza</div>
                             </div>
                             <div class="col">
