@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { lockNextLead } from '@/lib/sheets';
+import { lockNextLead } from '@/lib/leads';
 import { authOptions } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';

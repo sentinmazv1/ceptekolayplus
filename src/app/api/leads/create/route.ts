@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSheetsClient } from '@/lib/google';
-import { COLUMNS } from '@/lib/sheets';
 import { Customer } from '@/lib/types';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { addLead, logAction } from '@/lib/leads';
 import { randomUUID } from 'crypto';
 
 export const dynamic = 'force-dynamic';
@@ -22,71 +21,32 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: false, message: 'Ad Soyad, Telefon ve TC Kimlik zorunludur.' }, { status: 400 });
         }
 
-        const client = getSheetsClient();
-        const sheetId = process.env.GOOGLE_SHEET_ID;
+        // Add Defaults
+        const leadData: Partial<Customer> = {
+            ...body,
+            id: randomUUID(),
+            durum: 'Yeni',
+            sahip: session.user.email,
+        };
 
-        // Generate ID and Defaults
-        const newId = randomUUID();
-        const now = new Date().toISOString();
-        const owner = session.user.email;
+        const newLead = await addLead(leadData, session.user.email);
 
-        // Prepare Row Data mapping to COLUMNS order
-        const rowData = COLUMNS.map(col => {
-            if (col === 'id') return newId;
-            if (col === 'created_at') return now;
-            if (col === 'updated_at') return now;
-            if (col === 'sahip') return owner;
-            if (col === 'durum') return 'Yeni'; // Default status
-            if (col === 'cekilme_zamani') return now; // Considered 'pulled' by the creator
-
-            // Map incoming body fields
-            if (body[col as keyof Customer] !== undefined) {
-                return body[col as keyof Customer];
-            }
-            return '';
-        });
-
-        // 1. Append to Customers Sheet
-        await client.spreadsheets.values.append({
-            spreadsheetId: sheetId,
-            range: 'Customers!A:A',
-            valueInputOption: 'USER_ENTERED',
-            requestBody: {
-                values: [rowData]
-            }
-        });
-
-        // 2. Log Creation
-        const logId = randomUUID();
-        const logRow = [
-            logId,
-            now,
-            owner,
-            newId,
-            'CREATED',
-            '',
-            'Yeni',
-            `Müşteri manuel oluşturuldu. Kanal: ${body.basvuru_kanali || 'Belirtilmedi'}`
-        ];
-
-        await client.spreadsheets.values.append({
-            spreadsheetId: sheetId,
-            range: 'Logs!A:A',
-            valueInputOption: 'USER_ENTERED',
-            requestBody: {
-                values: [logRow]
-            }
+        // Explicit Log (though addLead might not log creation automatically yet? Checked leads.ts, addLead does NOT log. So we log here.)
+        await logAction({
+            log_id: randomUUID(),
+            timestamp: new Date().toISOString(),
+            user_email: session.user.email,
+            customer_id: newLead.id,
+            action: 'CREATED',
+            old_value: '',
+            new_value: 'Yeni',
+            note: `Müşteri manuel oluşturuldu. Kanal: ${body.basvuru_kanali || 'Panel'}`
         });
 
         return NextResponse.json({
             success: true,
             message: 'Müşteri başarıyla oluşturuldu.',
-            lead: {
-                ...body,
-                id: newId,
-                durum: 'Yeni',
-                sahip: owner
-            }
+            lead: newLead
         });
 
     } catch (error: any) {

@@ -136,7 +136,7 @@ export interface LogEntry {
   timestamp: string;
   user_email: string;
   customer_id: string;
-  action: 'PULL_LEAD' | 'UPDATE_STATUS' | 'UPDATE_FIELDS' | 'UPLOAD_IMAGE_1' | 'UPLOAD_IMAGE_2' | 'SET_NEXT_CALL' | 'SEND_SMS' | 'SEND_WHATSAPP' | 'CUSTOM_ACTION';
+  action: 'PULL_LEAD' | 'UPDATE_STATUS' | 'UPDATE_FIELDS' | 'UPLOAD_IMAGE_1' | 'UPLOAD_IMAGE_2' | 'SET_NEXT_CALL' | 'SEND_SMS' | 'SEND_WHATSAPP' | 'CUSTOM_ACTION' | 'CREATED' | 'DELETED';
   old_value?: string;
   new_value?: string;
   note?: string;
