@@ -1,6 +1,6 @@
+
 import { NextRequest, NextResponse } from 'next/server';
-import { getSheetsClient } from '@/lib/google';
-import { COLUMNS, parseSheetDate } from '@/lib/sheets';
+import { getReportData, getAllLogs } from '@/lib/leads';
 
 // Helper using Intl for robustness
 const trFormatter = new Intl.DateTimeFormat('en-CA', {
@@ -10,7 +10,7 @@ const trFormatter = new Intl.DateTimeFormat('en-CA', {
     day: '2-digit'
 });
 
-// Helper for Sheet Strings (Naive TRT -> preserve face value)
+// Helper for Strings
 const utcFormatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'UTC',
     year: 'numeric',
@@ -18,50 +18,24 @@ const utcFormatter = new Intl.DateTimeFormat('en-CA', {
     day: '2-digit'
 });
 
-// Helper to get formatted date safely
 function getDayKey(dateStr?: string) {
     if (!dateStr) return 'Unknown';
-    // Use parseSheetDate for robust handling
-    const ts = parseSheetDate(dateStr);
-    if (!ts) return 'Invalid Date';
-
-    // Treat the timestamp as UTC to preserve the face value of the string
-    return utcFormatter.format(new Date(ts));
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return 'Invalid Date';
+    return utcFormatter.format(d);
 }
 
 export async function GET(req: NextRequest) {
     try {
-        const client = getSheetsClient();
-        const sheetId = process.env.GOOGLE_SHEET_ID;
-
-        // Fetch Customers AND Logs
-        // We need logs to calculate Pace (time between calls)
-        const [customersParams, logsParams] = await Promise.all([
-            client.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Customers!A1:ZZ' }),
-            client.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Logs!A1:H' }) // Assuming Logs format
+        // Fetch Data from Supabase
+        const [customers, logs] = await Promise.all([
+            getReportData(),
+            getAllLogs() // passing nothing = default limit (5000) or we might want specific date filter later
         ]);
 
-        const allRows = customersParams.data.values || [];
-        const logRows = logsParams.data.values || []; // Headers likely: log_id, timestamp, user_email, customer_id, action, ...
-
-        if (allRows.length < 2) {
+        if (!customers || customers.length === 0) {
             return NextResponse.json({ success: true, stats: null, message: "No data found" });
         }
-
-        const headers = allRows[0]; // Row 1
-        const rows = allRows.slice(1); // Row 2+
-
-        // Dynamic Column Mapper
-        const getCol = (row: any[], name: string) => {
-            const index = headers.indexOf(name);
-            return index > -1 ? row[index] : undefined;
-        };
-        const getColSafe = (row: any[], name: string) => {
-            const index = headers.indexOf(name);
-            if (index > -1) return row[index];
-            const fallbackIndex = COLUMNS.indexOf(name as any);
-            return fallbackIndex > -1 ? row[fallbackIndex] : undefined;
-        };
 
         const stats = {
             city: {} as Record<string, {
@@ -78,24 +52,24 @@ export async function GET(req: NextRequest) {
             profession: {} as Record<string, { count: number, totalIncome: number, avgIncome: number }>,
             product: {} as Record<string, number>,
             rejection: {} as Record<string, number>,
-            status: {} as Record<string, number>, // Summary Table
+            status: {} as Record<string, number>,
             channel: {} as Record<string, number>,
             daily: {} as Record<string, number>,
             funnel: {
                 total: 0,
                 contacted: 0,
-                applications: 0, // Başvuru Alındı
+                applications: 0,
                 sale: 0,
             },
             kpi: {
-                totalCalled: 0, // Bugüne Kadar Aranan (Exclude Yeni)
-                remainingToCall: 0, // Sadece 'Yeni'
-                retryPool: 0, // Tekrar Aranacaklar (Havuz+Ulaşılamadı...)
-                acquisitionRate: '0', // Başvuru / Aranan
-                conversionRate: '0', // Teslim / Başvuru
+                totalCalled: 0,
+                remainingToCall: 0,
+                retryPool: 0,
+                acquisitionRate: '0',
+                conversionRate: '0',
             },
             todayCalled: 0,
-            todayCalledByPerson: {} as Record<string, number>, // For Stacked Bar
+            todayCalledByPerson: {} as Record<string, number>,
             performance: {} as Record<string, {
                 calls: number,
                 approvals: number,
@@ -103,123 +77,93 @@ export async function GET(req: NextRequest) {
                 sms: number,
                 whatsapp: number
             }>,
-            hourly: {} as Record<string, Record<string, Record<number, number>>>, // Date -> User -> Hour -> Count
+            hourly: {} as Record<string, Record<string, Record<number, number>>>,
         };
 
-        // Determine Target Date (from Query or Today)
         const queryDate = req.nextUrl.searchParams.get('date');
         const targetDate = queryDate ? queryDate : trFormatter.format(new Date());
 
-        // Log for debugging
-        // console.log('Report Target Date:', targetDate);
-
-        // --- 1. PROCESS CUSTOMERS FOR CORE STATS ---
-        rows.forEach(row => {
+        // --- 1. PROCESS CUSTOMERS ---
+        customers.forEach((row: any) => {
             stats.funnel.total++;
 
-            const status = getColSafe(row, 'durum') || 'Bilinmiyor';
-            const city = getColSafe(row, 'sehir');
-            const job = getColSafe(row, 'meslek_is') || 'Diğer';
-            const incomeStr = getColSafe(row, 'son_yatan_maas');
-            const product = getColSafe(row, 'talep_edilen_urun');
-            const approval = getColSafe(row, 'onay_durumu');
-            const channel = getColSafe(row, 'basvuru_kanali');
-            const createdAt = getColSafe(row, 'created_at');
-            const lastCalled = getColSafe(row, 'son_arama_zamani');
-            const owner = getColSafe(row, 'sahip') || 'Sistem';
+            const status = row.durum || 'Bilinmiyor';
+            const city = row.sehir;
+            const job = row.meslek_is || 'Diğer';
+            const incomeStr = row.son_yatan_maas || row.maas_bilgisi; // Map legacy
+            const product = row.talep_edilen_urun;
+            const approval = row.onay_durumu;
+            const channel = row.basvuru_kanali;
+            const createdAt = row.created_at;
+            const lastCalled = row.son_arama_zamani;
+            const owner = row.sahip || row.sahip_email || 'Sistem';
 
-            // KPI: Bugüne Kadar Aranan (Exclude 'Yeni')
+            // KPI
             if (status !== 'Yeni') {
                 stats.kpi.totalCalled++;
                 stats.funnel.contacted++;
             }
-
-            // KPI: Remaining (Strictly 'Yeni')
             if (status === 'Yeni') {
                 stats.kpi.remainingToCall++;
             }
-
-            // KPI: Retry Pool
-            // Ulaşılamadı, Meşgul, Cevap Yok, Daha sonra, HAVUZ
             if (['Ulaşılamadı', 'Meşgul/Hattı kapalı', 'Cevap Yok', 'Daha sonra aranmak istiyor', 'HAVUZ'].includes(status)) {
                 stats.kpi.retryPool++;
             }
 
-            // Funnel: Applications (Başvuru Alındı+)
-            /* 
-               Logic: Any status implying application was taken:
-               'Başvuru alındı', 'Onaylandı', 'Reddedildi', 'Teslim edildi', 'Kefil bekleniyor'
-               Basically advanced stages.
-            */
-            const applicationStages = ['Başvuru alındı', 'Onaylandı', 'Reddedildi', 'Teslim edildi', 'Kefil bekleniyor', 'Eksik evrak bekleniyor', 'Satış yapıldı/Tamamlandı', 'Mağazaya davet edildi', 'Uygun değil', 'İptal/Vazgeçti'];
-            // Uygun değil/İptal might happen after appliation, or during call. 
-            // Let's stick to explicit 'Başvuru alındı' OR if approval status exists.
-
+            // Funnel
             let isApplication = false;
-            // If status is specifically advanced OR approval flow touched
             if (['Başvuru alındı', 'Onaylandı', 'Teslim edildi', 'Kefil bekleniyor', 'Satış yapıldı/Tamamlandı', 'Eksik evrak bekleniyor'].includes(status)) {
                 isApplication = true;
             } else if (approval && approval !== 'Beklemede') {
                 isApplication = true;
             }
 
-            if (isApplication) {
-                stats.funnel.applications++;
-            }
+            if (isApplication) stats.funnel.applications++;
+            if (status === 'Teslim edildi' || status === 'Satış yapıldı/Tamamlandı') stats.funnel.sale++;
 
-            if (status === 'Teslim edildi' || status === 'Satış yapıldı/Tamamlandı') {
-                stats.funnel.sale++;
-            }
-
-            // TODAY STATS & HOURLY
+            // Today Stats
             if (lastCalled) {
                 const callDay = getDayKey(lastCalled);
                 if (callDay === targetDate) {
                     stats.todayCalled++;
-
-                    // Track Count per Person (Still useful for pie/bar usage if needed)
                     stats.todayCalledByPerson[owner] = (stats.todayCalledByPerson[owner] || 0) + 1;
-
-                    // Note: We now count 'Performance' calls via LOGS (PULL_LEAD), not here.
-                    // But we still init the object to ensure user exists
                     if (!stats.performance[owner]) stats.performance[owner] = { calls: 0, approvals: 0, paceMinutes: 0, sms: 0, whatsapp: 0 };
                 }
 
-                // Hourly (Stacked by User)
-                const ts = parseSheetDate(lastCalled);
-                if (ts) {
-                    const d = new Date(ts);
-                    const dateKey = utcFormatter.format(d); // YYYY-MM-DD Face Value
-
-                    // Only count for the Target Date in the hourly chart to match the view
+                // Hourly
+                const d = new Date(lastCalled);
+                if (!isNaN(d.getTime())) {
+                    const dateKey = utcFormatter.format(d);
                     if (dateKey === targetDate) {
-                        // Hour extracted from Face Value (UTC method on naive timestamp)
-                        const hourStr = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', hour: 'numeric', hour12: false }).format(d);
-                        const h = parseInt(hourStr, 10);
+                        const h = d.getUTCHours() + 3; // TRT adjustment if stored as UTC ISO?
+                        // Actually, created_at is UTC. We need Local Hour (TRT).
+                        // Date object handles timezone if we configured env? No, Node defaults to UTC usually.
+                        // Let's use Intl to be safe.
+                        const hourStr = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Istanbul', hour: 'numeric', hour12: false }).format(d);
+                        const hInt = parseInt(hourStr, 10);
 
-                        if (!isNaN(h)) {
+                        if (!isNaN(hInt)) {
                             if (!stats.hourly[dateKey]) stats.hourly[dateKey] = {};
                             if (!stats.hourly[dateKey][owner]) stats.hourly[dateKey][owner] = {};
-
-                            stats.hourly[dateKey][owner][h] = (stats.hourly[dateKey][owner][h] || 0) + 1;
+                            stats.hourly[dateKey][owner][hInt] = (stats.hourly[dateKey][owner][hInt] || 0) + 1;
                         }
                     }
                 }
             }
 
-            // Approvals count for Performance
+            // Approvals Perf
             if (approval === 'Onaylandı' || status === 'Onaylandı') {
-                const appDate = getColSafe(row, 'onay_tarihi');
-                // If approved on target date
+                const appDate = row.onay_tarihi;
                 if (appDate && getDayKey(appDate) === targetDate) {
                     if (!stats.performance[owner]) stats.performance[owner] = { calls: 0, approvals: 0, paceMinutes: 0, sms: 0, whatsapp: 0 };
                     stats.performance[owner].approvals++;
                 }
             }
 
-            // Demographics & Other Charts
+            // Charts
             stats.status[status] = (stats.status[status] || 0) + 1;
             if (channel) stats.channel[channel] = (stats.channel[channel] || 0) + 1;
+
             if (city) {
                 if (!stats.city[city]) stats.city[city] = { total: 0, delivered: 0, approved: 0, rejected: 0, cancelled: 0, kefil: 0, noEdevlet: 0, unreachable: 0, other: 0 };
                 const cStats = stats.city[city];
@@ -233,115 +177,82 @@ export async function GET(req: NextRequest) {
                 else if (status === 'Uygun değil' || approval === 'Reddedildi') cStats.rejected++;
                 else cStats.other++;
             }
+
             if (job) {
                 if (!stats.profession[job]) stats.profession[job] = { count: 0, totalIncome: 0, avgIncome: 0 };
                 stats.profession[job].count++;
-                const income = parseFloat(incomeStr?.replace(/[^0-9]/g, '') || '0');
+                const income = parseFloat(String(incomeStr || '0').replace(/[^0-9]/g, ''));
                 if (income > 0) stats.profession[job].totalIncome += income;
             }
+
             if (product) stats.product[product] = (stats.product[product] || 0) + 1;
 
-            // Rejection logic (Simplified for brevity, same as before)
-            if (status === 'Reddetti' || approval === 'Reddedildi' || status === 'Uygun değil' || status === 'İptal/Vazgeçti') {
+            if (['Reddetti', 'Uygun değil', 'İptal/Vazgeçti'].includes(status) || approval === 'Reddedildi') {
                 let reason = 'Diğer';
                 if (approval === 'Reddedildi') reason = 'Yönetici Reddi';
                 else if (status === 'Reddetti') reason = 'Müşteri Reddetti';
                 else if (status === 'Uygun değil') reason = 'Kriter Dışı';
-                else if (status === 'İptal/Vazgeçti') {
-                    const specificReason = getColSafe(row, 'iptal_nedeni');
-                    if (specificReason) reason = specificReason;
-                }
+                else if (status === 'İptal/Vazgeçti') reason = 'İptal';
                 stats.rejection[reason] = (stats.rejection[reason] || 0) + 1;
             }
 
-            // Daily Trend
             const day = getDayKey(createdAt);
             if (day !== 'Unknown' && day !== 'Invalid Date') {
                 stats.daily[day] = (stats.daily[day] || 0) + 1;
             }
         });
 
-        // --- 2. LOGS PROCESSING FOR PACE & METRICS ---
-        // 1. Filter logs by Target Date
-        const targetDateLogs = logRows.slice(1).filter(row => {
-            const dateStr = row[1]; // timestamp
-            return getDayKey(dateStr) === targetDate;
-        });
-
+        // --- 2. LOGS ---
+        const targetLogs = logs.filter((l: any) => getDayKey(l.timestamp) === targetDate);
         const userLogs: Record<string, number[]> = {};
 
-        targetDateLogs.forEach(row => {
-            const user = row[2]; // user_email
-            const tsStr = row[1];
-            const action = row[4]; // action column
-            const ts = parseSheetDate(tsStr);
-
+        targetLogs.forEach((l: any) => {
+            const user = l.user_email;
             if (user) {
-                // Initialize performance object for this user if missing
                 if (!stats.performance[user]) stats.performance[user] = { calls: 0, approvals: 0, paceMinutes: 0, sms: 0, whatsapp: 0 };
+                if (l.action === 'SEND_SMS') stats.performance[user].sms++;
+                if (l.action === 'SEND_WHATSAPP') stats.performance[user].whatsapp++;
+                if (l.action === 'PULL_LEAD') stats.performance[user].calls++;
 
-                // Count Metrics
-                if (action === 'SEND_SMS') stats.performance[user].sms++;
-                if (action === 'SEND_WHATSAPP') stats.performance[user].whatsapp++;
-                // Count 'Calls' based on 'PULL_LEAD' (Müşteri Çek) as requested
-                if (action === 'PULL_LEAD') stats.performance[user].calls++;
-
-                // For Pace Calculation (using timestamps of actions)
-                if (ts) {
+                if (l.timestamp) {
+                    const ts = new Date(l.timestamp).getTime();
                     if (!userLogs[user]) userLogs[user] = [];
                     userLogs[user].push(ts);
                 }
             }
         });
 
-        // Calculate Average Gap (Minutes)
         Object.keys(userLogs).forEach(user => {
             const timestamps = userLogs[user].sort((a, b) => a - b);
             if (timestamps.length < 2) return;
-
             let totalDiffMs = 0;
             let gaps = 0;
-
             for (let i = 1; i < timestamps.length; i++) {
                 const diff = timestamps[i] - timestamps[i - 1];
-                // Filter out massive gaps (e.g. > 60 mins) which might be logic breaks / lunch
                 if (diff < 60 * 60 * 1000) {
                     totalDiffMs += diff;
                     gaps++;
                 }
             }
-
             if (gaps > 0) {
-                const avgMs = totalDiffMs / gaps;
-                const avgMin = Math.round(avgMs / 1000 / 60);
-
-                if (stats.performance[user]) {
-                    stats.performance[user].paceMinutes = avgMin;
-                }
+                const avgMin = Math.round(totalDiffMs / gaps / 60000);
+                if (stats.performance[user]) stats.performance[user].paceMinutes = avgMin;
             }
         });
 
-        // Remove 'Sistem' or 'System' user (Case Insensitive)
+        // Cleanup
         Object.keys(stats.performance).forEach(key => {
-            if (['sistem', 'system', 'admin'].includes(key.toLowerCase())) {
-                delete stats.performance[key];
-            }
+            if (['sistem', 'system', 'admin'].includes(key.toLowerCase())) delete stats.performance[key];
         });
 
-
-        // --- 3. FINAL CALCULATIONS ---
-
-        // Acquisition Rate: Applications / Total Contacted (Aranan)
+        // Rate Calcs
         stats.kpi.acquisitionRate = stats.kpi.totalCalled > 0
             ? ((stats.funnel.applications / stats.kpi.totalCalled) * 100).toFixed(1)
             : '0';
-
-        // Conversion Rate: Sales / Applications
         stats.kpi.conversionRate = stats.funnel.applications > 0
             ? ((stats.funnel.sale / stats.funnel.applications) * 100).toFixed(1)
             : '0';
 
-        // Averages for Profession
         Object.keys(stats.profession).forEach(job => {
             const d = stats.profession[job];
             d.avgIncome = d.count > 0 ? Math.round(d.totalIncome / d.count) : 0;
@@ -353,13 +264,8 @@ export async function GET(req: NextRequest) {
         stats.daily = sortedDaily;
 
         return NextResponse.json({ success: true, stats });
-
     } catch (error: any) {
         console.error('Reports API Error:', error);
-        return NextResponse.json({
-            success: false,
-            error: error.message || 'Unknown error',
-            stack: error.stack
-        }, { status: 500 });
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }

@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getLogs } from '@/lib/sheets';
+import { getLogs } from '@/lib/leads';
 
 export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions);

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { updateLead, getLeads } from '@/lib/sheets';
+import { updateLead, getLeads } from '@/lib/leads';
 import { Customer } from '@/lib/types';
 import { sendStatusEmail } from '@/lib/email-service';
 
@@ -42,7 +42,7 @@ export async function PUT(
             // Import dynamically or at top. Using dynamic for now to keep cleaner diff
             const { SMS_TEMPLATES } = await import('@/lib/sms-templates');
             const { sendSMS } = await import('@/lib/sms');
-            const { logAction } = await import('@/lib/sheets');
+            const { logAction } = await import('@/lib/leads');
 
             if (status === 'Ulaşılamadı' || status === 'Cevap Yok') {
                 smsMessage = SMS_TEMPLATES.UNREACHABLE(updated.ad_soyad);
@@ -83,7 +83,7 @@ export async function PUT(
         if (existing && existing.onay_durumu !== updated.onay_durumu && updated.onay_durumu === 'Kefil İstendi' && existing.durum === updated.durum) {
             const { SMS_TEMPLATES } = await import('@/lib/sms-templates');
             const { sendSMS } = await import('@/lib/sms');
-            const { logAction } = await import('@/lib/sheets');
+            const { logAction } = await import('@/lib/leads');
 
             const msg = SMS_TEMPLATES.GUARANTOR_REQUIRED(updated.ad_soyad);
             if (updated.telefon) {

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSheetsClient } from '@/lib/google';
-import { logAction } from '@/lib/sheets';
+import { getLogs, logAction } from '@/lib/leads';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
@@ -13,32 +12,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ cust
             return NextResponse.json({ success: false, message: 'Customer ID required' }, { status: 400 });
         }
 
-        const client = getSheetsClient();
-        const sheetId = process.env.GOOGLE_SHEET_ID;
 
-        const response = await client.spreadsheets.values.get({
-            spreadsheetId: sheetId,
-            range: 'Logs!A2:H', // A: log_id, B: timestamp, C: user, D: cust_id, E: action, F: old, G: new, H: note
-        });
+        const logs = await getLogs(customerId);
+        return NextResponse.json({ success: true, logs });
 
-        const rows = response.data.values || [];
-
-        // Filter logs for this customer
-        // Column Index 3 (D) is customer_id (0-indexed)
-        const customerLogs = rows
-            .filter(row => row[3] === customerId)
-            .map(row => ({
-                log_id: row[0],
-                timestamp: row[1],
-                user_email: row[2],
-                action: row[4],
-                old_value: row[5],
-                new_value: row[6],
-                note: row[7]
-            }))
-            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()); // CSS Sort Descending
-
-        return NextResponse.json({ success: true, logs: customerLogs });
 
 
     } catch (error: any) {

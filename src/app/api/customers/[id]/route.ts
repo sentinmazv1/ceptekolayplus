@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { deleteCustomer } from '@/lib/sheets';
+import { deleteCustomer } from '@/lib/leads';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 

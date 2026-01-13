@@ -278,6 +278,65 @@ export async function lockNextLead(userEmail: string): Promise<(Customer & { sou
     return { ...mapRowToCustomer(locked), source };
 }
 
+
+// --- REPORTING (BULK DATA) ---
+
+export async function getReportData() {
+    // Fetch only columns needed for reports to save bandwidth
+    // Columns: durum, sehir, meslek_is, son_yatan_maas, talep_edilen_urun, onay_durumu, basvuru_kanali, created_at, son_arama_zamani, sahip, onay_tarihi
+    // Note: Recursive fetch to ensure we get ALL data for reports.
+
+    let allRows: any[] = [];
+    let page = 0;
+    const pageSize = 2000;
+
+    while (true) {
+        const { data, error } = await supabaseAdmin
+            .from('leads')
+            .select('id, durum, sehir, meslek_is, maas_bilgisi, talep_edilen_urun, onay_durumu, basvuru_kanali, created_at, son_arama_zamani, sahip_email, onay_tarihi, sonraki_arama_zamani, acik_icra_varmi, kapali_icra_varmi, dava_dosyasi_varmi')
+            .range(page * pageSize, (page + 1) * pageSize - 1);
+
+        if (error) {
+            console.error('Report fetch error:', error);
+            break;
+        }
+        if (!data || data.length === 0) break;
+
+        allRows = allRows.concat(data);
+        if (data.length < pageSize) break;
+        page++;
+    }
+
+    return allRows.map(mapRowToCustomer);
+}
+
+export async function getAllLogs(dateFilter?: string) {
+    // Fetch logs for performance reports (Pace, Call Counts)
+    let query = supabaseAdmin.from('activity_logs').select('id, created_at, user_email, customer_id, action');
+
+    if (dateFilter) {
+        // Simple string match for YYYY-MM-DD
+        query = query.ilike('created_at', `${dateFilter}%`);
+    } else {
+        // default limit if no date? or last 30 days? 
+        // For 'Today's Report', we usually pass a date.
+        // If no date, careful! 
+        query = query.limit(5000).order('created_at', { ascending: false });
+    }
+
+    // pagination if needed, but for "Today" it usually fits in 5000
+    const { data, error } = await query;
+    if (error) return [];
+
+    return (data || []).map(row => ({
+        log_id: row.id,
+        timestamp: row.created_at,
+        user_email: row.user_email,
+        customer_id: row.customer_id,
+        action: row.action
+    }));
+}
+
 // --- STANDARD WRITES ---
 
 export async function updateLead(customer: Customer, userEmail: string): Promise<Customer> {
