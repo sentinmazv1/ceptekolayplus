@@ -4,14 +4,32 @@ import { supabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
+// Helper for recursive fetch
+async function fetchAll(queryBuilder: any) {
+    let allRows: any[] = [];
+    let page = 0;
+    const pageSize = 1000;
+
+    while (true) {
+        const { data, error } = await queryBuilder
+            .range(page * pageSize, (page + 1) * pageSize - 1);
+
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+
+        allRows = allRows.concat(data);
+        if (data.length < pageSize) break;
+        page++;
+    }
+    return allRows;
+}
+
 export async function GET(req: Request) {
     try {
         // 1. Fetch ALL leads to analyze in memory
-        const { data: leads, error } = await supabaseAdmin
-            .from('leads')
-            .select('id, durum, sahip_email');
+        const query = supabaseAdmin.from('leads').select('id, durum, sahip_email');
+        const leads = await fetchAll(query);
 
-        if (error) throw error;
         if (!leads) return NextResponse.json({ message: 'No leads found' });
 
         const idsToClear: string[] = [];
@@ -27,7 +45,6 @@ export async function GET(req: Request) {
             'Uygun değil',
             'İptal/Vazgeçti',
             'Numara kullanılmıyor',
-            // Note: 'Daha sonra aranmak istiyor' might be owned, leaving it alone for now.
         ];
 
         leads.forEach(lead => {
@@ -40,8 +57,6 @@ export async function GET(req: Request) {
                     idsToClear.push(lead.id);
                     stats[cleanStatus || 'EMPTY'] = (stats[cleanStatus || 'EMPTY'] || 0) + 1;
                 }
-            } else if (cleanStatus === 'Yeni') {
-                // Explicit check for exact match if missed above (though includes covers it)
             }
         });
 
@@ -54,12 +69,23 @@ export async function GET(req: Request) {
         }
 
         // 2. Bulk Update
-        const { error: updateError } = await supabaseAdmin
-            .from('leads')
-            .update({ sahip_email: null })
-            .in('id', idsToClear);
+        // Supabase 'in' filter also has limits (URL length)? 
+        // 344 IDs might be fine. If thousands, we might need to batch update.
+        // Let's do batch update for safety.
 
-        if (updateError) throw updateError;
+        const updateBatchSize = 100;
+        let updateCount = 0;
+
+        for (let i = 0; i < idsToClear.length; i += updateBatchSize) {
+            const batchIds = idsToClear.slice(i, i + updateBatchSize);
+            const { error: updateError } = await supabaseAdmin
+                .from('leads')
+                .update({ sahip_email: null })
+                .in('id', batchIds);
+
+            if (updateError) throw updateError;
+            updateCount += batchIds.length;
+        }
 
         return NextResponse.json({
             success: true,
