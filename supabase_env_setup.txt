@@ -1,0 +1,6 @@
+
+# ... existing content ...
+
+# Supabase Credentials
+NEXT_PUBLIC_SUPABASE_URL=https://dfdzeedpufeixcwenoth.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_yX2gu1iS-DovslDuSl68Jg_q8-gNdcr
