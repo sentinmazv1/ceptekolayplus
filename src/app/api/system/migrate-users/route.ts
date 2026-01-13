@@ -50,7 +50,7 @@ export async function GET() {
                 .upsert({
                     email,
                     name,
-                    role: role === 'ADMIN' ? 'ADMIN' : 'SALES_REP',
+                    role: ['ADMIN', 'YÖNETİCİ', 'YONETICI', 'YÖNETICI'].includes(role || '') ? 'ADMIN' : 'SALES_REP',
                     password: password, // Plain text migration
                     updated_at: new Date().toISOString()
                 }, { onConflict: 'email' });
