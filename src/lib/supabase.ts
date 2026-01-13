@@ -13,9 +13,13 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
 
 // Admin client with full privileges (Service Role)
 // We use this because our Next.js API routes are already protected by NextAuth
+// FALLBACKS ADDED FOR MIGRATION (TEMPORARY)
+const URL = SUPABASE_URL || 'https://dfdzeedpufeixcwenoth.supabase.co';
+const SERVICE_KEY = SUPABASE_SERVICE_KEY || 'sb_secret_4qUtGIJ1K2_2I70zecIibw_a7ehmYIl';
+
 export const supabaseAdmin = createClient(
-    SUPABASE_URL || '',
-    SUPABASE_SERVICE_KEY || '',
+    URL,
+    SERVICE_KEY,
     {
         auth: {
             autoRefreshToken: false,
