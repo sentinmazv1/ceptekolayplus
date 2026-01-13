@@ -4,6 +4,12 @@ import { Customer, LeadStatus, LogEntry } from './types';
 
 // --- READ OPERATIONS ---
 
+export async function getLead(id: string): Promise<Customer | null> {
+    const { data } = await supabaseAdmin.from('leads').select('*').eq('id', id).single();
+    if (!data) return null;
+    return mapRowToCustomer(data);
+}
+
 export async function getLeads(filters?: { sahip?: string; durum?: LeadStatus }): Promise<Customer[]> {
     let query = supabaseAdmin
         .from('leads')
@@ -73,6 +79,34 @@ export async function getCustomersByStatus(status: string, user: { email: string
     return filtered;
 }
 
+export async function searchCustomers(query: string): Promise<Customer[]> {
+    if (!query || query.length < 2) return [];
+
+    // Clean query for phone/tc search
+    const cleanQuery = query.replace(/\D/g, '');
+    const isNumeric = cleanQuery.length > 5;
+
+    let dbQuery = supabaseAdmin.from('leads').select('*');
+
+    if (isNumeric) {
+        // Search TC or Phone
+        // distinct search logic
+        dbQuery = dbQuery.or(`tc_kimlik.ilike.%${cleanQuery}%,telefon.ilike.%${cleanQuery}%`);
+    } else {
+        // Search Name
+        dbQuery = dbQuery.ilike('ad_soyad', `%${query}%`);
+    }
+
+    const { data, error } = await dbQuery.limit(50);
+
+    if (error) {
+        console.error('Search error:', error);
+        return [];
+    }
+
+    return (data || []).map(mapRowToCustomer);
+}
+
 // --- WRITE OPERATIONS ---
 
 export async function updateLead(customer: Customer, userEmail: string): Promise<Customer> {
@@ -97,7 +131,7 @@ export async function updateLead(customer: Customer, userEmail: string): Promise
         sehir: customer.sehir,
         ilce: customer.ilce,
         meslek_is: customer.meslek_is,
-        maas_bilgisi: customer.maas_bilgisi,
+        maas_bilgisi: customer.son_yatan_maas, // Map FROM Customer type TO DB column
 
         admin_notu: customer.admin_notu,
         arama_notu: customer.arama_not_kisa,
@@ -454,7 +488,7 @@ function mapRowToCustomer(row: any): Customer {
         sehir: row.sehir,
         ilce: row.ilce,
         meslek_is: row.meslek_is,
-        maas_bilgisi: row.maas_bilgisi,
+        son_yatan_maas: row.maas_bilgisi,
 
         acik_icra_varmi: row.icra_durumu?.acik_icra,
         kapali_icra_varmi: row.icra_durumu?.kapali_icra,
