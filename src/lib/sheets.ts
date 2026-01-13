@@ -395,7 +395,14 @@ export async function lockNextLead(userEmail: string): Promise<(Customer & { sou
                 let source = 'Genel';
                 if (target.customer.durum === 'Daha sonra aranmak istiyor') source = '📅 Randevu';
                 else if (target.customer.durum === 'Yeni') source = '🆕 Yeni Kayıt';
-                else if (!target.customer.durum || target.customer.durum.trim() === '') source = '🤖 Otomasyon';
+                else if (!target.customer.durum || target.customer.durum.trim() === '') {
+                    // Check if it has E-Devlet info
+                    if (target.customer.tc_kimlik && target.customer.e_devlet_sifre) {
+                        source = '🔐 E-Devlet Veren Müşteri (Otomasyon)';
+                    } else {
+                        source = '🤖 Otomasyon';
+                    }
+                }
                 else source = '♻️ Tekrar Arama';
 
                 const finalCustomer: Customer & { source: string } = {
