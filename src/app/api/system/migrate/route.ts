@@ -34,7 +34,6 @@ export async function POST(req: NextRequest) {
             }
 
             let talep = null;
-            let talep = null;
             if (c.talep_edilen_tutar) {
                 // it might be a number or string
                 const rawTutar = c.talep_edilen_tutar as any;
