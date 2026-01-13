@@ -34,9 +34,11 @@ export async function POST(req: NextRequest) {
             }
 
             let talep = null;
+            let talep = null;
             if (c.talep_edilen_tutar) {
                 // it might be a number or string
-                const val = typeof c.talep_edilen_tutar === 'string' ? c.talep_edilen_tutar.replace(/[^0-9.]/g, '') : c.talep_edilen_tutar;
+                const rawTutar = c.talep_edilen_tutar as any;
+                const val = typeof rawTutar === 'string' ? rawTutar.replace(/[^0-9.]/g, '') : rawTutar;
                 if (val) talep = parseFloat(val as string);
             }
 
