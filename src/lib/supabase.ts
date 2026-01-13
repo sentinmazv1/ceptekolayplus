@@ -1,25 +1,20 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+// FALLBACK CREDENTIALS (TEMPORARY FOR MIGRATION)
+// Used when environment variables are missing (e.g. Vercel Build Step)
+const HARDCODED_URL = 'https://dfdzeedpufeixcwenoth.supabase.co';
+const HARDCODED_ANON = 'sb_publishable_yX2gu1iS-DovslDuSl68Jg_q8-gNdcr';
+const HARDCODED_SERVICE = 'sb_secret_4qUtGIJ1K2_2I70zecIibw_a7ehmYIl';
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-    // Prevent crash during build if vars missing, but warn
-    if (process.env.NODE_ENV !== 'production') {
-        console.warn('Supabase env vars missing!');
-    }
-}
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || HARDCODED_URL;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || HARDCODED_ANON;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || HARDCODED_SERVICE;
 
 // Admin client with full privileges (Service Role)
-// We use this because our Next.js API routes are already protected by NextAuth
-// FALLBACKS ADDED FOR MIGRATION (TEMPORARY)
-const URL = SUPABASE_URL || 'https://dfdzeedpufeixcwenoth.supabase.co';
-const SERVICE_KEY = SUPABASE_SERVICE_KEY || 'sb_secret_4qUtGIJ1K2_2I70zecIibw_a7ehmYIl';
-
 export const supabaseAdmin = createClient(
-    URL,
-    SERVICE_KEY,
+    SUPABASE_URL,
+    SUPABASE_SERVICE_KEY,
     {
         auth: {
             autoRefreshToken: false,
@@ -28,8 +23,8 @@ export const supabaseAdmin = createClient(
     }
 );
 
-// Standard client (Anon) - Optional for now, mostly using Admin for migration/backend ops
+// Standard client (Anon)
 export const supabase = createClient(
-    SUPABASE_URL || '',
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
 );
