@@ -4,23 +4,36 @@ import { Customer, LeadStatus, LogEntry } from './types';
 
 // --- HELPERS ---
 
-// Supabase has a default limit of 1000 rows. We need to loop for stats.
+// Safe recursive fetch with safeguards
 async function fetchAllLeads(queryBuilder: any): Promise<any[]> {
     let allRows: any[] = [];
     let page = 0;
     const pageSize = 1000;
+    const MAX_PAGES = 10; // Safety brake (10k rows max for now)
 
-    while (true) {
-        const { data, error } = await queryBuilder
-            .range(page * pageSize, (page + 1) * pageSize - 1);
+    try {
+        while (page < MAX_PAGES) {
+            // Note: In supabase-js, .range() returns a new Promise-like builder. 
+            // We assume queryBuilder is the base FilterBuilder.
+            const { data, error } = await queryBuilder
+                .range(page * pageSize, (page + 1) * pageSize - 1);
 
-        if (error) throw error;
-        if (!data || data.length === 0) break;
+            if (error) {
+                console.error('fetchAllLeads error on page', page, error);
+                throw error;
+            }
+            if (!data || data.length === 0) break;
 
-        allRows = allRows.concat(data);
+            allRows = allRows.concat(data);
 
-        if (data.length < pageSize) break; // Last page
-        page++;
+            if (data.length < pageSize) break; // Finished
+            page++;
+        }
+    } catch (err) {
+        console.error('fetchAllLeads CRITICAL FAIL:', err);
+        // Fallback: return what we have so far instead of blowing up?
+        // Or rethrow? For stats, partial data is better than 500.
+        return allRows;
     }
     return allRows;
 }
@@ -45,13 +58,8 @@ export async function getLeads(filters?: { sahip?: string; durum?: LeadStatus })
         query = query.eq('durum', filters.durum);
     }
 
-    // For lists, 1000 is usually enough, but if filtering returns < 1000 from a larger set, 
-    // Supabase filtering works on DB side, so we get 1000 *matches*.
-    // However, if we want ALL matches to do client side stuff, we should use range.
-    // For now, let's bump the limit to a safe number for LIST views using range if needed.
-    // But filters are applied first, so we get the first 1000 matching rows.
-    // Let's just default to a higher limit like 2000 for standard lists.
-    const { data, error } = await query.range(0, 2000);
+    // LIST VIEW: Cap at 1000 for speed, users can search for specific older ones.
+    const { data, error } = await query.range(0, 1000);
 
     if (error) {
         console.error('Supabase getLeads error:', error);
@@ -67,33 +75,44 @@ export async function getCustomersByStatus(status: string, user: { email: string
         query.eq('sahip_email', user.email);
     }
 
-    // For 'HAVUZ' and large status lists, we might need more than 1000.
-    // Let's use the Looper if likely to be large, or just a large range.
-    // Given 2500 total rows, fetching all for filtering is safer for now.
-
     let leads: any[] = [];
 
-    // Using fetchAllLeads only for HAVUZ or Admin views to ensure accuracy
-    // Optimization: Only fetch all if filters are broad.
-    if (status === 'HAVUZ' || user.role === 'ADMIN') {
-        // Re-construct query because fetchAllLeads consumes it? 
-        // Actually we can just chain range in the loop.
-        leads = await fetchAllLeads(query);
+    // Optimize: HAVUZ needs checks on unowned, so we might need more rows.
+    // But loading 3000 rows for a list view is bad UX.
+    // Ideally we should filter in DB.
+
+    if (status === 'HAVUZ') {
+        // DB Filter for HAVUZ candidates to avoid fetching 3000 rows
+        // HAVUZ candidates are: (sahip_email IS NULL)
+        // AND (durum IS New OR Scheduled OR Retry)
+        // We can approximate this in DB to reduce fetch size.
+        const { data, error } = await supabaseAdmin
+            .from('leads')
+            .select('*')
+            .is('sahip_email', null) // Primary filter
+            .range(0, 2000); // Fetch top 2000 candidates
+
+        if (error) throw error;
+        leads = data || [];
+
     } else {
-        const { data, error } = await query.range(0, 2000);
+        // Specific status -> Filter in DB is efficient
+        query.eq('durum', status);
+        const { data, error } = await query.range(0, 1000);
         if (error) throw error;
         leads = data || [];
     }
 
     let filtered = leads.map(mapRowToCustomer);
 
+    // JS-side filtering for complex HAVUZ logic (Time checks etc)
     if (status === 'HAVUZ') {
         const nowTime = new Date().getTime();
         const TWO_HOURS = 2 * 60 * 60 * 1000;
 
         filtered = filtered.filter(c => {
+            // Re-verify unowned
             if (c.sahip && c.sahip.length > 0) return false;
-            // c.kilitli_mi check omitted as not fully migrated/used yet
 
             // 1. New/Automation
             if (c.durum === 'Yeni' || !c.durum || c.durum.trim() === '') return true;
@@ -114,8 +133,6 @@ export async function getCustomersByStatus(status: string, user: { email: string
             }
             return false;
         });
-    } else {
-        filtered = filtered.filter(c => c.durum === status);
     }
 
     filtered.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
@@ -137,14 +154,10 @@ export async function searchCustomers(query: string): Promise<Customer[]> {
     }
 
     const { data, error } = await dbQuery.limit(50);
-
-    if (error) {
-        console.error('Search error:', error);
-        return [];
-    }
-
+    if (error) return [];
     return (data || []).map(mapRowToCustomer);
 }
+
 
 // --- WRITE OPERATIONS ---
 
@@ -243,29 +256,16 @@ export async function deleteCustomer(id: string, userEmail: string) {
     });
 }
 
-
 // --- LOCK LOGIC ---
 
 export async function lockNextLead(userEmail: string): Promise<(Customer & { source?: string }) | null> {
-    // We want unowned ones from the start.
-    // If there are many candidates, 1000 limit might hide the "best" one if we are unlucky?
-    // Unlikely, as we usually process FIFO or priority.
-    // Fetching 1000 unowned should be enough to find *one* to lock.
-
-    // However, if we heavily rely on "Created At" for priority, and the first 1000 aren't the oldest?
-    // select('*') order is undefined unless specified.
-
-    // Let's rely on standard fetch for candidates, but order by created_at asc to get oldest first?
     const { data: candidates, error } = await supabaseAdmin
         .from('leads')
         .select('*')
         .is('sahip_email', null)
-        .limit(100); // Only need top candidates really
+        .limit(100);
 
     if (error || !candidates) return null;
-
-    // ... filtering logic ...
-    // Note: Re-using existing logic but optimized request size.
 
     const nowTime = new Date().getTime();
     const TWO_HOURS = 2 * 60 * 60 * 1000;
@@ -313,16 +313,12 @@ export async function lockNextLead(userEmail: string): Promise<(Customer & { sou
         .select()
         .single();
 
-    if (lockError || !locked) {
-        return null;
-    }
+    if (lockError || !locked) return null;
 
     let source = 'Genel';
     if (target.durum === 'Daha sonra aranmak istiyor') source = '📅 Randevu';
     else if (target.durum === 'Yeni') source = '🆕 Yeni Kayıt';
-    else if (!target.durum || target.durum.trim() === '') {
-        source = '🤖 Otomasyon';
-    }
+    else if (!target.durum || target.durum.trim() === '') source = '🤖 Otomasyon';
     else source = '♻️ Tekrar Arama';
 
     await logAction({
@@ -338,7 +334,8 @@ export async function lockNextLead(userEmail: string): Promise<(Customer & { sou
     return { ...mapRowToCustomer(locked), source };
 }
 
-// --- LOGGING & STATS ---
+
+// --- LOGGING ---
 
 export async function logAction(entry: LogEntry) {
     await supabaseAdmin.from('activity_logs').insert({
@@ -355,9 +352,7 @@ export async function logAction(entry: LogEntry) {
 export async function getLogs(customerId?: string): Promise<LogEntry[]> {
     let query = supabaseAdmin.from('activity_logs').select('*');
     if (customerId) query = query.eq('customer_id', customerId);
-
-    const { data } = await query.order('created_at', { ascending: false });
-
+    const { data } = await query.order('created_at', { ascending: false }).limit(200);
     return (data || []).map(row => ({
         log_id: row.id,
         timestamp: row.created_at,
@@ -389,14 +384,17 @@ export async function getRecentLogs(limit: number = 50): Promise<LogEntry[]> {
     }));
 }
 
-export async function getLeadStats(user?: { email: string; role: string }) {
-    // CRITICAL: Must fetch all records to calculate stats.
-    // Using fetchAllLeads loop.
 
-    // Optimized selection to reduce bandwidth
+// --- STATS ---
+
+export async function getLeadStats(user?: { email: string; role: string }) {
+    // Optimized fetch with try-catch and loop limit
     const query = supabaseAdmin.from('leads').select('durum, sahip_email, son_arama_zamani, sonraki_arama_zamani');
+
+    // Use the safe FetchAll
     const rows = await fetchAllLeads(query);
 
+    // If rows is empty, return zeros but don't crash
     if (!rows) return null;
 
     const nowTime = new Date().getTime();
@@ -422,13 +420,10 @@ export async function getLeadStats(user?: { email: string; role: string }) {
     const todayStr = new Date().toISOString().split('T')[0];
 
     for (const r of rows) {
-        // partial mapper logic since we only selected a few fields
         const c = r;
 
         // 1. AVAILABILITY
         let isAvail = false;
-        // Fix: check sahip_email specifically (db column name)
-        // r has raw DB props if not mapped.
         if (!c.sahip_email) {
             if (c.durum === 'Yeni' || !c.durum) { isAvail = true; waiting_new++; }
             else if (c.durum === 'Daha sonra aranmak istiyor' && c.sonraki_arama_zamani) {
@@ -445,8 +440,8 @@ export async function getLeadStats(user?: { email: string; role: string }) {
 
         if (c.durum) statusCounts[c.durum] = (statusCounts[c.durum] || 0) + 1;
 
-        if (c.son_arama_zamani) {
-            if (c.son_arama_zamani.startsWith(todayStr)) today_called++;
+        if (c.son_arama_zamani && c.son_arama_zamani.startsWith(todayStr)) {
+            today_called++;
         }
 
         if (c.durum === 'Başvuru alındı') pending_approval++;
@@ -480,8 +475,6 @@ export async function getLeadStats(user?: { email: string; role: string }) {
     };
 }
 
-
-// --- MAPPER ---
 function mapRowToCustomer(row: any): Customer {
     return {
         id: row.id,
@@ -492,35 +485,26 @@ function mapRowToCustomer(row: any): Customer {
         tc_kimlik: row.tc_kimlik,
         email: row.email,
         dogum_tarihi: row.dogum_tarihi,
-
         durum: row.durum,
         sahip: row.sahip_email,
-
         sehir: row.sehir,
         ilce: row.ilce,
         meslek_is: row.meslek_is,
         son_yatan_maas: row.maas_bilgisi,
-
         acik_icra_varmi: row.icra_durumu?.acik_icra,
         kapali_icra_varmi: row.icra_durumu?.kapali_icra,
         acik_icra_detay: row.icra_durumu?.detay,
-
         dava_dosyasi_varmi: row.dava_durumu?.varmi,
         dava_detay: row.dava_durumu?.detay,
-
         admin_notu: row.admin_notu,
         arama_not_kisa: row.arama_notu,
-
         basvuru_kanali: row.basvuru_kanali,
         talep_edilen_urun: row.talep_edilen_urun,
         talep_edilen_tutar: row.talep_edilen_tutar,
-
         onay_durumu: row.onay_durumu,
         sonraki_arama_zamani: row.sonraki_arama_zamani,
         son_arama_zamani: row.son_arama_zamani,
-
-        kilitli_mi: false, // Not used in DB impl
-
+        kilitli_mi: false,
         ...row
     };
 }
