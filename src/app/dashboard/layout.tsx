@@ -3,7 +3,7 @@
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Home, LogOut, PlusCircle, Search, User, UserCircle, BarChart2, FileSearch, Package, Loader2, LayoutDashboard, UserPlus, Menu, X, Calendar } from 'lucide-react';
+import { Home, LogOut, PlusCircle, Search, User, UserCircle, BarChart2, FileSearch, Package, Loader2, LayoutDashboard, UserPlus, Menu, X, Calendar, Database } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
 // import { LiveActivityTicker } from '@/components/LiveActivityTicker';
