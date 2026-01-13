@@ -19,7 +19,14 @@ export async function GET(req: NextRequest) {
         // Fetch only leads with "Başvuru alındı" status
         // Consistency Update: We trust 'durum' as the master status. 
         // If it is 'Başvuru alındı', it is pending, even if 'onay_durumu' was previously set (e.g. to 'Kefil İstendi').
-        const pendingLeads = await getLeads({ durum: 'Başvuru alındı' });
+        // Fetch leads that are either 'Başvuru alındı' OR 'Kefil bekleniyor'
+        // User feedback implies 'Pending' count is wrong, likely missing these intermediate states.
+        const allLeads = await getLeads();
+        const pendingLeads = allLeads.filter(l =>
+            l.durum === 'Başvuru alındı' ||
+            l.durum === 'Kefil bekleniyor' ||
+            l.durum === 'Onaya gönderildi' // Add this too just in case
+        );
 
         // We no longer filter by onay_durumu here to ensure re-submitted apps appear.
 

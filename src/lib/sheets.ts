@@ -326,13 +326,16 @@ export async function lockNextLead(userEmail: string): Promise<(Customer & { sou
             })
             .sort((a, b) => {
                 const getScore = (c: Customer) => {
-                    // Priority 1: Scheduled (Commitment)
-                    if (c.durum === 'Daha sonra aranmak istiyor') return 1;
+                    // Priority 1: Automation/Empty Status (Hot Leads from SendPulse)
+                    // User Request: "önce durumu boş olanlar bunlar instagramdan gelen"
+                    if (!c.durum || c.durum.trim() === '') return 1;
 
-                    // Priority 2: Automation/Empty Status (Hot Leads from SendPulse)
-                    if (!c.durum || c.durum.trim() === '') return 2;
+                    // Priority 2: Scheduled (Randevu)
+                    // User Request: "sonra randevu"
+                    if (c.durum === 'Daha sonra aranmak istiyor') return 2;
 
                     // Priority 3: Standard New
+                    // User Request: "sonra yeni"
                     if (c.durum === 'Yeni') return 3;
 
                     // Priority 4: Retry
@@ -431,7 +434,7 @@ export async function getLeadStats(user?: { email: string; role: string }) {
     // We will fetch up to ROW 3500 as a temporary fix to ensure stability
     const response = await client.spreadsheets.values.get({
         spreadsheetId: SHEET_ID,
-        range: `Customers!A2:ZZ3500`, // Explicit safety limit for stability
+        range: `Customers!A2:ZZ`, // Removed hardcoded limit to match Reports logic
     });
 
     const rows = response.data.values || [];
