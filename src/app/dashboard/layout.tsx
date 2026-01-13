@@ -278,6 +278,16 @@ export default function DashboardLayout({
                                             </Button>
                                         </Link>
 
+                                        <Link href="/dashboard/migration">
+                                            <Button
+                                                variant={isActive('/dashboard/migration') ? 'primary' : 'ghost'}
+                                                className="w-full justify-start text-sm text-amber-600 bg-amber-50 hover:bg-amber-100"
+                                            >
+                                                <Database className="w-4 h-4 mr-3" />
+                                                Veri Göçü 🚀
+                                            </Button>
+                                        </Link>
+
                                     </>
                                 )}
 
