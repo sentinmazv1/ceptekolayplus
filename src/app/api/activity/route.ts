@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getRecentLogs } from '@/lib/sheets';
+import { getRecentLogs } from '@/lib/leads';
 
 export const dynamic = 'force-dynamic';
 

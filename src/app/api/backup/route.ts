@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getLeads, getLogs } from '@/lib/sheets';
+import { getReportData, getAllLogs } from '@/lib/leads';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,26 +15,26 @@ export async function GET(request: Request) {
 
     try {
         const [leads, logs] = await Promise.all([
-            getLeads(),
-            getLogs()
+            getReportData(),
+            getAllLogs()
         ]);
 
         const backupData = {
             generated_at: new Date().toISOString(),
+            source: 'Supabase',
             data: {
                 customers: leads,
                 logs: logs
             }
         };
 
-        // Create a JSON response with headers to force download
         const json = JSON.stringify(backupData, null, 2);
 
         return new NextResponse(json, {
             status: 200,
             headers: {
                 'Content-Type': 'application/json',
-                'Content-Disposition': `attachment; filename="backup_${new Date().toISOString().split('T')[0]}.json"`
+                'Content-Disposition': `attachment; filename="backup_full_${new Date().toISOString().split('T')[0]}.json"`
             }
         });
 

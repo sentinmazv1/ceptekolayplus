@@ -1,40 +1,20 @@
+
 import { NextRequest, NextResponse } from 'next/server';
-import { getSheetsClient } from '@/lib/google';
-import { COLUMNS } from '@/lib/sheets';
-import { Customer } from '@/lib/types';
+import { getLeads } from '@/lib/leads';
 
 export const dynamic = 'force-dynamic';
-
-function rowToCustomer(row: any[]): Customer {
-    const c: any = {};
-    COLUMNS.forEach((col, idx) => {
-        c[col] = row[idx] || undefined;
-    });
-    return c as Customer;
-}
 
 export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         const dateFilter = searchParams.get('date'); // YYYY-MM-DD
 
-        const client = getSheetsClient();
-        const sheetId = process.env.GOOGLE_SHEET_ID;
+        // Fetch leads directly using the Service Layer
+        const leads = await getLeads({ durum: 'Teslim edildi' }); // Pre-filter if possible, or fetch all if leads() filters are limited
 
-        // Fetch all customers (optimization: could filter in sheets query if simplified, but full fetch is safer for consistent object mapping)
-        const response = await client.spreadsheets.values.get({
-            spreadsheetId: sheetId,
-            range: 'Customers!A2:ZZ',
-        });
+        // Filter for specific date
+        let deliveredCustomers = leads;
 
-        const rows = response.data.values || [];
-
-        let deliveredCustomers = rows
-            .map(row => rowToCustomer(row))
-            // 1. Filter by Status 'Teslim edildi'
-            .filter(c => c.durum === 'Teslim edildi');
-
-        // 2. Filter by Date if provided
         if (dateFilter) {
             deliveredCustomers = deliveredCustomers.filter(c => {
                 // Check 'teslim_tarihi' first, fallback to 'updated_at'
@@ -53,7 +33,7 @@ export async function GET(req: NextRequest) {
             });
         }
 
-        // 3. Sort by delivery date (newest first)
+        // Sort by delivery date (newest first)
         deliveredCustomers.sort((a, b) => {
             const dateA = new Date(a.teslim_tarihi || a.updated_at || 0).getTime();
             const dateB = new Date(b.teslim_tarihi || b.updated_at || 0).getTime();

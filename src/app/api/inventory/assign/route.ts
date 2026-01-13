@@ -1,8 +1,9 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { updateInventoryItem, getInventoryItems } from '@/lib/inventory-service';
-import { updateLead, getLeads, logAction } from '@/lib/sheets';
+import { updateLead, getLeads, logAction } from '@/lib/leads';
 
 export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
@@ -41,11 +42,8 @@ export async function POST(req: NextRequest) {
         });
 
         // 3. Update Customer -> Set IMEI/Serial
-        // We need to fetch current customer first to preserve other fields? 
-        // updateLead merges? No, updateLead expects a full object usually or handling partials?
-        // Checking sheets.ts: updateLead takes a Customer object and updates the row.
-        // We should fetch the customer first.
 
+        // Leads service returns all leads, fine for this op.
         const leads = await getLeads();
         const customer = leads.find(c => c.id === customerId);
 
@@ -67,7 +65,7 @@ export async function POST(req: NextRequest) {
                 marka: item.marka,
                 model: item.model,
                 satis_tarihi: now,
-                fiyat: 0 // We don't have price in inventory item yet, maybe add later
+                fiyat: 0
             };
 
             // Add to list
@@ -82,7 +80,7 @@ export async function POST(req: NextRequest) {
                 satilan_urunler: JSON.stringify(soldItems),
 
                 durum: 'Teslim edildi',
-                teslim_tarihi: now, // Updates to latest delivery time
+                teslim_tarihi: now,
                 teslim_eden: session.user.email || undefined
             }, session.user.email || 'System');
 

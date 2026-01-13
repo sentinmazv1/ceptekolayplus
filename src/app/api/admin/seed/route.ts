@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getSheetsClient } from '@/lib/google';
-import { COLUMNS } from '@/lib/sheets';
+import { addLead } from '@/lib/leads';
+import { Customer } from '@/lib/types'; // Import types
 
 const CITIES = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Adana'];
 const JOBS = ['Mühendis', 'Öğretmen', 'Esnaf', 'Memur', 'Diğer', 'Doktor', 'Hemşire'];
@@ -17,15 +17,15 @@ function randomDate(start: Date, end: Date) {
     return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime())).toISOString();
 }
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
     // Basic security: only allow in development or if a secret is passed
-    // For now, just development convenience
+    // For now, just development convenience. 
+    // Ideally check NODE_ENV or a query param key.
 
     try {
-        const client = getSheetsClient();
-        const sheetId = process.env.GOOGLE_SHEET_ID;
-
-        const rows = [];
+        const generated = [];
         for (let i = 0; i < 20; i++) {
             const city = getRandomItem(CITIES);
             const job = getRandomItem(JOBS);
@@ -39,36 +39,36 @@ export async function GET(req: NextRequest) {
             if (status === 'Teslim edildi') approvalStatus = 'Onaylandı';
             if (status === 'Reddetti') approvalStatus = 'Reddedildi';
 
-            const rowData: any = {
-                id: crypto.randomUUID(),
-                created_at: randomDate(new Date(2024, 0, 1), new Date()),
+            // Construct Customer Object (Supabase Match)
+            const customerData: Partial<Customer> = {
+                // id: crypto.randomUUID(), // addLead handles ID generation usually or Supabase does 
+                // But addLead in leads.ts might expect some fields.
+                // Checking leads.ts addLead: it maps input to row. It handles ID generation via Supabase default usually, but let's see. 
+                // Using addLead is safer.
+
                 ad_soyad: `Test User ${i + 1}`,
                 telefon: `555${Math.floor(Math.random() * 10000000)}`,
                 sehir: city,
                 meslek_is: job,
                 son_yatan_maas: (Math.floor(Math.random() * 40000) + 17000).toString(),
-                durum: status,
+                durum: status as any,
                 talep_edilen_urun: product,
-                talep_edilen_tutar: amount.toString(),
-                onay_durumu: approvalStatus,
-                kredi_limiti: approvalStatus === 'Onaylandı' ? (amount + 5000).toString() : '',
+                talep_edilen_tutar: amount,
+                onay_durumu: approvalStatus as any,
+                kredi_limiti: approvalStatus === 'Onaylandı' ? (amount + 5000).toString() : undefined,
                 // Guarantor logic
-                kefil_ad_soyad: approvalStatus === 'Kefil İstendi' ? 'Kefil Ali' : '',
+                kefil_ad_soyad: approvalStatus === 'Kefil İstendi' ? 'Kefil Ali' : undefined,
+
+                created_at: randomDate(new Date(2024, 0, 1), new Date()),
+                created_by: 'system_seed'
             };
 
-            // Map to column array based on strictly ordered COLUMNS
-            const rowValues = COLUMNS.map(col => rowData[col] || '');
-            rows.push(rowValues);
+            // Insert using service layer
+            const result = await addLead(customerData as Customer, 'system_seed');
+            if (result) generated.push(result);
         }
 
-        await client.spreadsheets.values.append({
-            spreadsheetId: sheetId,
-            range: 'Customers!A:AZ',
-            valueInputOption: 'USER_ENTERED',
-            requestBody: { values: rows }
-        });
-
-        return NextResponse.json({ success: true, message: `Added ${rows.length} test leads.` });
+        return NextResponse.json({ success: true, message: `Added ${generated.length} test leads.` });
 
     } catch (error: any) {
         console.error('Seed Error:', error);

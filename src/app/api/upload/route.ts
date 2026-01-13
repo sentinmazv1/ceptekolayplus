@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { uploadFileToDrive } from '@/lib/drive';
-import { logAction } from '@/lib/sheets';
+import { logAction } from '@/lib/leads';
 import { authOptions } from '@/lib/auth';
 
 export async function POST(request: Request) {

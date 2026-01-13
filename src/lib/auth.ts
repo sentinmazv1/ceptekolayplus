@@ -1,11 +1,14 @@
+
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { getSheetsClient } from '@/lib/google';
+import { supabaseAdmin } from '@/lib/supabase';
 import { DefaultSession, NextAuthOptions } from 'next-auth';
 
+// Extend NextAuth types
 declare module 'next-auth' {
     interface Session {
         user: {
+            id?: string;
             role?: string;
         } & DefaultSession['user']
     }
@@ -22,44 +25,44 @@ export const authOptions: NextAuthOptions = {
                 email: { label: "Email", type: "text" },
                 password: { label: "Password", type: "password" }
             },
-            async authorize(credentials: Record<string, string> | undefined) {
+            async authorize(credentials) {
                 if (!credentials?.email || !credentials?.password) return null;
 
+                const email = credentials.email.toLowerCase().trim();
+
                 try {
-                    const client = getSheetsClient();
-                    const sheetId = process.env.GOOGLE_SHEET_ID;
+                    // Fetch user from Supabase 'users' table
+                    // We use supabaseAdmin to ignore RLS if necessary, though explicit RLS policies are good practice.
+                    const { data: user, error } = await supabaseAdmin
+                        .from('users')
+                        .select('*')
+                        .eq('email', email)
+                        .single();
 
-                    // Fetch Users sheet including Password column (D)
-                    const response = await client.spreadsheets.values.get({
-                        spreadsheetId: sheetId,
-                        range: 'Users!A2:D',
-                    });
+                    if (error || !user) {
+                        // User not found
+                        return null;
+                    }
 
-                    const rows = response.data.values || [];
-                    const userEmail = credentials.email.toLowerCase().trim();
+                    // Verify password
+                    // WARNING: Currently storing/checking plaintext as migrated from Sheets.
+                    // TODO: Implement bcrypt/hashing for new users and migration.
+                    const dbPassword = user.password;
 
-                    // Find user
-                    const userRow = rows.find(row =>
-                        row[0]?.trim().toLowerCase() === userEmail
-                    );
-
-                    if (!userRow) return null;
-
-                    // Check password (Column D is index 3)
-                    const dbPassword = userRow[3]?.toString().trim();
                     if (dbPassword !== credentials.password) {
                         return null;
                     }
 
-                    // Return user object
+                    // Return user object compatible with NextAuth
                     return {
-                        id: userEmail,
-                        email: userEmail,
-                        name: userRow[1],
-                        role: userRow[2], // Map role from sheet
+                        id: user.id || email, // Use UUID if available, else email
+                        email: user.email,
+                        name: user.name,
+                        role: user.role,
                     };
+
                 } catch (error) {
-                    console.error('Login error:', error);
+                    console.error('Auth logic error:', error);
                     return null;
                 }
             }
@@ -69,17 +72,23 @@ export const authOptions: NextAuthOptions = {
         async jwt({ token, user }) {
             if (user) {
                 token.role = user.role;
+                token.id = user.id;
             }
             return token;
         },
         async session({ session, token }) {
             if (session.user) {
                 session.user.role = token.role as string;
+                session.user.id = token.id as string;
             }
             return session;
         }
     },
     pages: {
-        error: '/auth/error', // Custom error page if needed
+        signIn: '/auth/signin', // Optional: Custom sign in page
+        error: '/auth/error',
+    },
+    session: {
+        strategy: 'jwt'
     }
 };
