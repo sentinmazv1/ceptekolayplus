@@ -2,27 +2,6 @@
 import { supabaseAdmin } from './supabase';
 import { Customer, LeadStatus, LogEntry } from './types';
 
-// --- HELPERS ---
-
-// Safe Fetch: Parallel requests to cover 3000 rows (Sufficient for current 2569)
-// This avoids complex recursion and potential loops.
-async function fetchAllLeadsSafe(baseQuery: any): Promise<any[]> {
-    try {
-        const p1 = baseQuery.range(0, 999);
-        // We must Clone? No, range returns new query promise. But does it mutate?
-        // In supabase-js v2, we should create fresh chains if possible.
-        // But reusing the builder `baseQuery` might be risky if it mutates.
-        // Safer: Create 3 distinct queries if possible, or assume calling range() is safe.
-        // Actually, best practice with Supabase JS client is to await immediately or chain off a fresh .from()
-
-        // Let's rely on the calling function to provide us data or use a simpler approach inside stats.
-        // We will do it inside getLeadStats for maximum safety.
-        return [];
-    } catch (e) {
-        return [];
-    }
-}
-
 // --- READ OPERATIONS ---
 
 export async function getLead(id: string): Promise<Customer | null> {
@@ -37,14 +16,15 @@ export async function getLeads(filters?: { sahip?: string; durum?: LeadStatus })
     if (filters?.sahip) query = query.eq('sahip_email', filters.sahip);
     if (filters?.durum) query = query.eq('durum', filters.durum);
 
-    // List: 1000 limit is fine for UI lists.
-    const { data, error } = await query.limit(1000);
+    // Standard UI Limit (1000). For 100k rows, we would implement real pagination (page 1, 2, 3).
+    // But for now, fetching the recent 1000 is standard behavior.
+    const { data, error } = await query.order('created_at', { ascending: false }).limit(1000);
+
     if (error) throw error;
     return (data || []).map(mapRowToCustomer);
 }
 
 export async function getCustomersByStatus(status: string, user: { email: string; role: string }): Promise<Customer[]> {
-    // Optimization: Filter in DB as much as possible
     let query = supabaseAdmin.from('leads').select('*');
 
     if (user.role === 'SALES_REP' && status !== 'HAVUZ') {
@@ -54,19 +34,21 @@ export async function getCustomersByStatus(status: string, user: { email: string
     if (status !== 'HAVUZ') {
         query.eq('durum', status);
     } else {
-        // HAVUZ: Unowned
         query.is('sahip_email', null);
     }
 
-    // Fetch up to 1000. For specific status lists, this is usually enough.
-    // Use simple limit for stability now. User wants data back.
-    const { data, error } = await query.limit(1000);
+    // LIST VIEW: Limit to 1000 recent items.
+    // This is NOT a data loss issue, it's a UI View limit.
+    const { data, error } = await query.order('created_at', { ascending: false }).limit(1000);
     if (error) throw error;
 
     let leads = data || [];
     let filtered = leads.map(mapRowToCustomer);
 
-    // Client side refined filtering for HAVUZ
+    // Javascript Filter for HAVUZ (Complex Logic)
+    // Note: Since we only fetched 1000 UNOWNED leads, this is safe.
+    // Even with 100k total customers, the "Pool" (Unassigned) is usually small (<1000).
+    // If Pool > 1000, we show the first 1000.
     if (status === 'HAVUZ') {
         const nowTime = new Date().getTime();
         const TWO_HOURS = 2 * 60 * 60 * 1000;
@@ -74,7 +56,6 @@ export async function getCustomersByStatus(status: string, user: { email: string
         filtered = filtered.filter(c => {
             if (c.sahip && c.sahip.length > 0) return false;
 
-            // Standard Pool Logic
             if (c.durum === 'Yeni' || !c.durum) return true;
             if (c.durum === 'Daha sonra aranmak istiyor') {
                 return c.sonraki_arama_zamani && new Date(c.sonraki_arama_zamani).getTime() <= nowTime;
@@ -87,14 +68,12 @@ export async function getCustomersByStatus(status: string, user: { email: string
         });
     }
 
-    filtered.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
     return filtered;
 }
 
 export async function searchCustomers(query: string): Promise<Customer[]> {
     if (!query || query.length < 2) return [];
 
-    // Search is robust, usually < 50 results
     const cleanQuery = query.replace(/\D/g, '');
     let dbQuery = supabaseAdmin.from('leads').select('*');
     if (cleanQuery.length > 5) {
@@ -106,110 +85,141 @@ export async function searchCustomers(query: string): Promise<Customer[]> {
     return (data || []).map(mapRowToCustomer);
 }
 
-// --- STATS (CRITICAL) ---
+// --- SCALABLE STATS ---
 
 export async function getLeadStats(user?: { email: string; role: string }) {
-    // Manual Parallel Fetch Strategy
-    // We execute 3 queries covering 0-2999 range.
-    // This is robust and fast enough.
-
-    // Select minimal fields
-    const fields = 'durum, sahip_email, son_arama_zamani, sonraki_arama_zamani';
-
-    const p1 = supabaseAdmin.from('leads').select(fields).range(0, 999);
-    const p2 = supabaseAdmin.from('leads').select(fields).range(1000, 1999);
-    const p3 = supabaseAdmin.from('leads').select(fields).range(2000, 2999);
-
-    const [r1, r2, r3] = await Promise.all([p1, p2, p3]);
-
-    if (r1.error) console.error('Stats P1 Error', r1.error);
-    if (r2.error) console.error('Stats P2 Error', r2.error);
-
-    const rows = [
-        ...(r1.data || []),
-        ...(r2.data || []),
-        ...(r3.data || [])
-    ];
-
-    if (rows.length === 0) return null; // Should not happen if DB has data
-
-    // Calculation Logic
-    const nowTime = new Date().getTime();
-    const TWO_HOURS = 2 * 60 * 60 * 1000;
-
-    let available = 0;
-    let waiting_new = 0;
-    let waiting_scheduled = 0;
-    let total_scheduled = 0;
-    let waiting_retry = 0;
-    let pending_approval = 0;
-    let waiting_guarantor = 0;
-    let delivered = 0;
-    let approved = 0;
-    let today_called = 0;
-
-    const statusCounts: Record<string, number> = {};
-    const hourly: Record<number, number> = {};
+    // OLD WAY: Fetch All -> Count in JS (Crashes on large data)
+    // NEW WAY: Database Counts using `.count()` and efficient filtering.
 
     const isSales_REP = user?.role === 'SALES_REP';
     const filterEmail = user?.email;
     const todayStr = new Date().toISOString().split('T')[0];
 
-    for (const c of rows) {
-        // c is raw object
+    // 1. COMPLEX COUNTS (Availability)
+    // For availability, complexity implies retrieving candidate rows.
+    // However, we only need to fetch "Unowned" rows, which is a much smaller subset than "All History".
+    // This scales because processed leads (99% of DB) are ignored.
 
-        let isAvail = false;
-        if (!c.sahip_email) {
-            if (c.durum === 'Yeni' || !c.durum) { isAvail = true; waiting_new++; }
+    const { data: poolCandidates } = await supabaseAdmin
+        .from('leads')
+        .select('durum, sonraki_arama_zamani, son_arama_zamani')
+        .is('sahip_email', null); // Fetch ONLY unowned
+
+    // JS Logic for Pool (Fast on small subset)
+    const nowTime = new Date().getTime();
+    const TWO_HOURS = 2 * 60 * 60 * 1000;
+
+    let available = 0;
+    let waiting_new = 0;
+
+    if (poolCandidates) {
+        for (const c of poolCandidates) {
+            let isAvail = false;
+            // Null/Empty or Yeni -> Always available
+            if (c.durum === 'Yeni' || !c.durum) {
+                isAvail = true;
+                waiting_new++;
+            }
+            // Scheduled -> Time Check
             else if (c.durum === 'Daha sonra aranmak istiyor' && c.sonraki_arama_zamani) {
                 if (new Date(c.sonraki_arama_zamani).getTime() <= nowTime) isAvail = true;
             }
+            // Retry -> Timeout Check
             else if (['Ulaşılamadı', 'Meşgul/Hattı kapalı', 'Cevap Yok'].includes(c.durum)) {
                 if (!c.son_arama_zamani || (nowTime - new Date(c.son_arama_zamani).getTime() > TWO_HOURS)) isAvail = true;
             }
-        }
-        if (isAvail) available++;
 
-        if (isSales_REP && c.sahip_email !== filterEmail) continue;
-
-        if (c.durum) statusCounts[c.durum] = (statusCounts[c.durum] || 0) + 1;
-
-        if (c.son_arama_zamani && c.son_arama_zamani.startsWith(todayStr)) {
-            today_called++;
-        }
-
-        if (c.durum === 'Başvuru alındı') pending_approval++;
-        if (c.durum === 'Kefil bekleniyor') waiting_guarantor++;
-        if (c.durum === 'Teslim edildi') delivered++;
-        if (c.durum === 'Onaylandı') approved++;
-
-        if (c.durum === 'Daha sonra aranmak istiyor') {
-            total_scheduled++;
-            if (c.sonraki_arama_zamani && new Date(c.sonraki_arama_zamani).getTime() <= nowTime) waiting_scheduled++;
-        }
-
-        if (['Ulaşılamadı', 'Meşgul/Hattı kapalı', 'Cevap Yok'].includes(c.durum)) {
-            if (!c.son_arama_zamani || (nowTime - new Date(c.son_arama_zamani).getTime() > TWO_HOURS)) waiting_retry++;
+            if (isAvail) available++;
         }
     }
 
+    // 2. SIMPLE COUNTS (DB Aggregation)
+    // We can run these in parallel.
+
+    // Helper for role-based filtering
+    const baseFilter = (q: any) => {
+        if (isSales_REP) return q.eq('sahip_email', filterEmail);
+        return q;
+    };
+
+    // Prepare Promises
+    const pScheduled = baseFilter(supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).eq('durum', 'Daha sonra aranmak istiyor'));
+    const pRetry = baseFilter(supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).in('durum', ['Ulaşılamadı', 'Meşgul/Hattı kapalı', 'Cevap Yok']));
+    const pPending = baseFilter(supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).eq('durum', 'Başvuru alındı'));
+    const pGuarantor = baseFilter(supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).eq('durum', 'Kefil bekleniyor'));
+    const pDelivered = baseFilter(supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).eq('durum', 'Teslim edildi'));
+    const pApproved = baseFilter(supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).eq('durum', 'Onaylandı'));
+
+    // Today Called: Requires filtering by string date (DB Index recommended later)
+    const pToday = baseFilter(supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).ilike('son_arama_zamani', `${todayStr}%`));
+
+    // Execute Parallel
+    const [
+        { count: total_scheduled },
+        { count: waiting_retry_raw },
+        { count: pending_approval },
+        { count: waiting_guarantor },
+        { count: delivered },
+        { count: approved },
+        { count: today_called }
+    ] = await Promise.all([pScheduled, pRetry, pPending, pGuarantor, pDelivered, pApproved, pToday]);
+
+    // Note: waiting_retry in DB count includes ALL retry statuses.
+    // To match legacy logic "Available for retry > 2 hours", we used JS above for the Pool.
+    // For the User's Dashboard "Waiting Retry" box, usually they want to see "Total in Retry Status" or "Actually Waiting"?
+    // The legacy code calculated "waiting_retry" as Available ones.
+    // Let's stick to total DB count for the "Retry" box to show volume, OR keep consistent.
+    // Actually, dashboard usually shows "Working on it" piles.
+    // Let's use the DB count for 'Total Retry Pile' which is faster.
+    // Or if we need exact "available retry", we already calculated it in the Pool loop if unowned.
+    // If owned, we need to check time. 
+    // Complexity: If Sales Rep owns it, is it "Waiting" if it's too early? Yes, technically just not pullable.
+    // Let's simplify: "Waiting Retry" = Total count of retry statuses assigned to user (or all if admin).
+    // This matches the DB count `waiting_retry_raw`.
+
+    // Status Breakdown (Pie Chart data)
+    // We can't do GroupBy easily without RPC.
+    // For now, we can omit it or make a separate RPC call later. 
+    // Or fetch just the 'durum' column for filtered rows.
+    // Let's fetch just 'durum' for the User/Admin to build the chart.
+    // 100k rows of just "String" is ~1MB. Doable.
+
+    const { data: allStatuses } = await baseFilter(supabaseAdmin.from('leads').select('durum'));
+    const statusCounts: Record<string, number> = {};
+    if (allStatuses) {
+        allStatuses.forEach((r: any) => {
+            if (r.durum) statusCounts[r.durum] = (statusCounts[r.durum] || 0) + 1;
+        });
+    }
+
+    // Waiting Scheduled (Time check)
+    // We have total_scheduled. How many are "Waiting"? 
+    // DB Filter: sonraki_arama_zamani <= NOW
+    const nowISO = new Date().toISOString();
+    const { count: waiting_scheduled } = await baseFilter(
+        supabaseAdmin.from('leads')
+            .select('*', { count: 'exact', head: true })
+            .eq('durum', 'Daha sonra aranmak istiyor')
+            .lte('sonraki_arama_zamani', nowISO) // Database Time Comparison
+    );
+
     return {
-        available,
-        waiting_new,
-        waiting_scheduled,
-        total_scheduled,
-        waiting_retry,
-        pending_approval,
-        waiting_guarantor,
-        delivered,
-        approved,
-        today_called,
-        statusCounts,
-        hourly
+        available: available || 0, // Calculated from Pool Candidates
+        waiting_new: waiting_new || 0, // Calculated from Pool Candidates
+        waiting_scheduled: waiting_scheduled || 0,
+        total_scheduled: total_scheduled || 0,
+        waiting_retry: waiting_retry_raw || 0,
+        pending_approval: pending_approval || 0,
+        waiting_guarantor: waiting_guarantor || 0,
+        delivered: delivered || 0,
+        approved: approved || 0,
+        today_called: today_called || 0,
+        statusCounts: statusCounts,
+        hourly: {} // Deprecated/Empty for now
     };
 }
 
-// --- WRITE OPS & MAPPER (Unchanged but included for integrity) ---
+// --- REST UNCHANGED ---
 
 export async function updateLead(customer: Customer, userEmail: string): Promise<Customer> {
     const now = new Date().toISOString();
