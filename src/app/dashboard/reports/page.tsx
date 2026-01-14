@@ -4,54 +4,47 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
-    PieChart, Pie, Cell, AreaChart, Area, LineChart, Line, LabelList, Legend
+    Legend
 } from 'recharts';
 import {
     Loader2, ArrowLeft, Users, Phone, Printer,
-    Package, CheckCircle, Share2, ClipboardList, TrendingUp, Clock, Activity, Download, PhoneForwarded,
-    CheckCircle2, MessageSquare, MessageCircle
+    Package, TrendingUp, Clock, Calendar, Target,
+    MessageSquare, MessageCircle, BadgeCheck, PhoneCall, ClipboardList
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface ReportStats {
-    city: Record<string, {
-        total: number;
-        delivered: number;
-        approved: number;
-        rejected: number;
-        cancelled: number;
-        kefil: number;
-        noEdevlet: number;
-        unreachable: number;
-        other: number;
-    }>;
+    city: Record<string, { total: number; delivered: number; approved: number; rejected: number; cancelled: number; kefil: number; noEdevlet: number; unreachable: number; other: number; }>;
     profession: Record<string, { count: number, totalIncome: number, avgIncome: number }>;
     product: Record<string, number>;
     status: Record<string, number>;
     channel: Record<string, number>;
     rejection: Record<string, number>;
     daily: Record<string, number>;
-    hourly: Record<string, Record<string, Record<number, number>>>; // Date -> User -> Hour -> Count
+    hourly: Record<string, Record<string, Record<number, number>>>;
     funnel: {
-        total: number;
-        contacted: number;
+        totalCalled: number;
+        uniqueCalled: number;
         applications: number;
+        attorneyQueries: number;
+        attorneyPending: number;
+        approved: number;
+        approvedLimit: number;
+        delivered: number;
         sale: number;
     };
-    kpi: {
-        totalCalled: number;
-        remainingToCall: number;
-        retryPool: number;
-        acquisitionRate: string;
-        conversionRate: string;
-    };
-    todayCalled: number;
     todayCalledByPerson: Record<string, number>;
-    performance: Record<string, { calls: number, approvals: number, paceMinutes: number, sms?: number, whatsapp?: number }>;
-    totalCalled: number;
-    remainingToCall: number;
-    totalDelivered: number;
-    totalApproved: number;
+    performance: Record<string, {
+        calls: number;
+        approvals: number;
+        approvedLimit: number;
+        applications: number;
+        paceMinutes: number;
+        sms: number;
+        whatsapp: number;
+        dailyGoal: number;
+        image: string;
+    }>;
 }
 
 const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#6366F1'];
@@ -61,136 +54,108 @@ export default function ReportsPage() {
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState<ReportStats | null>(null);
 
-    // Initialize with today's date in YYYY-MM-DD format (Turkey Time)
-    const [selectedDate, setSelectedDate] = useState<string>(() => {
-        const now = new Date();
-        const trDateFormatter = new Intl.DateTimeFormat('en-CA', {
-            timeZone: 'Europe/Istanbul',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        });
-        return trDateFormatter.format(now);
+    // Date Range State
+    const [startDate, setStartDate] = useState<string>(() => {
+        return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    });
+    const [endDate, setEndDate] = useState<string>(() => {
+        return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
     });
 
     useEffect(() => {
         setLoading(true);
-        fetch(`/api/reports?date=${selectedDate}`)
+        fetch(`/api/reports?startDate=${startDate}&endDate=${endDate}`)
             .then(res => res.json())
             .then(data => {
                 if (data.success) setStats(data.stats);
             })
             .catch(err => console.error(err))
             .finally(() => setLoading(false));
-    }, [selectedDate]);
-
-    const handlePrint = () => {
-        window.print();
-    };
+    }, [startDate, endDate]);
 
     if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin w-8 h-8 text-indigo-600" /></div>;
     if (!stats) return <div className="p-8 text-center text-gray-500">Veri yok.</div>;
 
     // --- Chart Data Prep ---
-
-    // 1. Status Summary (Table data mostly)
-    const statusEntries = Object.entries(stats.status || {})
-        .sort((a, b) => b[1] - a[1]);
+    const statusEntries = Object.entries(stats.status || {}).sort((a, b) => b[1] - a[1]);
     const totalStatusCount = statusEntries.reduce((acc, curr) => acc + curr[1], 0);
 
-    // 2. Channel Data
-    const channelData = Object.entries(stats.channel || {}).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+    // Hourly Data (Aggregated per user across range? API returns by Date Key)
+    // We want to show "Average Activity by Hour" or "Total Activity by Hour" over the period?
+    // User asked "Saatlik çalışma yoğunluğunu canlı veriymiş gibi görselleştir".
+    // We'll aggregate counts per hour across ALL days in range for the heat map effect.
+    const aggregatedHourly: Record<number, Record<string, number>> = {};
+    const relevantUsers = new Set<string>();
 
-    // 3. Profession Data (Top 10)
-    const professionData = Object.entries(stats.profession || {})
-        .filter(([name, d]) => d.count > 0 && name && name !== 'Diğer' && name !== 'Bilinmiyor' && name.trim() !== '')
-        .map(([name, d]) => ({
-            name,
-            count: d.count,
-            percent: totalStatusCount > 0 ? ((d.count / totalStatusCount) * 100).toFixed(1) : '0' // Avg based on total count approximation
-        }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 10);
+    Object.values(stats.hourly || {}).forEach((dayData) => {
+        Object.entries(dayData).forEach(([user, hourMap]) => {
+            // Exclude system users (API should have filtered, but ignore if present)
+            if (['sistem', 'ibrahim', 'admin'].some(x => user.toLowerCase().includes(x))) return;
 
-    const productData = Object.entries(stats.product || {})
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 10)
-        .map(([name, value]) => ({
-            name,
-            value,
-            percent: totalStatusCount > 0 ? ((value / totalStatusCount) * 100).toFixed(1) : '0'
-        }));
-
-    // 4. Hourly Data (Stacked)
-    // Needs to process stats.hourly[selectedDate] -> { user1: {9: 5, 10: 2}, user2: {9: 3} }
-    const relevantHourly = stats.hourly && stats.hourly[selectedDate] ? stats.hourly[selectedDate] : {};
-    const relevantUsers = Object.keys(relevantHourly);
-
-    // Create data for Recharts: [{ hour: '09:00', user1: 5, user2: 3 }, ...]
-    // Focus hours 09:00 to 20:00 (or dynamic range)
-    const hoursToCheck = Array.from({ length: 12 }, (_, i) => i + 9); // 9 to 20
-
-    const hourlyData = hoursToCheck.map(h => {
-        const row: any = { hour: `${String(h).padStart(2, '0')}:00` };
-        let total = 0;
-        relevantUsers.forEach(user => {
-            const count = relevantHourly[user]?.[h] || 0;
-            if (count > 0) {
-                row[user.split('@')[0]] = count; // Short name
-                total += count;
-            }
+            relevantUsers.add(user);
+            Object.entries(hourMap).forEach(([hourStr, count]) => {
+                const h = parseInt(hourStr);
+                if (!aggregatedHourly[h]) aggregatedHourly[h] = {};
+                aggregatedHourly[h][user] = (aggregatedHourly[h][user] || 0) + count;
+            });
         });
-        row.total = total;
-        return row;
     });
 
-    // 5. Daily Trend
-    const dailyData = Object.entries(stats.daily || {}).map(([date, count]) => ({ date, count }));
-
-    // 6. Rejection Data
-    const rejectionTotal = Object.values(stats.rejection || {}).reduce((a, b) => a + b, 0);
-    const rejectionData = Object.entries(stats.rejection || {})
-        .map(([name, value]) => ({
-            name,
-            value,
-            percentStr: rejectionTotal > 0 ? `%${((value / rejectionTotal) * 100).toFixed(1)}` : '0%'
-        }))
-        .sort((a, b) => b.value - a.value);
-
+    const hoursToCheck = Array.from({ length: 14 }, (_, i) => i + 8); // 08:00 to 21:00
+    const hourlyData = hoursToCheck.map(h => {
+        const row: any = { hour: `${String(h).padStart(2, '0')}:00` };
+        relevantUsers.forEach(user => {
+            const count = aggregatedHourly[h]?.[user] || 0;
+            if (count > 0) row[user.split('@')[0]] = count;
+        });
+        return row;
+    });
+    const userList = Array.from(relevantUsers);
 
     return (
         <div className="min-h-screen bg-gray-50/50 p-6 md:p-8 pb-20 print:bg-white print:p-0 font-sans">
             {/* Header */}
-            <div className="flex justify-between items-center mb-8 print:hidden">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 print:hidden">
                 <div className="flex items-center gap-4">
                     <Button variant="outline" onClick={() => router.back()} className="hover:bg-gray-100">
                         <ArrowLeft className="w-4 h-4 mr-2" /> Geri
                     </Button>
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Yönetici Paneli</h1>
-                        <p className="text-sm text-gray-500">Performans ve Operasyonel Metrikler</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <div className="flex items-center">
-                        <span className="mr-3 text-sm font-bold text-gray-600">Tarih:</span>
-                        <input
-                            type="date"
-                            className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2 font-bold shadow-sm"
-                            value={selectedDate}
-                            onChange={(e) => setSelectedDate(e.target.value)}
-                        />
+
+                <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
+                    <div className="flex items-center gap-2 px-2 border-r border-gray-100">
+                        <Calendar className="w-4 h-4 text-gray-500" />
+                        <span className="text-xs font-bold text-gray-500">Tarih Aralığı:</span>
                     </div>
+                    <input
+                        type="date"
+                        className="bg-gray-50 border-0 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:bg-white transition-colors block p-2 font-bold cursor-pointer hover:bg-gray-100"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                    />
+                    <span className="text-gray-400 font-bold">-</span>
+                    <input
+                        type="date"
+                        className="bg-gray-50 border-0 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:bg-white transition-colors block p-2 font-bold cursor-pointer hover:bg-gray-100"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                    />
+                </div>
+
+                <div className="flex gap-2">
                     <Button
                         onClick={() => router.push('/dashboard/delivery-reports')}
-                        className="bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-50 px-4 py-2 rounded-lg transition-colors flex items-center gap-2 font-bold shadow-sm"
+                        className="bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-50 px-4 py-2 rounded-lg font-bold shadow-sm"
                     >
-                        <Package className="w-4 h-4" />
-                        Teslimat Detay
+                        <Package className="w-4 h-4 mr-2" />
+                        Teslimat
                     </Button>
                     <button
                         onClick={() => window.print()}
-                        className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 font-bold shadow-sm"
+                        className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2 font-bold shadow-sm"
                     >
                         <Printer className="w-4 h-4" />
                         Yazdır
@@ -203,34 +168,36 @@ export default function ReportsPage() {
                 <div className="flex justify-between items-end">
                     <div>
                         <h1 className="text-4xl font-extrabold text-gray-900">YÖNETİCİ RAPORU</h1>
-                        <p className="text-gray-600 mt-2 font-bold text-lg">Günlük Satış & Operasyon Özeti</p>
+                        <p className="text-gray-600 mt-2 font-bold text-lg">Operasyon Özeti</p>
                     </div>
                     <div className="text-right">
-                        <p className="text-sm text-gray-500 font-bold">RAPOR TARİHİ</p>
-                        <p className="text-xl font-extrabold text-gray-900">{new Date(selectedDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                        <p className="text-sm text-gray-500 font-bold">RAPOR ARALIĞI</p>
+                        <p className="text-xl font-extrabold text-gray-900">
+                            {new Date(startDate).toLocaleDateString()} - {new Date(endDate).toLocaleDateString()}
+                        </p>
                     </div>
                 </div>
             </div>
 
-            {/* --- ROW 1: SALES FUNNEL (NEW) --- */}
+            {/* --- ROW 1: SALES FUNNEL --- */}
             <div className="mb-8">
                 <SalesFunnel stats={stats} />
             </div>
 
-            {/* --- ROW 2: TEAM PERFORMANCE (REDESIGNED) --- */}
+            {/* --- ROW 2: TEAM PERFORMANCE --- */}
             <div className="mb-10">
                 <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2 mb-6 uppercase tracking-tight">
                     <Users className="w-6 h-6 text-indigo-600" />
                     Personel Performans Karnesi
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {Object.entries(stats.performance).map(([user, pStats]) => (
+                    {Object.entries(stats.performance).sort((a, b) => b[1].calls - a[1].calls).map(([user, pStats]) => (
                         <UserPerformanceCard key={user} user={user} stats={pStats} />
                     ))}
                 </div>
             </div>
 
-            {/* --- ROW 3: HOURLY & TREND --- */}
+            {/* --- ROW 3: HOURLY & STATUS --- */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8 break-inside-avoid">
                 <ChartCard title="Saatlik Çalışma Yoğunluğu" className="xl:col-span-2">
                     <div className="h-[300px]">
@@ -239,10 +206,10 @@ export default function ReportsPage() {
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                                 <XAxis dataKey="hour" tick={{ fontSize: 11, fontWeight: 'bold' }} />
                                 <YAxis tick={{ fontSize: 11 }} />
-                                <RechartsTooltip cursor={{ fill: '#F3F4F6' }} contentStyle={{ borderRadius: '8px' }} />
-                                <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '11px', fontWeight: 'bold' }} />
-                                {relevantUsers.map((user, idx) => (
-                                    <Bar key={user} dataKey={user.split('@')[0]} stackId="a" fill={COLORS[idx % COLORS.length]} radius={[0, 0, 0, 0]} barSize={20} />
+                                <RechartsTooltip cursor={{ fill: '#F3F4F6', opacity: 0.5 }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                                <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase' }} />
+                                {userList.map((user, idx) => (
+                                    <Bar key={user} dataKey={user.split('@')[0]} stackId="a" fill={COLORS[idx % COLORS.length]} radius={[0, 0, 0, 0]} barSize={24} />
                                 ))}
                             </BarChart>
                         </ResponsiveContainer>
@@ -250,10 +217,10 @@ export default function ReportsPage() {
                 </ChartCard>
 
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col h-full">
-                    <h3 className="text-sm font-extrabold text-gray-800 mb-6 uppercase tracking-tight">Dosya Durum Dağılımı</h3>
-                    <div className="flex-1 overflow-auto max-h-[300px] pr-2">
+                    <h3 className="text-sm font-extrabold text-gray-800 mb-6 uppercase tracking-tight">Akıbet Dağılımı</h3>
+                    <div className="flex-1 overflow-auto max-h-[300px] pr-2 scrollbar-thin scrollbar-thumb-gray-200">
                         <table className="w-full text-sm">
-                            <thead className="text-xs text-gray-500 bg-gray-50 uppercase sticky top-0">
+                            <thead className="text-xs text-gray-500 bg-gray-50 uppercase sticky top-0 z-10">
                                 <tr>
                                     <th className="py-2 text-left pl-2">Durum</th>
                                     <th className="py-2 text-right">Adet</th>
@@ -265,7 +232,7 @@ export default function ReportsPage() {
                                     <tr key={status} className="hover:bg-gray-50/50">
                                         <td className="py-2 pl-2 font-medium text-gray-700 truncate max-w-[150px]" title={status}>{status}</td>
                                         <td className="py-2 text-right font-bold text-gray-900">{count}</td>
-                                        <td className="py-2 text-right pr-2 text-gray-500 text-xs text-right w-16">
+                                        <td className="py-2 text-right pr-2 text-gray-500 text-xs w-16">
                                             {totalStatusCount > 0 ? `%${((count / totalStatusCount) * 100).toFixed(1)}` : '0%'}
                                         </td>
                                     </tr>
@@ -276,7 +243,7 @@ export default function ReportsPage() {
                 </div>
             </div>
 
-            {/* --- ROW 4: MINI TABLES (City etc) --- */}
+            {/* --- ROW 4: MINI TABLES --- */}
             <div className="mb-8 break-inside-avoid">
                 <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2 uppercase">
                     İl Bazlı Performans (Top 10)
@@ -284,9 +251,9 @@ export default function ReportsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <CityMiniTable title="Hacim" data={stats.city} sortKey="total" color="blue" />
                     <CityMiniTable title="Teslimat" data={stats.city} sortKey="delivered" color="emerald" showPercent />
-                    <CityMiniTable title="E-Devlet Yok" data={stats.city} sortKey="noEdevlet" color="red" showPercent />
+                    <CityMiniTable title="Red" data={stats.city} sortKey="rejected" color="red" showPercent />
                     <CityMiniTable title="Kefil" data={stats.city} sortKey="kefil" color="purple" showPercent />
-                    <CityMiniTable title="İptal" data={stats.city} sortKey="cancelled" color="gray" showPercent />
+                    <CityMiniTable title="Ulaşılamadı" data={stats.city} sortKey="unreachable" color="gray" showPercent />
                 </div>
             </div>
 
@@ -297,18 +264,16 @@ export default function ReportsPage() {
     );
 }
 
-// --- NEW COMPONENTS ---
+// --- SUB COMPONENTS ---
 
 function SalesFunnel({ stats }: { stats: any }) {
-    // Funnel Steps: Called -> Application -> Attorney -> Approved -> Delivered
-    // We also show "Attorney Pending" as a sub-metric under Attorney
     const f = stats.funnel;
 
-    // For visualization percentages (relative to previous step roughly, or just max width)
-    // Let's keep it simple: Flex row with arrows
+    // Formatting currency
+    const formatCurrency = (val: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(val);
 
     return (
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 relative overflow-hidden">
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 relative overflow-hidden ring-1 ring-gray-100">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500"></div>
             <h2 className="text-xl font-bold text-gray-900 mb-8 flex items-center gap-2">
                 <TrendingUp className="w-6 h-6 text-indigo-600" />
@@ -316,16 +281,21 @@ function SalesFunnel({ stats }: { stats: any }) {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 relative">
-                {/* Arrow connectors (Hidden on mobile) */}
+                {/* Arrow connectors */}
                 <div className="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-gray-100 -z-10 transform -translate-y-1/2"></div>
+                <div className="hidden md:block absolute top-1/2 left-[20%] w-2 h-2 rounded-full bg-gray-300 -z-10 transform -translate-y-1/2"></div>
+                <div className="hidden md:block absolute top-1/2 left-[40%] w-2 h-2 rounded-full bg-gray-300 -z-10 transform -translate-y-1/2"></div>
+                <div className="hidden md:block absolute top-1/2 left-[60%] w-2 h-2 rounded-full bg-gray-300 -z-10 transform -translate-y-1/2"></div>
+                <div className="hidden md:block absolute top-1/2 left-[80%] w-2 h-2 rounded-full bg-gray-300 -z-10 transform -translate-y-1/2"></div>
 
                 <FunnelStep
                     title="YAPILAN ARAMA"
-                    value={stats.todayCalled}
-                    icon={Phone}
+                    value={f.uniqueCalled} // Unique Count
+                    subValue={`Toplam: ${f.totalCalled} Çağrı`} // Total Count
+                    icon={PhoneCall}
                     color="text-indigo-600"
                     bg="bg-indigo-50"
-                    desc="Bugün Aranan Tekil Kişi"
+                    desc="Tekil Kişi Sayısı"
                 />
 
                 <FunnelStep
@@ -343,18 +313,20 @@ function SalesFunnel({ stats }: { stats: any }) {
                     icon={ScaleIcon}
                     color="text-purple-600"
                     bg="bg-purple-50"
-                    desc={`${f.attorneyPending || 0} Bekleyen Sorgu`}
-                    subValue={f.attorneyPending ? `(${f.attorneyPending} Bekleyen)` : undefined}
+                    desc={`${f.attorneyPending || 0} Bekleyen`}
+                    subValue={f.attorneyPending > 0 ? "Şuan İncelenen" : "Tüm Sorgular"}
                 />
 
                 <FunnelStep
                     title="ONAYLANAN"
                     value={f.approved}
-                    icon={CheckCircle2}
+                    icon={BadgeCheck}
                     color="text-emerald-600"
                     bg="bg-emerald-50"
-                    desc="Kredi Onayı Alan"
+                    desc={f.approvedLimit > 0 ? formatCurrency(f.approvedLimit) : "Toplam Limit"}
+                    subValue="Toplam Limit"
                 />
+
                 <FunnelStep
                     title="TESLİM EDİLEN"
                     value={f.delivered}
@@ -371,54 +343,74 @@ function SalesFunnel({ stats }: { stats: any }) {
 
 function FunnelStep({ title, value, icon: Icon, color, bg, desc, subValue, isFinal }: any) {
     return (
-        <div className={`relative flex flex-col items-center text-center p-4 rounded-xl border-2 transition-transform hover:-translate-y-1 ${bg} ${isFinal ? 'border-green-400 shadow-md transform scale-105' : 'border-transparent'}`}>
+        <div className={`relative flex flex-col items-center text-center p-5 rounded-xl border-2 transition-transform hover:-translate-y-1 ${bg} ${isFinal ? 'border-green-400 shadow-md transform scale-105' : 'border-transparent shadow-sm'}`}>
             <div className={`p-3 rounded-full bg-white shadow-sm mb-3 ${color}`}>
                 <Icon className="w-6 h-6" />
             </div>
-            <div className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1">{title}</div>
-            <div className={`text-3xl font-black ${color} mb-1`}>{value}</div>
-            <div className="text-xs font-bold text-gray-500">{desc}</div>
-            {/* Connector Triangle for Mobile */}
-            <div className="md:hidden mt-4 text-gray-300">▼</div>
+            <div className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-2">{title}</div>
+            <div className={`text-4xl font-black ${color} mb-2 tracking-tight`}>{value}</div>
+
+            {subValue && (
+                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-tight mb-1">{subValue}</div>
+            )}
+            <div className="text-xs font-bold text-gray-600">{desc}</div>
         </div>
     );
 }
 
 function UserPerformanceCard({ user, stats }: { user: string, stats: any }) {
-    // Rates
+    // Rates calculation using new metrics
+    // Conversion: Applications / Calls
     const appRate = stats.calls > 0 ? Math.round((stats.applications / stats.calls) * 100) : 0;
+    // Approal Rate: Approvals / Applications
     const approvalRate = stats.applications > 0 ? Math.round((stats.approvals / stats.applications) * 100) : 0;
 
+    // Goal Progress
+    const goalPercent = stats.dailyGoal > 0 ? Math.min(100, Math.round((stats.calls / stats.dailyGoal) * 100)) : 0;
+
+    const formatShortCurrency = (val: number) => {
+        if (!val) return '0 ₺';
+        return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0, notation: 'compact' }).format(val);
+    };
+
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col hover:shadow-lg transition-shadow duration-200">
             {/* Header */}
             <div className="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-lg">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-white border border-indigo-100 text-indigo-700 flex items-center justify-center font-black text-lg shadow-sm">
                         {user.charAt(0).toUpperCase()}
                     </div>
                     <div>
                         <div className="font-bold text-gray-900 text-base">{user.split('@')[0]}</div>
-                        <div className="text-xs text-gray-500 font-medium">Satış Temsilcisi</div>
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full w-fit">
+                            <span>Hedef: {stats.dailyGoal} Çağrı</span>
+                        </div>
                     </div>
                 </div>
-                {/* Score Badge (Optional) */}
-                <div className="flex flex-col items-end">
-                    <span className="text-[10px] uppercase font-bold text-gray-400">GÜNLÜK HEDEF</span>
-                    <span className="text-xs font-bold text-gray-800"> -- </span>
+                {/* Goal Gauge */}
+                <div className="relative w-12 h-12 flex items-center justify-center">
+                    <svg className="w-full h-full transform -rotate-90">
+                        <circle cx="24" cy="24" r="20" stroke="#E5E7EB" strokeWidth="4" fill="none" />
+                        <circle cx="24" cy="24" r="20" stroke="#4F46E5" strokeWidth="4" fill="none" strokeDasharray={`${goalPercent * 1.25} 125`} strokeLinecap="round" />
+                    </svg>
+                    <span className="absolute text-[10px] font-bold text-gray-700">%{goalPercent}</span>
                 </div>
             </div>
 
             <div className="p-4 grid grid-cols-2 gap-4 divide-x divide-gray-100">
                 {/* Left: Activity */}
                 <div className="pr-2 space-y-4">
-                    <h4 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-2">AKTİVİTE</h4>
+                    <h4 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                        <Target className="w-3 h-3" />
+                        AKTİVİTE
+                    </h4>
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2 text-gray-600">
                             <Phone className="w-4 h-4" />
                             <span className="text-xs font-bold">Arama</span>
                         </div>
-                        <span className="text-lg font-black text-gray-900">{stats.calls}</span>
+                        <span className="text-xl font-black text-gray-900">{stats.calls}</span>
                     </div>
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2 text-gray-600">
@@ -438,37 +430,36 @@ function UserPerformanceCard({ user, stats }: { user: string, stats: any }) {
 
                 {/* Right: Funnel & Results */}
                 <div className="pl-4 space-y-4">
-                    <h4 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-2">SONUÇ & DÖNÜŞÜM</h4>
+                    <h4 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3" />
+                        SONUÇ
+                    </h4>
 
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center bg-blue-50/50 p-2 rounded-lg border border-blue-50">
                         <div className="flex flex-col">
-                            <span className="text-xs font-bold text-blue-600">Başvuru</span>
-                            <span className="text-[9px] text-gray-400 font-bold">Aramadan Dönüş</span>
+                            <span className="text-[10px] font-bold text-blue-800">Başvuru</span>
+                            <span className="text-[9px] text-blue-400 font-bold">%{appRate} Dönüşüm</span>
                         </div>
-                        <div className="text-right">
-                            <span className="block text-lg font-black text-blue-600">{stats.applications || 0}</span>
-                            <span className="text-[10px] font-bold text-gray-400">%{appRate}</span>
-                        </div>
+                        <span className="text-xl font-black text-blue-700">{stats.applications || 0}</span>
                     </div>
 
-                    <div className="flex justify-between items-center pt-2 border-t border-gray-50">
+                    <div className="flex justify-between items-center bg-emerald-50/50 p-2 rounded-lg border border-emerald-50">
                         <div className="flex flex-col">
-                            <span className="text-xs font-bold text-emerald-600">Onay</span>
-                            <span className="text-[9px] text-gray-400 font-bold">Başvurudan Dönüş</span>
+                            <span className="text-[10px] font-bold text-emerald-800">Onay</span>
+                            <span className="text-[9px] text-emerald-600 font-bold">{formatShortCurrency(stats.approvedLimit)}</span>
                         </div>
                         <div className="text-right">
-                            <span className="block text-lg font-black text-emerald-600">{stats.approvals}</span>
-                            <span className="text-[10px] font-bold text-gray-400">%{approvalRate}</span>
+                            <span className="block text-xl font-black text-emerald-700">{stats.approvals}</span>
                         </div>
                     </div>
                 </div>
             </div>
             {/* Footer: Pace */}
             <div className="bg-gray-50 p-2 flex justify-between items-center border-t border-gray-100">
-                <span className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1">
-                    <Clock className="w-3 h-3" /> Arama Hızı
-                </span>
-                <span className={`text-xs font-black ${stats.paceMinutes > 15 ? 'text-red-500' : 'text-emerald-600'}`}>
+                <div className="flex items-center gap-1 text-[10px] font-bold text-gray-500 uppercase">
+                    <Clock className="w-3 h-3" /> ORT. ARAMA HIZI
+                </div>
+                <span className={`text-xs font-black ${stats.paceMinutes > 8 ? 'text-red-500' : 'text-emerald-600'} bg-white px-2 py-0.5 rounded shadow-sm`}>
                     {stats.paceMinutes > 0 ? `${stats.paceMinutes} dk/çağrı` : '-'}
                 </span>
             </div>
@@ -498,31 +489,6 @@ function ScaleIcon(props: any) {
             <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" />
         </svg>
     )
-}
-
-function KpiCard({ label, value, icon: Icon, color, subtext, desc }: any) {
-    const colors: any = {
-        blue: 'bg-blue-50 text-blue-700 border-blue-200',
-        indigo: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-        cyan: 'bg-cyan-50 text-cyan-700 border-cyan-200',
-        emerald: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-        amber: 'bg-amber-50 text-amber-700 border-amber-200',
-        purple: 'bg-purple-50 text-purple-700 border-purple-200',
-        green: 'bg-green-50 text-green-700 border-green-200',
-    };
-    const theme = colors[color] || colors.blue;
-    return (
-        <div className={`p-4 rounded-xl border-2 flex flex-col justify-between h-full bg-white hover:shadow-md transition-all print:border-gray-800 ${theme.replace(/bg-\w+-50/, '').replace(/text-\w+-700/, '')}`}>
-            <div className="flex justify-between items-start mb-2">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-500 print:text-black">{label}</span>
-                <Icon className={`w-5 h-5 ${theme.split(' ')[1]} print:text-black`} />
-            </div>
-            <div>
-                <span className="text-2xl font-black text-gray-900">{value}</span>
-                {desc && <p className="text-[10px] text-gray-400 font-bold mt-1 uppercase print:text-gray-600">{desc}</p>}
-            </div>
-        </div>
-    );
 }
 
 function ChartCard({ title, children, className }: { title: string, children: React.ReactNode, className?: string }) {
@@ -578,26 +544,4 @@ function CityMiniTable({ title, data, sortKey, color, showPercent }: { title: st
             </div>
         </div>
     );
-}
-
-// Icon helper
-function TargetIcon(props: any) {
-    return (
-        <svg
-            {...props}
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-            <circle cx="12" cy="12" r="10" />
-            <circle cx="12" cy="12" r="6" />
-            <circle cx="12" cy="12" r="2" />
-        </svg>
-    )
 }
