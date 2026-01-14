@@ -366,7 +366,24 @@ export async function updateLead(customer: Customer, userEmail: string): Promise
             kapali_icra: customer.kapali_icra_varmi,
             detay: customer.acik_icra_detay
         },
-        dava_durumu: { varmi: customer.dava_dosyasi_varmi, detay: customer.dava_detay }
+        dava_durumu: { varmi: customer.dava_dosyasi_varmi, detay: customer.dava_detay },
+
+        // Missing Fields Added:
+        winner_musteri_no: customer.winner_musteri_no,
+        e_devlet_sifre: customer.e_devlet_sifre,
+        iptal_nedeni: customer.iptal_nedeni,
+        kefil_ad_soyad: customer.kefil_ad_soyad,
+        kefil_telefon: customer.kefil_telefon,
+        kefil_tc_kimlik: customer.kefil_tc_kimlik,
+        teslim_tarihi: customer.teslim_tarihi || null,
+        teslim_eden: customer.teslim_eden,
+        urun_imei: customer.urun_imei,
+        urun_seri_no: customer.urun_seri_no,
+        satilan_urunler: customer.satilan_urunler // JSON string or object? DB expects JSONB. 
+        // Frontend stores it as stringified JSON in `satilan_urunler` string field?
+        // Let's check type. Customer type says string. DB needs JSONB.
+        // If Customer type says string, we should probably parse it if it looks like JSON, or pass as is if Postgres handles string->jsonb cast.
+        // Postgres handles string literal to jsonb.
     };
 
     const { data, error } = await supabaseAdmin.from('leads').update(updates).eq('id', customer.id).select().single();
@@ -412,6 +429,8 @@ export async function getRecentLogs(limit: number = 50): Promise<LogEntry[]> {
 
 function mapRowToCustomer(row: any): Customer {
     return {
-        id: row.id, created_at: row.created_at, created_by: row.created_by, ad_soyad: row.ad_soyad, telefon: row.telefon, tc_kimlik: row.tc_kimlik, email: row.email, dogum_tarihi: row.dogum_tarihi, durum: row.durum, sahip: row.sahip_email, sehir: row.sehir, ilce: row.ilce, meslek_is: row.meslek_is, son_yatan_maas: row.maas_bilgisi, acik_icra_varmi: row.icra_durumu?.acik_icra, kapali_icra_varmi: row.icra_durumu?.kapali_icra, acik_icra_detay: row.icra_durumu?.detay, dava_dosyasi_varmi: row.dava_durumu?.varmi, dava_detay: row.dava_durumu?.detay, admin_notu: row.admin_notu, arama_not_kisa: row.arama_notu, basvuru_kanali: row.basvuru_kanali, talep_edilen_urun: row.talep_edilen_urun, talep_edilen_tutar: row.talep_edilen_tutar, onay_durumu: row.onay_durumu, sonraki_arama_zamani: row.sonraki_arama_zamani, son_arama_zamani: row.son_arama_zamani, kilitli_mi: false, ...row
+        id: row.id, created_at: row.created_at, created_by: row.created_by, ad_soyad: row.ad_soyad, telefon: row.telefon, tc_kimlik: row.tc_kimlik, email: row.email, dogum_tarihi: row.dogum_tarihi, durum: row.durum, sahip: row.sahip_email, sehir: row.sehir, ilce: row.ilce, meslek_is: row.meslek_is, son_yatan_maas: row.maas_bilgisi, acik_icra_varmi: row.icra_durumu?.acik_icra, kapali_icra_varmi: row.icra_durumu?.kapali_icra, acik_icra_detay: row.icra_durumu?.detay, dava_dosyasi_varmi: row.dava_durumu?.varmi, dava_detay: row.dava_durumu?.detay, admin_notu: row.admin_notu, arama_not_kisa: row.arama_notu, basvuru_kanali: row.basvuru_kanali, talep_edilen_urun: row.talep_edilen_urun, talep_edilen_tutar: row.talep_edilen_tutar, onay_durumu: row.onay_durumu, sonraki_arama_zamani: row.sonraki_arama_zamani, son_arama_zamani: row.son_arama_zamani, kilitli_mi: false,
+        winner_musteri_no: row.winner_musteri_no, e_devlet_sifre: row.e_devlet_sifre, iptal_nedeni: row.iptal_nedeni, kefil_ad_soyad: row.kefil_ad_soyad, kefil_telefon: row.kefil_telefon, kefil_tc_kimlik: row.kefil_tc_kimlik, teslim_tarihi: row.teslim_tarihi, teslim_eden: row.teslim_eden, urun_imei: row.urun_imei, urun_seri_no: row.urun_seri_no, satilan_urunler: typeof row.satilan_urunler === 'object' ? JSON.stringify(row.satilan_urunler) : row.satilan_urunler,
+        ...row
     };
 }

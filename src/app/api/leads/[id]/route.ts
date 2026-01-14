@@ -102,9 +102,14 @@ export async function PUT(
 
         return NextResponse.json({ lead: updated });
     } catch (error: any) {
-        console.error('Update error:', error);
+        console.error('Update Validation Error Details:', JSON.stringify(error, null, 2));
+        console.error('Update Error Message:', error.message);
+
         return NextResponse.json(
-            { message: error.message || 'Update failed' },
+            {
+                message: error.message || 'Update failed',
+                details: error.details || error.hint || 'No specific details'
+            },
             { status: 500 }
         );
     }
