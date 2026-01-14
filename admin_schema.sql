@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
     name TEXT,
     role TEXT DEFAULT 'SALES_REP', -- 'ADMIN' or 'SALES_REP'
     created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
     last_login TIMESTAMPTZ
 );
 
