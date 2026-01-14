@@ -26,7 +26,7 @@ export default function DashboardLayout({
     }, [pathname]);
 
     useEffect(() => {
-        if (session?.user?.role === 'ADMIN') {
+        if (['ADMIN', 'Admin'].includes(session?.user?.role || '')) {
             fetch('/api/leads/stats').then(res => res.json()).then(setStats).catch(() => { });
         }
     }, [pathname, session]);
@@ -57,7 +57,7 @@ export default function DashboardLayout({
                             <div className="flex items-center gap-4">
                                 <h1 className="text-xl font-bold text-gray-900 tracking-tight">CepteKolay+</h1>
                                 <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full border border-indigo-100 hidden sm:inline-block">
-                                    {session?.user?.email}
+                                    {session?.user?.email} <span className="opacity-75">({session?.user?.role})</span>
                                 </span>
                             </div>
 
@@ -108,7 +108,7 @@ export default function DashboardLayout({
                                     </Button>
                                 </Link>
 
-                                {session?.user?.role === 'ADMIN' && (
+                                {['ADMIN', 'Admin'].includes(session?.user?.role || '') && (
                                     <>
                                         <Link href="/dashboard/approvals">
                                             <Button
@@ -243,7 +243,7 @@ export default function DashboardLayout({
                                     </Button>
                                 </Link>
 
-                                {session?.user?.role === 'ADMIN' && (
+                                {['ADMIN', 'Admin'].includes(session?.user?.role || '') && (
                                     <>
                                         <div className="my-2 border-t border-gray-100" />
                                         <p className="text-xs font-semibold text-gray-400 uppercase px-2 mb-2">Yönetici</p>
