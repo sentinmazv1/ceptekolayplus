@@ -231,15 +231,21 @@ export async function GET(req: NextRequest) {
             if (stats.performance[u]) stats.performance[u].applications = userAppIds[u].size;
         });
 
-        // Goals & Pace
-        const goaldStart = new Date(); goaldStart.setDate(goaldStart.getDate() - 7);
-        const goalStartTime = goaldStart.getTime();
+        // Goals: Last 7 Days EXCLUDING Today (Static Goal)
+        const todayMidnight = new Date();
+        todayMidnight.setHours(0, 0, 0, 0);
+        const sevenDaysAgoMidnight = todayMidnight.getTime() - (7 * 24 * 60 * 60 * 1000);
+        const todayMidnightTime = todayMidnight.getTime();
+
         const last7DaysCalls: Record<string, number> = {};
 
         logs.forEach((l: any) => {
             const user = l.user_email;
             if (!user || ['sistem', 'admin', 'ibrahim'].some(x => user.includes(x))) return;
-            if (new Date(l.timestamp).getTime() >= goalStartTime && l.action === 'PULL_LEAD') {
+            const t = new Date(l.timestamp).getTime();
+
+            // Strictly between 7 days ago (inclusive) and today midnight (exclusive)
+            if (t >= sevenDaysAgoMidnight && t < todayMidnightTime && l.action === 'PULL_LEAD') {
                 last7DaysCalls[user] = (last7DaysCalls[user] || 0) + 1;
             }
         });
