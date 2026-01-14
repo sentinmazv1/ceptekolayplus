@@ -2,6 +2,8 @@
 import { supabaseAdmin } from './supabase';
 import { Customer, LeadStatus, LogEntry } from './types';
 
+const retryStates = ['Ulaşılamadı', 'Meşgul/Hattı kapalı', 'Cevap Yok'];
+
 // --- READ OPERATIONS ---
 
 export async function getLead(id: string): Promise<Customer | null> {
@@ -181,7 +183,6 @@ export async function getLeadStats(user?: { email: string; role: string }) {
 export async function lockNextLead(userEmail: string): Promise<(Customer & { source?: string }) | null> {
     const nowISO = new Date().toISOString();
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-    const retryStates = ['Ulaşılamadı', 'Meşgul/Hattı kapalı', 'Cevap Yok'];
 
     // Parallel Fetch from 4 Buckets
     // 1. Automation (Empty/Null/Yeni)
