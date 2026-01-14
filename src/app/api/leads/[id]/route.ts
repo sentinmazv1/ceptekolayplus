@@ -35,14 +35,28 @@ export async function PUT(
 
         // --- SMS LOGIC ---
         // Check if status changed
+        // Match logs for Reports (Applications, etc.)
         if (existing && existing.durum !== updated.durum) {
+            const { logAction } = await import('@/lib/leads'); // Ensure import
+
+            // Log the Status Change
+            await logAction({
+                log_id: crypto.randomUUID(),
+                timestamp: new Date().toISOString(),
+                user_email: session.user.email,
+                customer_id: updated.id,
+                action: 'UPDATE_STATUS', // Crucial for Reports
+                old_value: existing.durum,
+                new_value: updated.durum,
+                note: 'Status updated via detailed view'
+            });
+
             const status = updated.durum;
             let smsMessage = null;
 
             // Import dynamically or at top. Using dynamic for now to keep cleaner diff
             const { SMS_TEMPLATES } = await import('@/lib/sms-templates');
             const { sendSMS } = await import('@/lib/sms');
-            const { logAction } = await import('@/lib/leads');
 
             if (status === 'Ulaşılamadı' || status === 'Cevap Yok') {
                 smsMessage = SMS_TEMPLATES.UNREACHABLE(updated.ad_soyad);
@@ -78,6 +92,22 @@ export async function PUT(
                 console.log('Skipping Auto-SMS (Manual Mode Active):', smsMessage);
             }
         }
+
+        // Detect Attorney Query Updates
+        if (existing && existing.avukat_sorgu_durumu !== updated.avukat_sorgu_durumu) {
+            const { logAction } = await import('@/lib/leads');
+            await logAction({
+                log_id: crypto.randomUUID(),
+                timestamp: new Date().toISOString(),
+                user_email: session.user.email,
+                customer_id: updated.id,
+                action: 'UPDATE_FIELDS',
+                old_value: existing.avukat_sorgu_durumu || '',
+                new_value: updated.avukat_sorgu_durumu || '',
+                note: 'Avukat Sorgu Durumu Updated'
+            });
+        }
+
 
         // Also check if approval status changed explicitly to 'Kefil İstendi' even if main status didn't change (edge case)
         if (existing && existing.onay_durumu !== updated.onay_durumu && updated.onay_durumu === 'Kefil İstendi' && existing.durum === updated.durum) {

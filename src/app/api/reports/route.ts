@@ -244,8 +244,12 @@ export async function GET(req: NextRequest) {
                 if (!stats.city[row.sehir]) stats.city[row.sehir] = { total: 0, delivered: 0, approved: 0, rejected: 0, cancelled: 0, kefil: 0, noEdevlet: 0, unreachable: 0, other: 0 };
                 stats.city[row.sehir].total++;
                 if (status === 'Teslim edildi') stats.city[row.sehir].delivered++;
-                // ... (mapping continues same as before)
             }
+            // Populate Status Distribution
+            if (status) {
+                stats.status[status] = (stats.status[status] || 0) + 1;
+            }
+
             // ... (Other snapshots same as before)
 
             // Rejections

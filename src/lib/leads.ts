@@ -439,6 +439,7 @@ export async function updateLead(customer: Customer, userEmail: string): Promise
 
         // Delivery
         teslim_tarihi: customer.teslim_tarihi || null,
+        onay_tarihi: customer.onay_tarihi || null, // Add this line
         teslim_eden: customer.teslim_eden,
         urun_imei: customer.urun_imei,
         urun_seri_no: customer.urun_seri_no,
