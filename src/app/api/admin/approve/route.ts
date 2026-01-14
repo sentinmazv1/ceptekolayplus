@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { updateLead, getLeads, logAction } from '@/lib/leads';
+import { updateLead, getLead, logAction } from '@/lib/leads';
 import { sendStatusEmail } from '@/lib/email-service';
 
 export async function POST(req: NextRequest) {
@@ -23,9 +23,8 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
         }
 
-        // Fetch the customer
-        const leads = await getLeads();
-        const customer = leads.find(l => l.id === customerId);
+        // Fetch the customer directly
+        const customer = await getLead(customerId);
 
         if (!customer) {
             return NextResponse.json({ message: 'Customer not found' }, { status: 404 });

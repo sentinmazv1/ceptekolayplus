@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { updateLead, getLeads, logAction } from '@/lib/leads';
+import { updateLead, getLead, logAction } from '@/lib/leads';
 
 export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
@@ -25,9 +25,8 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'customerId ve action gerekli' }, { status: 400 });
         }
 
-        // Fetch the customer
-        const leads = await getLeads();
-        const customer = leads.find(l => l.id === customerId);
+        // Fetch the customer directly
+        const customer = await getLead(customerId);
 
         if (!customer) {
             return NextResponse.json({ message: 'Customer not found' }, { status: 404 });

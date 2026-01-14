@@ -32,9 +32,11 @@ export async function GET(req: NextRequest) {
         const targetDate = queryDate ? queryDate : trFormatter.format(new Date());
 
         // Fetch Data from Supabase
+        // FIX: Fetch ALL logs to handle timezone differences correctly in JS. 
+        // Passing targetDate to getAllLogs performs a strict string match on UTC ISO string which fails for TRT offsets.
         const [customers, logs] = await Promise.all([
             getReportData(),
-            getAllLogs(targetDate) // Optimized: Fetch logs ONLY for the target day
+            getAllLogs() // No filter = fetch all (paginated)
         ]);
 
         if (!customers || customers.length === 0) {
