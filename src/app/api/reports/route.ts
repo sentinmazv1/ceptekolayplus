@@ -84,9 +84,6 @@ export async function GET(req: NextRequest) {
             hourly: {} as Record<string, Record<string, Record<number, number>>>,
         };
 
-        const queryDate = req.nextUrl.searchParams.get('date');
-        const targetDate = queryDate ? queryDate : trFormatter.format(new Date());
-
         // --- 1. PROCESS CUSTOMERS ---
         customers.forEach((row: any) => {
             stats.funnel.total++;
