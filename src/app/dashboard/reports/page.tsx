@@ -172,20 +172,28 @@ export default function ReportsPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <div className="flex items-center">
+                        <span className="mr-3 text-sm font-bold text-gray-600">Tarih:</span>
+                        <input
+                            type="date"
+                            className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2 font-bold shadow-sm"
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                        />
+                    </div>
                     <Button
                         onClick={() => router.push('/dashboard/delivery-reports')}
                         className="bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-50 px-4 py-2 rounded-lg transition-colors flex items-center gap-2 font-bold shadow-sm"
                     >
                         <Package className="w-4 h-4" />
-                        Teslimat Detay Raporu
+                        Teslimat Detay
                     </Button>
-
                     <button
                         onClick={() => window.print()}
                         className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 font-bold shadow-sm"
                     >
                         <Printer className="w-4 h-4" />
-                        Yazdır / PDF
+                        Yazdır
                     </button>
                 </div>
             </div>
@@ -195,263 +203,54 @@ export default function ReportsPage() {
                 <div className="flex justify-between items-end">
                     <div>
                         <h1 className="text-4xl font-extrabold text-gray-900">YÖNETİCİ RAPORU</h1>
-                        <p className="text-gray-600 mt-2 font-bold text-lg">CepteKolay+ Operasyon Analizi</p>
+                        <p className="text-gray-600 mt-2 font-bold text-lg">Günlük Satış & Operasyon Özeti</p>
                     </div>
                     <div className="text-right">
                         <p className="text-sm text-gray-500 font-bold">RAPOR TARİHİ</p>
-                        <p className="text-xl font-extrabold text-gray-900">{new Date().toLocaleDateString('tr-TR')}</p>
+                        <p className="text-xl font-extrabold text-gray-900">{new Date(selectedDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                     </div>
                 </div>
             </div>
 
-            {/* --- ROW 1: EXECUTIVE KPIs (New Logic) --- */}
-            <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
-                <KpiCard
-                    label="TOPLAM BAŞVURU"
-                    value={stats.funnel.total}
-                    icon={Users}
-                    color="blue"
-                    desc="Tüm zamanlar"
-                />
-                <KpiCard
-                    label="BUGÜNE KADAR ARANAN"
-                    value={stats.kpi.totalCalled}
-                    icon={Phone}
-                    color="indigo"
-                    desc="Yeni hariç tekil"
-                />
-                <KpiCard
-                    label="BAŞVURU ORANI" // Acquisition Rate
-                    value={`%${stats.kpi.acquisitionRate}`}
-                    icon={TargetIcon}
-                    color="cyan"
-                    desc="Başvuru / Aranan"
-                />
-                <KpiCard
-                    label="SATIŞ ORANI" // Conversion Rate
-                    value={`%${stats.kpi.conversionRate}`}
-                    icon={TrendingUp}
-                    color="emerald"
-                    desc="Teslim / Başvuru"
-                />
-                <KpiCard
-                    label="KALAN (YENİ)"
-                    value={stats.kpi.remainingToCall}
-                    icon={ClipboardList}
-                    color="amber"
-                    desc="Henüz hiç aranmamış"
-                />
-                <KpiCard
-                    label="TEKRAR ARANACAK"
-                    value={stats.kpi.retryPool}
-                    icon={PhoneForwarded}
-                    color="purple"
-                    desc="Ulaşılamadı/Havuz vb."
-                />
+            {/* --- ROW 1: SALES FUNNEL (NEW) --- */}
+            <div className="mb-8">
+                <SalesFunnel stats={stats} />
             </div>
 
-            {/* --- ROW 2: TEAM PERFORMANCE & HOURLY --- */}
+            {/* --- ROW 2: TEAM PERFORMANCE (REDESIGNED) --- */}
+            <div className="mb-10">
+                <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2 mb-6 uppercase tracking-tight">
+                    <Users className="w-6 h-6 text-indigo-600" />
+                    Personel Performans Karnesi
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {Object.entries(stats.performance).map(([user, pStats]) => (
+                        <UserPerformanceCard key={user} user={user} stats={pStats} />
+                    ))}
+                </div>
+            </div>
+
+            {/* --- ROW 3: HOURLY & TREND --- */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8 break-inside-avoid">
-                {/* Team Cards (Activity) */}
-                <div className="xl:col-span-1 space-y-4">
-                    <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                        <Activity className="w-5 h-5 text-indigo-600" />
-                        Ekip Performansı ({new Date(selectedDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })})
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-4">
-                        {Object.entries(stats.performance).map(([user, pStats]) => {
-                            // Pace Color Logic: <10m Green, 10-20m Amber, >20m Red/Gray
-                            const paceColor = pStats.paceMinutes > 0 && pStats.paceMinutes <= 12 ? 'text-emerald-700 bg-emerald-50 border-emerald-200' :
-                                pStats.paceMinutes > 12 && pStats.paceMinutes <= 25 ? 'text-amber-700 bg-amber-50 border-amber-200' :
-                                    'text-red-700 bg-red-50 border-red-200';
-
-                            return (
-                                <div key={user} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 print:border-gray-800 flex flex-col gap-3 hover:shadow-md transition-shadow">
-                                    <div className="pb-2 border-b border-gray-100 flex justify-between items-center">
-                                        <div className="flex items-center gap-2">
-                                            <div className="bg-gray-100 p-1.5 rounded-full">
-                                                <Users className="w-4 h-4 text-gray-600" />
-                                            </div>
-                                            <div className="font-bold text-gray-900 truncate text-base" title={user}>{user.split('@')[0]}</div>
-                                        </div>
-                                        {/* Optional: Add a simple rank or badge here if needed */}
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="text-center p-2 rounded-lg bg-indigo-50/50 border border-indigo-100">
-                                            <span className="block text-2xl font-black text-indigo-600">{pStats.calls}</span>
-                                            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wide">ARAMA</span>
-                                        </div>
-                                        <div className="text-center p-2 rounded-lg bg-emerald-50/50 border border-emerald-100">
-                                            <span className="block text-2xl font-black text-emerald-600">{pStats.approvals}</span>
-                                            <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wide">ONAY</span>
-                                        </div>
-                                        {/* Row 2: SMS & WA */}
-                                        <div className="text-center p-2 rounded-lg bg-blue-50/50 border border-blue-100">
-                                            <span className="block text-lg font-black text-blue-600">{pStats.sms || 0}</span>
-                                            <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wide">SMS</span>
-                                        </div>
-                                        <div className="text-center p-2 rounded-lg bg-green-50/50 border border-green-100">
-                                            <span className="block text-lg font-black text-green-600">{pStats.whatsapp || 0}</span>
-                                            <span className="text-[10px] font-bold text-green-400 uppercase tracking-wide">WP</span>
-                                        </div>
-                                    </div>
-
-                                    {pStats.paceMinutes > 0 ? (
-                                        <div className={`flex flex-col gap-1 px-3 py-2 rounded-lg border ${paceColor}`}>
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-1.5">
-                                                    <Clock className="w-3.5 h-3.5" />
-                                                    <span className="text-[10px] font-extrabold uppercase opacity-80">Arama Sıklığı</span>
-                                                </div>
-                                                <span className="text-sm font-black">{pStats.paceMinutes} dk</span>
-                                            </div>
-                                            <div className="text-[10px] font-medium opacity-90 text-right leading-tight">
-                                                Her {pStats.paceMinutes} dakikada bir arama
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="text-xs text-gray-400 text-center py-2 italic bg-gray-50 rounded-lg">Henüz hız verisi oluşmadı</div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* Hourly Stacked Chart */}
-                <ChartCard title="SAATLİK ÇALIŞMA YOĞUNLUĞU (KİŞİ BAZLI)" className="xl:col-span-2">
-                    <div className="mb-4 flex items-center justify-between print:hidden">
-                        <span className="text-xs text-gray-500 font-bold">Seçili Tarih:</span>
-                        <input
-                            type="date"
-                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2"
-                            value={selectedDate}
-                            onChange={(e) => setSelectedDate(e.target.value)}
-                        />
-                    </div>
-                    <div className="h-[350px]">
+                <ChartCard title="Saatlik Çalışma Yoğunluğu" className="xl:col-span-2">
+                    <div className="h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={hourlyData} margin={{ top: 20, right: 30, left: -20, bottom: 5 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                                 <XAxis dataKey="hour" tick={{ fontSize: 11, fontWeight: 'bold' }} />
                                 <YAxis tick={{ fontSize: 11 }} />
-                                <RechartsTooltip
-                                    cursor={{ fill: '#F3F4F6' }}
-                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
-                                />
-                                <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '12px', fontWeight: 'bold' }} />
+                                <RechartsTooltip cursor={{ fill: '#F3F4F6' }} contentStyle={{ borderRadius: '8px' }} />
+                                <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '11px', fontWeight: 'bold' }} />
                                 {relevantUsers.map((user, idx) => (
-                                    <Bar
-                                        key={user}
-                                        dataKey={user.split('@')[0]}
-                                        stackId="a"
-                                        fill={COLORS[idx % COLORS.length]}
-                                        radius={[0, 0, 0, 0]}
-                                        barSize={30}
-                                    >
-                                        <LabelList dataKey={user.split('@')[0]} position="center" fill="white" fontSize={10} fontWeight="bold" formatter={(val: any) => val > 0 ? val : ''} />
-                                    </Bar>
+                                    <Bar key={user} dataKey={user.split('@')[0]} stackId="a" fill={COLORS[idx % COLORS.length]} radius={[0, 0, 0, 0]} barSize={20} />
                                 ))}
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
                 </ChartCard>
 
-                {/* TOTAL SUMMARY CARD (Below Chart - Spanning 2 cols) */}
-                <div className="xl:col-span-2 mt-[-1rem]">
-                    {(() => {
-                        const totals = Object.values(stats.performance).reduce((acc, curr) => ({
-                            calls: acc.calls + curr.calls,
-                            approvals: acc.approvals + curr.approvals,
-                            sms: acc.sms + (curr.sms || 0),
-                            whatsapp: acc.whatsapp + (curr.whatsapp || 0),
-                            paceSum: acc.paceSum + (curr.paceMinutes || 0),
-                            paceCount: acc.paceCount + (curr.paceMinutes > 0 ? 1 : 0)
-                        }), { calls: 0, approvals: 0, sms: 0, whatsapp: 0, paceSum: 0, paceCount: 0 });
-
-                        const avgPace = totals.paceCount > 0 ? Math.round(totals.paceSum / totals.paceCount) : 0;
-
-                        return (
-                            <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white p-6 rounded-xl shadow-lg border border-gray-700 flex flex-col items-center justify-between gap-6 print:break-inside-avoid relative overflow-hidden">
-                                {/* Decorative Background Elements */}
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-
-                                <div className="flex items-center gap-4 w-full md:w-auto z-10">
-                                    <div className="p-3 bg-white/10 rounded-full backdrop-blur-sm border border-white/10">
-                                        <Activity className="w-8 h-8 text-indigo-300" />
-                                    </div>
-                                    <div className="text-left">
-                                        <h3 className="text-lg font-bold text-white tracking-tight leading-tight">TOPLAM PERFORMANS</h3>
-                                        <p className="text-xs text-indigo-200 font-medium uppercase tracking-wide">Günlük Özet</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 w-full z-10">
-                                    <div className="flex flex-col items-center p-3 bg-white/5 rounded-lg border border-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors">
-                                        <Phone className="w-5 h-5 text-indigo-300 mb-1 opacity-70" />
-                                        <span className="text-2xl font-black text-white">{totals.calls}</span>
-                                        <span className="text-[9px] font-bold text-indigo-200 uppercase tracking-widest">Arama</span>
-                                    </div>
-
-                                    <div className="flex flex-col items-center p-3 bg-white/5 rounded-lg border border-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors">
-                                        <CheckCircle2 className="w-5 h-5 text-emerald-300 mb-1 opacity-70" />
-                                        <span className="text-2xl font-black text-white">{totals.approvals}</span>
-                                        <span className="text-[9px] font-bold text-emerald-200 uppercase tracking-widest">Onay</span>
-                                    </div>
-
-                                    <div className="flex flex-col items-center p-3 bg-white/5 rounded-lg border border-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors">
-                                        <MessageSquare className="w-5 h-5 text-blue-300 mb-1 opacity-70" />
-                                        <span className="text-2xl font-black text-white">{totals.sms}</span>
-                                        <span className="text-[9px] font-bold text-blue-200 uppercase tracking-widest">SMS</span>
-                                    </div>
-
-                                    <div className="flex flex-col items-center p-3 bg-white/5 rounded-lg border border-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors">
-                                        <MessageCircle className="w-5 h-5 text-green-300 mb-1 opacity-70" />
-                                        <span className="text-2xl font-black text-white">{totals.whatsapp}</span>
-                                        <span className="text-[9px] font-bold text-green-200 uppercase tracking-widest">WP</span>
-                                    </div>
-
-                                    <div className="flex flex-col items-center p-3 bg-white/5 rounded-lg border border-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors col-span-2 md:col-span-1">
-                                        <Clock className="w-5 h-5 text-amber-300 mb-1 opacity-70" />
-                                        <span className="text-2xl font-black text-white">{avgPace}<span className="text-sm font-normal opacity-60 ml-0.5">dk</span></span>
-                                        <span className="text-[9px] font-bold text-amber-200 uppercase tracking-widest">Ort. Hız</span>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })()}
-                </div>
-            </div>
-
-            {/* --- ROW 3: DETAILED BREAKDOWNS --- */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 break-inside-avoid">
-                {/* 30 Day Trend (Area) */}
-                <ChartCard title="30 GÜNLÜK İŞLEM HACMİ" className="lg:col-span-2">
-                    <div className="h-[300px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={dailyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <defs>
-                                    <linearGradient id="colorTrend" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#4F46E5" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                                <XAxis dataKey="date" tick={{ fontSize: 10, fontWeight: 'bold' }} minTickGap={30} />
-                                <YAxis tick={{ fontSize: 10 }} />
-                                <RechartsTooltip />
-                                <Area type="monotone" dataKey="count" stroke="#4F46E5" strokeWidth={3} fillOpacity={1} fill="url(#colorTrend)">
-                                    <LabelList dataKey="count" position="top" offset={10} fontSize={10} fontWeight="bold" formatter={(val: any) => val} />
-                                </Area>
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
-                </ChartCard>
-
-                {/* Status List (Table Replacement for Pie) */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 print:border-gray-800 flex flex-col h-full">
-                    <h3 className="text-base font-bold text-gray-800 mb-4 uppercase">DOSYA DURUM DAĞILIMI</h3>
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col h-full">
+                    <h3 className="text-sm font-extrabold text-gray-800 mb-6 uppercase tracking-tight">Dosya Durum Dağılımı</h3>
                     <div className="flex-1 overflow-auto max-h-[300px] pr-2">
                         <table className="w-full text-sm">
                             <thead className="text-xs text-gray-500 bg-gray-50 uppercase sticky top-0">
@@ -462,11 +261,11 @@ export default function ReportsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {statusEntries.map(([status, count], idx) => (
+                                {statusEntries.map(([status, count]) => (
                                     <tr key={status} className="hover:bg-gray-50/50">
-                                        <td className="py-2 pl-2 font-medium text-gray-700 truncate max-w-[120px]" title={status}>{status}</td>
+                                        <td className="py-2 pl-2 font-medium text-gray-700 truncate max-w-[150px]" title={status}>{status}</td>
                                         <td className="py-2 text-right font-bold text-gray-900">{count}</td>
-                                        <td className="py-2 text-right pr-2 text-gray-500 text-xs">
+                                        <td className="py-2 text-right pr-2 text-gray-500 text-xs text-right w-16">
                                             {totalStatusCount > 0 ? `%${((count / totalStatusCount) * 100).toFixed(1)}` : '0%'}
                                         </td>
                                     </tr>
@@ -474,69 +273,232 @@ export default function ReportsPage() {
                             </tbody>
                         </table>
                     </div>
-                    <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center text-sm font-bold text-gray-900">
-                        <span>TOPLAM</span>
-                        <span>{totalStatusCount}</span>
-                    </div>
                 </div>
             </div>
 
-            {/* --- ROW 4: DEMOGRAPHICS (Bar Charts with Labels) --- */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 break-inside-avoid">
-                <ChartCard title="MESLEK DAĞILIMI (TOP 10)">
-                    <div className="h-[300px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={professionData} layout="vertical" margin={{ left: 0, right: 30 }}>
-                                <XAxis type="number" hide />
-                                <YAxis dataKey="name" type="category" width={110} tick={{ fontSize: 10, fontWeight: 'bold' }} axisLine={false} tickLine={false} />
-                                <Bar dataKey="count" fill="#EC4899" radius={[0, 4, 4, 0]} barSize={20}>
-                                    <LabelList dataKey="percent" position="right" formatter={(val: any) => `%${val}`} fontSize={11} fontWeight="bold" fill="#374151" />
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </ChartCard>
-
-                <ChartCard title="EN ÇOK TALEP EDİLEN ÜRÜNLER">
-                    <div className="h-[300px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={productData} layout="vertical" margin={{ left: 0, right: 30 }}>
-                                <XAxis type="number" hide />
-                                <YAxis dataKey="name" type="category" width={110} tick={{ fontSize: 10, fontWeight: 'bold' }} axisLine={false} tickLine={false} />
-                                <Bar dataKey="value" fill="#6366F1" radius={[0, 4, 4, 0]} barSize={20}>
-                                    <LabelList dataKey="percent" position="right" formatter={(val: any) => `%${val}`} fontSize={11} fontWeight="bold" fill="#374151" />
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </ChartCard>
-            </div>
-
-            {/* --- ROW 5: CITY (Keep original mini tables design) --- */}
+            {/* --- ROW 4: MINI TABLES (City etc) --- */}
             <div className="mb-8 break-inside-avoid">
                 <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2 uppercase">
-                    İl Bazlı Performans Özetleri (Top 10)
+                    İl Bazlı Performans (Top 10)
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <CityMiniTable title="Hacim" data={stats.city} sortKey="total" color="blue" />
                     <CityMiniTable title="Teslimat" data={stats.city} sortKey="delivered" color="emerald" showPercent />
-                    <CityMiniTable title="E-Devlet Paylaşmadı" data={stats.city} sortKey="noEdevlet" color="red" showPercent />
+                    <CityMiniTable title="E-Devlet Yok" data={stats.city} sortKey="noEdevlet" color="red" showPercent />
                     <CityMiniTable title="Kefil" data={stats.city} sortKey="kefil" color="purple" showPercent />
                     <CityMiniTable title="İptal" data={stats.city} sortKey="cancelled" color="gray" showPercent />
                 </div>
             </div>
 
-            {/* Footer */}
             <div className="mt-12 pt-8 border-t border-gray-200 text-center text-gray-400 text-xs hidden print:block font-bold">
-                Bu rapor sistem tarafından {new Date().toLocaleString('tr-TR')} tarihinde oluşturulmuştur.
-                <br />
-                CepteKolay+ Yönetim Sistemi
+                CepteKolay+ Yönetim Sistemi Raporu - {new Date().toLocaleString('tr-TR')}
             </div>
         </div>
     );
 }
 
-// --- COMPONENTS ---
+// --- NEW COMPONENTS ---
+
+function SalesFunnel({ stats }: { stats: any }) {
+    // Funnel Steps: Called -> Application -> Attorney -> Approved -> Delivered
+    // We also show "Attorney Pending" as a sub-metric under Attorney
+    const f = stats.funnel;
+
+    // For visualization percentages (relative to previous step roughly, or just max width)
+    // Let's keep it simple: Flex row with arrows
+
+    return (
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500"></div>
+            <h2 className="text-xl font-bold text-gray-900 mb-8 flex items-center gap-2">
+                <TrendingUp className="w-6 h-6 text-indigo-600" />
+                SATIŞ HUNİSİ (GÜNLÜK AKIŞ)
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 relative">
+                {/* Arrow connectors (Hidden on mobile) */}
+                <div className="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-gray-100 -z-10 transform -translate-y-1/2"></div>
+
+                <FunnelStep
+                    title="YAPILAN ARAMA"
+                    value={stats.todayCalled}
+                    icon={Phone}
+                    color="text-indigo-600"
+                    bg="bg-indigo-50"
+                    desc="Bugün Aranan Tekil Kişi"
+                />
+
+                <FunnelStep
+                    title="ALINAN BAŞVURU"
+                    value={f.applications}
+                    icon={ClipboardList}
+                    color="text-blue-600"
+                    bg="bg-blue-50"
+                    desc="Formu Tamamlanan"
+                />
+
+                <FunnelStep
+                    title="AVUKAT SORGUSU"
+                    value={f.attorneyQueries}
+                    icon={ScaleIcon}
+                    color="text-purple-600"
+                    bg="bg-purple-50"
+                    desc={`${f.attorneyPending || 0} Bekleyen Sorgu`}
+                    subValue={f.attorneyPending ? `(${f.attorneyPending} Bekleyen)` : undefined}
+                />
+
+                <FunnelStep
+                    title="ONAYLANAN"
+                    value={f.approved}
+                    icon={CheckCircle2}
+                    color="text-emerald-600"
+                    bg="bg-emerald-50"
+                    desc="Kredi Onayı Alan"
+                />
+                <FunnelStep
+                    title="TESLİM EDİLEN"
+                    value={f.delivered}
+                    icon={Package}
+                    color="text-green-700"
+                    bg="bg-green-100"
+                    desc="Satışı Tamamlanan"
+                    isFinal
+                />
+            </div>
+        </div>
+    );
+}
+
+function FunnelStep({ title, value, icon: Icon, color, bg, desc, subValue, isFinal }: any) {
+    return (
+        <div className={`relative flex flex-col items-center text-center p-4 rounded-xl border-2 transition-transform hover:-translate-y-1 ${bg} ${isFinal ? 'border-green-400 shadow-md transform scale-105' : 'border-transparent'}`}>
+            <div className={`p-3 rounded-full bg-white shadow-sm mb-3 ${color}`}>
+                <Icon className="w-6 h-6" />
+            </div>
+            <div className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1">{title}</div>
+            <div className={`text-3xl font-black ${color} mb-1`}>{value}</div>
+            <div className="text-xs font-bold text-gray-500">{desc}</div>
+            {/* Connector Triangle for Mobile */}
+            <div className="md:hidden mt-4 text-gray-300">▼</div>
+        </div>
+    );
+}
+
+function UserPerformanceCard({ user, stats }: { user: string, stats: any }) {
+    // Rates
+    const appRate = stats.calls > 0 ? Math.round((stats.applications / stats.calls) * 100) : 0;
+    const approvalRate = stats.applications > 0 ? Math.round((stats.approvals / stats.applications) * 100) : 0;
+
+    return (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+            {/* Header */}
+            <div className="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-lg">
+                        {user.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <div className="font-bold text-gray-900 text-base">{user.split('@')[0]}</div>
+                        <div className="text-xs text-gray-500 font-medium">Satış Temsilcisi</div>
+                    </div>
+                </div>
+                {/* Score Badge (Optional) */}
+                <div className="flex flex-col items-end">
+                    <span className="text-[10px] uppercase font-bold text-gray-400">GÜNLÜK HEDEF</span>
+                    <span className="text-xs font-bold text-gray-800"> -- </span>
+                </div>
+            </div>
+
+            <div className="p-4 grid grid-cols-2 gap-4 divide-x divide-gray-100">
+                {/* Left: Activity */}
+                <div className="pr-2 space-y-4">
+                    <h4 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-2">AKTİVİTE</h4>
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2 text-gray-600">
+                            <Phone className="w-4 h-4" />
+                            <span className="text-xs font-bold">Arama</span>
+                        </div>
+                        <span className="text-lg font-black text-gray-900">{stats.calls}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2 text-gray-600">
+                            <MessageSquare className="w-4 h-4" />
+                            <span className="text-xs font-bold">SMS</span>
+                        </div>
+                        <span className="text-base font-bold text-gray-700">{stats.sms || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2 text-gray-600">
+                            <MessageCircle className="w-4 h-4" />
+                            <span className="text-xs font-bold">WP</span>
+                        </div>
+                        <span className="text-base font-bold text-gray-700">{stats.whatsapp || 0}</span>
+                    </div>
+                </div>
+
+                {/* Right: Funnel & Results */}
+                <div className="pl-4 space-y-4">
+                    <h4 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-2">SONUÇ & DÖNÜŞÜM</h4>
+
+                    <div className="flex justify-between items-center">
+                        <div className="flex flex-col">
+                            <span className="text-xs font-bold text-blue-600">Başvuru</span>
+                            <span className="text-[9px] text-gray-400 font-bold">Aramadan Dönüş</span>
+                        </div>
+                        <div className="text-right">
+                            <span className="block text-lg font-black text-blue-600">{stats.applications || 0}</span>
+                            <span className="text-[10px] font-bold text-gray-400">%{appRate}</span>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-2 border-t border-gray-50">
+                        <div className="flex flex-col">
+                            <span className="text-xs font-bold text-emerald-600">Onay</span>
+                            <span className="text-[9px] text-gray-400 font-bold">Başvurudan Dönüş</span>
+                        </div>
+                        <div className="text-right">
+                            <span className="block text-lg font-black text-emerald-600">{stats.approvals}</span>
+                            <span className="text-[10px] font-bold text-gray-400">%{approvalRate}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {/* Footer: Pace */}
+            <div className="bg-gray-50 p-2 flex justify-between items-center border-t border-gray-100">
+                <span className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1">
+                    <Clock className="w-3 h-3" /> Arama Hızı
+                </span>
+                <span className={`text-xs font-black ${stats.paceMinutes > 15 ? 'text-red-500' : 'text-emerald-600'}`}>
+                    {stats.paceMinutes > 0 ? `${stats.paceMinutes} dk/çağrı` : '-'}
+                </span>
+            </div>
+        </div>
+    );
+}
+
+// Icon helper
+function ScaleIcon(props: any) {
+    return (
+        <svg
+            {...props}
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+            <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+            <path d="M7 21h10" />
+            <path d="M12 3v18" />
+            <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" />
+        </svg>
+    )
+}
 
 function KpiCard({ label, value, icon: Icon, color, subtext, desc }: any) {
     const colors: any = {
@@ -548,13 +510,11 @@ function KpiCard({ label, value, icon: Icon, color, subtext, desc }: any) {
         purple: 'bg-purple-50 text-purple-700 border-purple-200',
         green: 'bg-green-50 text-green-700 border-green-200',
     };
-
     const theme = colors[color] || colors.blue;
-
     return (
         <div className={`p-4 rounded-xl border-2 flex flex-col justify-between h-full bg-white hover:shadow-md transition-all print:border-gray-800 ${theme.replace(/bg-\w+-50/, '').replace(/text-\w+-700/, '')}`}>
             <div className="flex justify-between items-start mb-2">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-500 print:text-black">{label}</span>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-500 print:text-black">{label}</span>
                 <Icon className={`w-5 h-5 ${theme.split(' ')[1]} print:text-black`} />
             </div>
             <div>

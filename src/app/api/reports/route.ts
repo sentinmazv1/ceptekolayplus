@@ -65,7 +65,11 @@ export async function GET(req: NextRequest) {
                 total: 0,
                 contacted: 0,
                 applications: 0,
+                attorneyQueries: 0, // NEW
+                attorneyPending: 0, // NEW
                 sale: 0,
+                approved: 0, // Explicitly track approved count for funnel
+                delivered: 0, // Explicitly track delivered count for funnel
             },
             kpi: {
                 totalCalled: 0,
@@ -79,6 +83,7 @@ export async function GET(req: NextRequest) {
             performance: {} as Record<string, {
                 calls: number,
                 approvals: number,
+                applications: number, // NEW: For creating user conversion rates
                 paceMinutes: number,
                 sms: number,
                 whatsapp: number
@@ -100,6 +105,7 @@ export async function GET(req: NextRequest) {
             const createdAt = row.created_at;
             const lastCalled = row.son_arama_zamani;
             const owner = row.sahip || row.sahip_email || 'Sistem';
+            const attorneyStatus = row.avukat_sorgu_durumu;
 
             // KPI
             if (status !== 'Yeni') {
@@ -113,7 +119,13 @@ export async function GET(req: NextRequest) {
                 stats.kpi.retryPool++;
             }
 
-            // Funnel
+            // Funnel - Attorney
+            if (attorneyStatus) {
+                stats.funnel.attorneyQueries++;
+                if (attorneyStatus === 'BEKLİYOR') stats.funnel.attorneyPending++;
+            }
+
+            // Funnel - Applications & Success
             let isApplication = false;
             if (['Başvuru alındı', 'Onaylandı', 'Teslim edildi', 'Kefil bekleniyor', 'Satış yapıldı/Tamamlandı', 'Eksik evrak bekleniyor'].includes(status)) {
                 isApplication = true;
@@ -122,7 +134,11 @@ export async function GET(req: NextRequest) {
             }
 
             if (isApplication) stats.funnel.applications++;
-            if (status === 'Teslim edildi' || status === 'Satış yapıldı/Tamamlandı') stats.funnel.sale++;
+            if (approval === 'Onaylandı' || status === 'Onaylandı') stats.funnel.approved++;
+            if (status === 'Teslim edildi' || status === 'Satış yapıldı/Tamamlandı') {
+                stats.funnel.sale++;
+                stats.funnel.delivered++;
+            }
 
             // Today Stats
             if (lastCalled) {
@@ -130,7 +146,7 @@ export async function GET(req: NextRequest) {
                 if (callDay === targetDate) {
                     stats.todayCalled++;
                     stats.todayCalledByPerson[owner] = (stats.todayCalledByPerson[owner] || 0) + 1;
-                    if (!stats.performance[owner]) stats.performance[owner] = { calls: 0, approvals: 0, paceMinutes: 0, sms: 0, whatsapp: 0 };
+                    if (!stats.performance[owner]) stats.performance[owner] = { calls: 0, approvals: 0, applications: 0, paceMinutes: 0, sms: 0, whatsapp: 0 };
                 }
 
                 // Hourly
@@ -138,10 +154,7 @@ export async function GET(req: NextRequest) {
                 if (!isNaN(d.getTime())) {
                     const dateKey = utcFormatter.format(d);
                     if (dateKey === targetDate) {
-                        const h = d.getUTCHours() + 3; // TRT adjustment if stored as UTC ISO?
-                        // Actually, created_at is UTC. We need Local Hour (TRT).
-                        // Date object handles timezone if we configured env? No, Node defaults to UTC usually.
-                        // Let's use Intl to be safe.
+                        // Use Intl for TR Hour (0-23)
                         const hourStr = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Istanbul', hour: 'numeric', hour12: false }).format(d);
                         const hInt = parseInt(hourStr, 10);
 
@@ -154,11 +167,14 @@ export async function GET(req: NextRequest) {
                 }
             }
 
-            // Approvals Perf
+            // Approvals Perf (Attributed cleanup)
             if (approval === 'Onaylandı' || status === 'Onaylandı') {
                 const appDate = row.onay_tarihi;
                 if (appDate && getDayKey(appDate) === targetDate) {
-                    if (!stats.performance[owner]) stats.performance[owner] = { calls: 0, approvals: 0, paceMinutes: 0, sms: 0, whatsapp: 0 };
+                    // Note: 'onaylayan_admin' handles attribution in updateLead, but here we fallback to owner if needed.
+                    // Ideally we should check logs for who approved, but for now owner is a decent proxy OR add 'onaylayan' field usage if available.
+                    // Current logic uses owner.
+                    if (!stats.performance[owner]) stats.performance[owner] = { calls: 0, approvals: 0, applications: 0, paceMinutes: 0, sms: 0, whatsapp: 0 };
                     stats.performance[owner].approvals++;
                 }
             }
@@ -212,10 +228,15 @@ export async function GET(req: NextRequest) {
         targetLogs.forEach((l: any) => {
             const user = l.user_email;
             if (user) {
-                if (!stats.performance[user]) stats.performance[user] = { calls: 0, approvals: 0, paceMinutes: 0, sms: 0, whatsapp: 0 };
+                if (!stats.performance[user]) stats.performance[user] = { calls: 0, approvals: 0, applications: 0, paceMinutes: 0, sms: 0, whatsapp: 0 };
                 if (l.action === 'SEND_SMS') stats.performance[user].sms++;
                 if (l.action === 'SEND_WHATSAPP') stats.performance[user].whatsapp++;
                 if (l.action === 'PULL_LEAD') stats.performance[user].calls++;
+
+                // Track Applications gained by User (Status change to 'Başvuru alındı')
+                if (l.action === 'UPDATE_STATUS' && l.new_value === 'Başvuru alındı') {
+                    stats.performance[user].applications++;
+                }
 
                 if (l.timestamp) {
                     const ts = new Date(l.timestamp).getTime();
