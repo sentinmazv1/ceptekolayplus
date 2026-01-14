@@ -28,9 +28,13 @@ function getDayKey(dateStr?: string) {
 export async function GET(req: NextRequest) {
     try {
         // Fetch Data from Supabase
+        const queryDate = req.nextUrl.searchParams.get('date');
+        const targetDate = queryDate ? queryDate : trFormatter.format(new Date());
+
+        // Fetch Data from Supabase
         const [customers, logs] = await Promise.all([
             getReportData(),
-            getAllLogs() // passing nothing = default limit (5000) or we might want specific date filter later
+            getAllLogs(targetDate) // Optimized: Fetch logs ONLY for the target day
         ]);
 
         if (!customers || customers.length === 0) {

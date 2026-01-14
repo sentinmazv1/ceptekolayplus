@@ -289,12 +289,13 @@ export async function getReportData() {
 
     let allRows: any[] = [];
     let page = 0;
-    const pageSize = 2000;
+    const pageSize = 1000; // Safer limit (Supabase default max rows is often 1000)
 
     while (true) {
         const { data, error } = await supabaseAdmin
             .from('leads')
-            .select('id, durum, sehir, meslek_is, maas_bilgisi, talep_edilen_urun, onay_durumu, basvuru_kanali, created_at, son_arama_zamani, sahip_email, onay_tarihi, sonraki_arama_zamani, icra_durumu, dava_durumu')
+            .select('id, durum, sehir, meslek_is, maas_bilgisi, talep_edilen_urun, onay_durumu, basvuru_kanali, created_at, son_arama_zamani, sahip_email, onay_tarihi, sonraki_arama_zamani, icra_durumu, dava_durumu, aciklama_uzun, avukat_sorgu_durumu, avukat_sorgu_sonuc, psikoteknik_varmi, psikoteknik_notu, ikametgah_varmi, hizmet_dokumu_varmi, ayni_isyerinde_sure_ay, mulkiyet_durumu, arac_varmi, arac_detay, tapu_varmi, tapu_detay, kapali_icra_kapanis_sekli, gizli_dosya_varmi, gizli_dosya_detay, kefil_meslek_is, kefil_son_yatan_maas, kefil_ayni_isyerinde_sure_ay, kefil_e_devlet_sifre, kefil_ikametgah_varmi, kefil_hizmet_dokumu_varmi, kefil_dava_dosyasi_varmi, kefil_dava_detay, kefil_acik_icra_varmi, kefil_acik_icra_detay, kefil_kapali_icra_varmi, kefil_kapali_icra_kapanis_sekli, kefil_mulkiyet_durumu, kefil_arac_varmi, kefil_tapu_varmi, kefil_notlar, winner_musteri_no, e_devlet_sifre, iptal_nedeni, kefil_ad_soyad, kefil_telefon, kefil_tc_kimlik, teslim_tarihi, teslim_eden, urun_imei, urun_seri_no, satilan_urunler')
+            .order('id', { ascending: true }) // Stable ordering for pagination
             .range(page * pageSize, (page + 1) * pageSize - 1);
 
         if (error) {
@@ -313,23 +314,39 @@ export async function getReportData() {
 
 export async function getAllLogs(dateFilter?: string) {
     // Fetch logs for performance reports (Pace, Call Counts)
-    let query = supabaseAdmin.from('activity_logs').select('id, created_at, user_email, customer_id, action');
+    let allLogs: any[] = [];
+    let page = 0;
+    const pageSize = 1000;
 
-    if (dateFilter) {
-        // Simple string match for YYYY-MM-DD
-        query = query.ilike('created_at', `${dateFilter}%`);
-    } else {
-        // default limit if no date? or last 30 days? 
-        // For 'Today's Report', we usually pass a date.
-        // If no date, careful! 
-        query = query.limit(5000).order('created_at', { ascending: false });
+    // Build base query function
+    const fetchPage = async (p: number) => {
+        let query = supabaseAdmin.from('activity_logs').select('id, created_at, user_email, customer_id, action');
+
+        if (dateFilter) {
+            query = query.ilike('created_at', `${dateFilter}%`);
+        }
+
+        // No arbitrary limit, use pagination to get everything
+        return query
+            .order('created_at', { ascending: false })
+            .range(p * pageSize, (p + 1) * pageSize - 1);
+    };
+
+    while (true) {
+        const { data, error } = await fetchPage(page);
+
+        if (error) {
+            console.error('Logs fetch error:', error);
+            break;
+        }
+        if (!data || data.length === 0) break;
+
+        allLogs = allLogs.concat(data);
+        if (data.length < pageSize) break;
+        page++;
     }
 
-    // pagination if needed, but for "Today" it usually fits in 5000
-    const { data, error } = await query;
-    if (error) return [];
-
-    return (data || []).map(row => ({
+    return allLogs.map(row => ({
         log_id: row.id,
         timestamp: row.created_at,
         user_email: row.user_email,
