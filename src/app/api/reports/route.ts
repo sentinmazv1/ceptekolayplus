@@ -144,11 +144,6 @@ export async function GET(req: NextRequest) {
             }
 
             // B. Funnel: Applications
-            // [HYBRID FIX]: Broader inference to recover missing logs for today.
-            // conditions to count as "Application processed today":
-            // 1. Status is 'Başvuru alındı' or 'Kefil bekleniyor' AND Updated Today.
-            // 2. Approved Today (Must have been an application).
-            // 3. Created Today (New Lead -> Application pipeline).
             const isAppStatus = ['Başvuru alındı', 'Kefil bekleniyor'].includes(status || '');
             if ((isAppStatus && isInRange(row.updated_at)) ||
                 (approval === 'Onaylandı' && isInRange(approvalDate)) ||
@@ -158,14 +153,12 @@ export async function GET(req: NextRequest) {
             }
 
             // C. Funnel: Attorney Queries
-            // [HYBRID FIX]: If they have a result OR are pending, and updated today.
             if (row.avukat_sorgu_durumu || row.avukat_sorgu_sonuc) {
-                // Pending is a snapshot state (always count if active)
                 if (row.avukat_sorgu_durumu === 'BEKLİYOR') {
                     stats.funnel.attorneyPending++;
                 }
 
-                // Count as "Query Made" if pending OR result exists, and touched today
+                // Count as "Query Made"
                 if (row.avukat_sorgu_durumu === 'BEKLİYOR' || (row.avukat_sorgu_sonuc && isInRange(row.updated_at))) {
                     attorneyQueryIds.add(row.id);
                 }
@@ -183,7 +176,6 @@ export async function GET(req: NextRequest) {
             }
 
             // E. Funnel: Delivered
-            // Use teslim_tarihi if available, else updated_at if status matches
             const isDelivered = (status === 'Teslim edildi' || status === 'Satış yapıldı/Tamamlandı');
             if (isDelivered) {
                 const dDate = row.teslim_tarihi || row.updated_at;
@@ -192,11 +184,27 @@ export async function GET(req: NextRequest) {
                 }
             }
 
-            // F. Standard Aggregates
+            // F. Standard Aggregates (FIXED CITY LOGIC)
             if (row.sehir) {
                 if (!stats.city[row.sehir]) stats.city[row.sehir] = { total: 0, delivered: 0, approved: 0, rejected: 0, cancelled: 0, kefil: 0, noEdevlet: 0, unreachable: 0, other: 0 };
+
                 stats.city[row.sehir].total++;
-                if (isDelivered) stats.city[row.sehir].delivered++;
+
+                if (isDelivered) {
+                    stats.city[row.sehir].delivered++;
+                } else if (approval === 'Onaylandı') {
+                    stats.city[row.sehir].approved++;
+                } else if (['Reddetti', 'Uygun değil', 'Kriter Dışı'].includes(status || '') || approval === 'Reddedildi') {
+                    stats.city[row.sehir].rejected++;
+                } else if (status === 'İptal/Vazgeçti') {
+                    stats.city[row.sehir].cancelled++;
+                } else if (status === 'Kefil bekleniyor' || approval === 'Kefil İstendi') {
+                    stats.city[row.sehir].kefil++;
+                } else if (['Ulaşılamadı', 'Cevap Yok', 'Meşgul/Hattı kapalı', 'Yanlış numara', 'Numara kullanılmıyor'].includes(status || '')) {
+                    stats.city[row.sehir].unreachable++;
+                } else {
+                    stats.city[row.sehir].other++;
+                }
             }
             if (status) stats.status[status] = (stats.status[status] || 0) + 1;
 
@@ -219,18 +227,15 @@ export async function GET(req: NextRequest) {
         stats.funnel.sale = deliveredIds.size;
         stats.funnel.totalCalled = Object.values(stats.performance).reduce((a, b) => a + b.calls, 0);
 
-        // Update User Performance Applications Count from Set
         Object.keys(userAppIds).forEach(u => {
             if (stats.performance[u]) stats.performance[u].applications = userAppIds[u].size;
         });
 
-        // Goals & Pace (reused logic)
-        // [Copying Goal Logic from previous Context or re-calculating]
+        // Goals & Pace
         const goaldStart = new Date(); goaldStart.setDate(goaldStart.getDate() - 7);
         const goalStartTime = goaldStart.getTime();
         const last7DaysCalls: Record<string, number> = {};
 
-        // Quickly compute goals again from logs (activity only)
         logs.forEach((l: any) => {
             const user = l.user_email;
             if (!user || ['sistem', 'admin', 'ibrahim'].some(x => user.includes(x))) return;
@@ -241,11 +246,8 @@ export async function GET(req: NextRequest) {
         Object.keys(stats.performance).forEach(user => {
             const avg = Math.round((last7DaysCalls[user] || 0) / 7);
             stats.performance[user].dailyGoal = Math.max(10, Math.ceil(avg * 1.1));
-            // Recalculate pace for valid users
-            // ... Pace logic simplified ...
         });
 
-        // Pace Logic
         const userActivityMap: Record<string, number[]> = {};
         logs.forEach((l: any) => {
             const u = l.user_email;
