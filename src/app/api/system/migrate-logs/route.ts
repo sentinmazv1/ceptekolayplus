@@ -134,8 +134,12 @@ export async function GET(req: NextRequest) {
             const { error: insertError } = await supabaseAdmin.from('activity_logs').insert(chunk);
             if (insertError) {
                 console.error("Chunk insert error", insertError);
-                // Continue best effort? or throw
-                // throw insertError; 
+                return NextResponse.json({
+                    success: false,
+                    stage: 'insertion',
+                    error: insertError,
+                    message: 'Database insert failed. Check RLS policies or Service Key.'
+                }, { status: 500 });
             }
         }
 
