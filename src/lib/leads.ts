@@ -374,6 +374,7 @@ export async function updateLead(customer: Customer, userEmail: string): Promise
         ilce: customer.ilce,
         meslek_is: customer.meslek_is,
         maas_bilgisi: customer.son_yatan_maas,
+        kredi_limiti: customer.kredi_limiti,
         admin_notu: customer.admin_notu,
         arama_notu: customer.arama_not_kisa,
         aciklama_uzun: customer.aciklama_uzun,
