@@ -12,7 +12,7 @@ const trFormatter = new Intl.DateTimeFormat('en-CA', {
 
 // Helper for Strings
 const utcFormatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'UTC',
+    timeZone: 'Europe/Istanbul', // Changed to match local operations
     year: 'numeric',
     month: '2-digit',
     day: '2-digit'

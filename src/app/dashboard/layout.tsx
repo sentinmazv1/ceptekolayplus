@@ -144,29 +144,7 @@ export default function DashboardLayout({
                                             </Button>
                                         </Link>
 
-                                        <Link href="/dashboard/duplicates">
-                                            <Button
-                                                variant={isActive('/dashboard/duplicates') ? 'primary' : 'ghost'}
-                                                size="sm"
-                                                className={isActive('/dashboard/duplicates') ? '' : 'text-gray-600 hover:text-gray-900'}
-                                            >
-                                                <FileSearch className="w-4 h-4 mr-2" />
-                                                Mükerrer
-                                            </Button>
-                                        </Link>
-
                                         <div className="w-px h-6 bg-gray-200 mx-2" />
-
-                                        <Link href="/dashboard/admin/users">
-                                            <Button
-                                                variant={isActive('/dashboard/admin/users') ? 'primary' : 'ghost'}
-                                                size="sm"
-                                                className={isActive('/dashboard/admin/users') ? '' : 'text-gray-600 hover:text-gray-900'}
-                                            >
-                                                <UserCircle className="w-4 h-4 mr-2" />
-                                                Kullanıcılar
-                                            </Button>
-                                        </Link>
 
                                         <Link href="/dashboard/admin/settings">
                                             <Button
@@ -175,11 +153,12 @@ export default function DashboardLayout({
                                                 className={isActive('/dashboard/admin/settings') ? '' : 'text-gray-600 hover:text-gray-900'}
                                             >
                                                 <Database className="w-4 h-4 mr-2" />
-                                                Ayarlar
+                                                Ayarlar (Yönetim)
                                             </Button>
                                         </Link>
                                     </>
-                                )}
+                                ) // End Admin Check
+                                }
 
                                 <Link href="/dashboard/search">
                                     <Button
@@ -304,14 +283,13 @@ export default function DashboardLayout({
 
 
 
-
-                                        <Link href="/dashboard/admin/users">
+                                        <Link href="/dashboard/inventory">
                                             <Button
-                                                variant={isActive('/dashboard/admin/users') ? 'primary' : 'ghost'}
+                                                variant={isActive('/dashboard/inventory') ? 'primary' : 'ghost'}
                                                 className="w-full justify-start text-sm"
                                             >
-                                                <UserCircle className="w-4 h-4 mr-3" />
-                                                Kullanıcılar
+                                                <Package className="w-4 h-4 mr-3" />
+                                                Stok
                                             </Button>
                                         </Link>
 
@@ -321,7 +299,7 @@ export default function DashboardLayout({
                                                 className="w-full justify-start text-sm"
                                             >
                                                 <Database className="w-4 h-4 mr-3" />
-                                                Ayarlar
+                                                Ayarlar (Yönetim)
                                             </Button>
                                         </Link>
                                     </>
