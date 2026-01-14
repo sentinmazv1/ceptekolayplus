@@ -57,7 +57,7 @@ export default function DashboardLayout({
                             <div className="flex items-center gap-4">
                                 <h1 className="text-xl font-bold text-gray-900 tracking-tight">CepteKolay+</h1>
                                 <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full border border-indigo-100 hidden sm:inline-block">
-                                    {session?.user?.email} <span className="opacity-75">({session?.user?.role})</span>
+                                    {session?.user?.email}
                                 </span>
                             </div>
 
@@ -132,6 +132,7 @@ export default function DashboardLayout({
                                             </Button>
                                         </Link>
 
+
                                         <Link href="/dashboard/inventory">
                                             <Button
                                                 variant={isActive('/dashboard/inventory') ? 'primary' : 'ghost'}
@@ -154,6 +155,29 @@ export default function DashboardLayout({
                                             </Button>
                                         </Link>
 
+                                        <div className="w-px h-6 bg-gray-200 mx-2" />
+
+                                        <Link href="/dashboard/admin/users">
+                                            <Button
+                                                variant={isActive('/dashboard/admin/users') ? 'primary' : 'ghost'}
+                                                size="sm"
+                                                className={isActive('/dashboard/admin/users') ? '' : 'text-gray-600 hover:text-gray-900'}
+                                            >
+                                                <UserCircle className="w-4 h-4 mr-2" />
+                                                Kullanıcılar
+                                            </Button>
+                                        </Link>
+
+                                        <Link href="/dashboard/admin/settings">
+                                            <Button
+                                                variant={isActive('/dashboard/admin/settings') ? 'primary' : 'ghost'}
+                                                size="sm"
+                                                className={isActive('/dashboard/admin/settings') ? '' : 'text-gray-600 hover:text-gray-900'}
+                                            >
+                                                <Database className="w-4 h-4 mr-2" />
+                                                Ayarlar
+                                            </Button>
+                                        </Link>
                                     </>
                                 )}
 
