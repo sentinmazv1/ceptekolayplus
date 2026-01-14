@@ -75,6 +75,9 @@ export default function SettingsPage() {
 function StatusManager({ statuses, refresh }: { statuses: any[], refresh: () => void }) {
     const [newStatus, setNewStatus] = useState('');
     const [newColor, setNewColor] = useState('gray');
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editLabel, setEditLabel] = useState('');
+    const [editColor, setEditColor] = useState('');
 
     async function addStatus(e: React.FormEvent) {
         e.preventDefault();
@@ -93,6 +96,34 @@ function StatusManager({ statuses, refresh }: { statuses: any[], refresh: () => 
         });
         refresh();
     }
+
+    async function deleteStatus(id: string) {
+        if (!confirm('Bu durumu silmek istediğinize emin misiniz? (Kullanılan durumlarda sorun çıkabilir)')) return;
+
+        const res = await fetch(`/api/admin/statuses?id=${id}`, { method: 'DELETE' });
+        const json = await res.json();
+
+        if (!res.ok) {
+            alert('Hata: ' + (json.error || 'Silinemedi'));
+        } else {
+            refresh();
+        }
+    }
+
+    async function saveEdit(id: string) {
+        await fetch('/api/admin/statuses', {
+            method: 'PUT',
+            body: JSON.stringify({ id, label: editLabel, color: editColor })
+        });
+        setEditingId(null);
+        refresh();
+    }
+
+    const startEdit = (s: any) => {
+        setEditingId(s.id);
+        setEditLabel(s.label);
+        setEditColor(s.color);
+    };
 
     return (
         <div className="space-y-6">
@@ -127,19 +158,52 @@ function StatusManager({ statuses, refresh }: { statuses: any[], refresh: () => 
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 divide-y">
                 {statuses.map((s) => (
                     <div key={s.id} className="p-4 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className={`w-3 h-3 rounded-full bg-${s.color}-500`} />
-                            <span className={s.is_active ? 'text-gray-900' : 'text-gray-400 line-through'}>{s.label}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-400 mr-2">Sıra: {s.sort_order}</span>
-                            <button
-                                onClick={() => toggleActive(s.id, s.is_active)}
-                                className={`text-sm px-2 py-1 rounded ${s.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100'}`}
-                            >
-                                {s.is_active ? 'Aktif' : 'Pasif'}
-                            </button>
-                        </div>
+                        {editingId === s.id ? (
+                            <div className="flex items-center gap-2 flex-1">
+                                <input
+                                    value={editLabel}
+                                    onChange={e => setEditLabel(e.target.value)}
+                                    className="border rounded px-2 py-1 flex-1"
+                                />
+                                <select
+                                    value={editColor}
+                                    onChange={e => setEditColor(e.target.value)}
+                                    className="border rounded px-2 py-1"
+                                >
+                                    <option value="gray">Gri</option>
+                                    <option value="blue">Mavi</option>
+                                    <option value="green">Yeşil</option>
+                                    <option value="red">Kırmızı</option>
+                                    <option value="yellow">Sarı</option>
+                                    <option value="orange">Turuncu</option>
+                                </select>
+                                <Button size="sm" onClick={() => saveEdit(s.id)}><Check className="w-4 h-4" /></Button>
+                                <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}><X className="w-4 h-4" /></Button>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-3 h-3 rounded-full bg-${s.color}-500`} />
+                                    <span className={s.is_active ? 'text-gray-900' : 'text-gray-400 line-through'}>{s.label}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-400 mr-2">Sıra: {s.sort_order}</span>
+                                    <button
+                                        onClick={() => toggleActive(s.id, s.is_active)}
+                                        className={`text-sm px-2 py-1 rounded ${s.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100'}`}
+                                        title="Aktif/Pasif"
+                                    >
+                                        {s.is_active ? 'Aktif' : 'Pasif'}
+                                    </button>
+                                    <button onClick={() => startEdit(s)} className="p-1 hover:bg-gray-100 rounded text-blue-600" title="Düzenle">
+                                        <Edit2 className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={() => deleteStatus(s.id)} className="p-1 hover:bg-gray-100 rounded text-red-600" title="Sil">
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 ))}
             </div>

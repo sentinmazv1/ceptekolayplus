@@ -128,6 +128,7 @@ export async function getLeadStats(user?: { email: string; role: string }) {
     const pApproved = baseFilter(supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).eq('durum', 'Onaylandı'));
     const pToday = baseFilter(supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).ilike('son_arama_zamani', `${todayStr}%`));
 
+
     // Execute All
     const [
         { count: waitNew },
@@ -148,9 +149,6 @@ export async function getLeadStats(user?: { email: string; role: string }) {
     const totalAvailable = (waitNew || 0) + (waitSched || 0) + (waitRetry || 0);
 
     // Status Breakdown (Fetching just 'durum' for filtered set - limit to 5000)
-    // Optimization: Skip valid status counts if heavy, but users like pie charts.
-    // Let's disable precise status counts for very large DBs unless requested, or cap it.
-    // For 2500 rows, fetching all 'durum' is fine.
     const { data: allStatuses } = await baseFilter(supabaseAdmin.from('leads').select('durum').limit(5000));
     const statusCounts: Record<string, number> = {};
     if (allStatuses) {
@@ -164,7 +162,7 @@ export async function getLeadStats(user?: { email: string; role: string }) {
         waiting_new: waitNew || 0,
         waiting_scheduled: waitSched || 0, // Specifically ripe ones
         total_scheduled: totalSched || 0,
-        waiting_retry: myRetry || 0, // Used for "Waiting for Retry" box usually
+        waiting_retry: waitRetry || 0, // CORRECTED: This should be Pool Retry, not My Retry
         pending_approval: pending || 0,
         waiting_guarantor: guarantor || 0,
         delivered: delivered || 0,
@@ -361,8 +359,8 @@ export async function updateLead(customer: Customer, userEmail: string): Promise
         basvuru_kanali: customer.basvuru_kanali,
         talep_edilen_urun: customer.talep_edilen_urun,
         talep_edilen_tutar: customer.talep_edilen_tutar,
-        sonraki_arama_zamani: customer.sonraki_arama_zamani,
-        son_arama_zamani: customer.son_arama_zamani,
+        sonraki_arama_zamani: customer.sonraki_arama_zamani || null, // Sanitize empty string
+        son_arama_zamani: customer.son_arama_zamani || null, // Sanitize empty string
         icra_durumu: {
             acik_icra: customer.acik_icra_varmi,
             kapali_icra: customer.kapali_icra_varmi,
