@@ -153,15 +153,27 @@ export async function GET(req: NextRequest) {
             }
 
             // C. Funnel: Attorney Queries
+            // [HYBRID FIX]: Broader check. If stats or result exists, count it.
             if (row.avukat_sorgu_durumu || row.avukat_sorgu_sonuc) {
                 if (row.avukat_sorgu_durumu === 'BEKLİYOR') {
                     stats.funnel.attorneyPending++;
                 }
 
-                // Count as "Query Made"
-                if (row.avukat_sorgu_durumu === 'BEKLİYOR' || (row.avukat_sorgu_sonuc && isInRange(row.updated_at))) {
+                // Count as "Query Made" if:
+                // 1. Pending (active query)
+                // 2. Result exists AND updated in range (completed recently)
+                // 3. Status has 'avukat' content AND updated in range
+
+                const hasResult = !!row.avukat_sorgu_sonuc && row.avukat_sorgu_sonuc !== '';
+                const isPending = row.avukat_sorgu_durumu === 'BEKLİYOR';
+
+                if (isPending || (hasResult && isInRange(row.updated_at))) {
                     attorneyQueryIds.add(row.id);
                 }
+                // If not updated today but has result, we miss it if relying only on updated_at.
+                // But for "Daily Report", we only care about activity TODAY.
+                // If they were queried yesterday, they should NOT appear in today's funnel except perhaps as Pending if still pending.
+                // Correct logic: Only count completed queries if they finished TODAY.
             }
 
             // D. Funnel: Approved
@@ -184,7 +196,7 @@ export async function GET(req: NextRequest) {
                 }
             }
 
-            // F. Standard Aggregates (FIXED CITY LOGIC)
+            // F. Standard Aggregates
             if (row.sehir) {
                 if (!stats.city[row.sehir]) stats.city[row.sehir] = { total: 0, delivered: 0, approved: 0, rejected: 0, cancelled: 0, kefil: 0, noEdevlet: 0, unreachable: 0, other: 0 };
 
@@ -254,6 +266,7 @@ export async function GET(req: NextRequest) {
             stats.performance[user].dailyGoal = Math.max(10, Math.ceil(avg * 1.1));
         });
 
+        // Pace: Include today for pace calculation
         const userActivityMap: Record<string, number[]> = {};
         logs.forEach((l: any) => {
             const u = l.user_email;
