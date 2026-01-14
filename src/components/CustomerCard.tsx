@@ -693,6 +693,59 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                             </div>
                         </section>
 
+                        {/* ADMIN ONLY: Onay ve Limit Yönetimi */}
+                        {session?.user?.role === 'ADMIN' && (
+                            <section className="bg-indigo-50/50 p-4 rounded-lg border border-indigo-100 mb-4">
+                                <h3 className="text-sm font-semibold text-indigo-900 mb-3 flex items-center gap-2">
+                                    🛡️ Yönetici Onay Paneli
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <Select
+                                        label="Onay Durumu"
+                                        value={data.onay_durumu || 'Beklemede'}
+                                        onChange={(e) => handleChange('onay_durumu', e.target.value)}
+                                        options={[
+                                            { value: 'Beklemede', label: 'Beklemede' },
+                                            { value: 'Kefil İstendi', label: 'Kefil İstendi' },
+                                            { value: 'Onaylandı', label: 'Onaylandı' },
+                                            { value: 'Reddedildi', label: 'Reddedildi' }
+                                        ]}
+                                        className="bg-white"
+                                    />
+
+                                    {data.onay_durumu === 'Onaylandı' && (
+                                        <Input
+                                            label="Onaylanan Limit (TL)"
+                                            value={data.kredi_limiti || ''}
+                                            onChange={(e) => handleChange('kredi_limiti', e.target.value)}
+                                            placeholder="Örn: 50.000"
+                                            className="bg-white font-semibold text-green-700"
+                                        />
+                                    )}
+
+                                    <div className="md:col-span-3">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Yönetici Notu</label>
+                                        <textarea
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white min-h-[60px]"
+                                            value={data.admin_notu || ''}
+                                            onChange={(e) => handleChange('admin_notu', e.target.value)}
+                                            placeholder="Onay/Red sebebi veya özel notlar..."
+                                        />
+                                    </div>
+
+                                    {/* Quick Actions based on status */}
+                                    {data.onay_durumu === 'Onaylandı' && (
+                                        <div className="md:col-span-3 flex justify-end">
+                                            <p className="text-xs text-green-600 flex items-center gap-1">
+                                                <Info className="w-3 h-3" />
+                                                Onaylandığında müşteriye otomatik SMS gitmez, panelden gönderebilirsiniz.
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </section>
+                        )}
+
                         {/* Takip Durumu */}
                         <section>
                             <h3 className="text-sm font-semibold text-gray-900 bg-gray-50 p-2 rounded mb-3">📌 Takip Durumu</h3>
