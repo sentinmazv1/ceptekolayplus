@@ -105,19 +105,21 @@ export async function getLeadStats(user?: { email: string; role: string }) {
         .lte('sonraki_arama_zamani', nowISO);
 
     // C. Waiting Retry (Unowned + RetryStatus + LastCall <= 2h Ago OR Null)
-    // Supabase OR syntax for (LastCall <= 2h OR LastCall IS NULL) is tricky combined with AND.
-    // Simplification: Count distinct retry statuses that are unowned.
-    // For stats accuracy, we might just count ALL unowned retry leads, 
-    // or assume cron jobs/pull logic handles the timing.
-    // Let's rely on total unowned retry count for the "Pile", 
-    // but ideally we filter time. 
-    // Let's count Total Unowned Retry for the dashboard box.
-    const retryStates = ['Ulaşılamadı', 'Meşgul/Hattı kapalı', 'Cevap Yok'];
-    // Manual .in() filter string
-    const retryFilter = `durum.in.("${retryStates.join('","')}")`;
-    const pWaitRetry = supabaseAdmin.from('leads').select('*', { count: 'exact', head: true })
+    // We want to count only those that are "Ready to Call" to match the Dashboard "Available" perception.
+    // Logic: Unowned AND RetryStatus AND (son_arama_zamani < 2h OR son_arama_zamani IS NULL)
+    // Note: Supabase JS library OR syntax inside an AND filter is: .or('col.is.null,col.lt.value')
+    // We need to apply this ON TOP of the previous filters.
+
+    // 1. Base Pool Query
+    let retryQuery = supabaseAdmin.from('leads').select('*', { count: 'exact', head: true })
         .is('sahip_email', null)
-        .or(retryFilter); // This counts all unowned retry, ignoring time lock. Acceptable for "Total Pool".
+        .in('durum', retryStates);
+
+    // 2. Add Time Filter (Optimized: "Ready" means either called long ago or never called timestamp wise)
+    // To solve the "800 vs 300" confusion, we interpret "Available" as "Ready to Call Now".
+    retryQuery = retryQuery.or(`son_arama_zamani.lt.${twoHoursAgo},son_arama_zamani.is.null`);
+
+    const pWaitRetry = retryQuery;
 
     // 2. USER/ADMIN OWNED COUNTS
     const pTotalSched = baseFilter(supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).eq('durum', 'Daha sonra aranmak istiyor'));
@@ -291,7 +293,7 @@ export async function getReportData() {
     while (true) {
         const { data, error } = await supabaseAdmin
             .from('leads')
-            .select('id, durum, sehir, meslek_is, maas_bilgisi, talep_edilen_urun, onay_durumu, basvuru_kanali, created_at, son_arama_zamani, sahip_email, onay_tarihi, sonraki_arama_zamani, acik_icra_varmi, kapali_icra_varmi, dava_dosyasi_varmi')
+            .select('id, durum, sehir, meslek_is, maas_bilgisi, talep_edilen_urun, onay_durumu, basvuru_kanali, created_at, son_arama_zamani, sahip_email, onay_tarihi, sonraki_arama_zamani, icra_durumu, dava_durumu')
             .range(page * pageSize, (page + 1) * pageSize - 1);
 
         if (error) {
