@@ -62,8 +62,8 @@ export async function GET(req: NextRequest) {
             performance: {} as Record<string, {
                 calls: number,
                 approvals: number,
-                approvedLimit: 0,
-                applications: 0,
+                approvedLimit: number,
+                applications: number,
                 paceMinutes: number,
                 sms: number,
                 whatsapp: number,
