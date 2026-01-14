@@ -358,34 +358,72 @@ export async function updateLead(customer: Customer, userEmail: string): Promise
         maas_bilgisi: customer.son_yatan_maas,
         admin_notu: customer.admin_notu,
         arama_notu: customer.arama_not_kisa,
+        aciklama_uzun: customer.aciklama_uzun,
         basvuru_kanali: customer.basvuru_kanali,
         talep_edilen_urun: customer.talep_edilen_urun,
         talep_edilen_tutar: customer.talep_edilen_tutar,
-        sonraki_arama_zamani: customer.sonraki_arama_zamani || null, // Sanitize empty string
-        son_arama_zamani: customer.son_arama_zamani || null, // Sanitize empty string
+        sonraki_arama_zamani: customer.sonraki_arama_zamani || null,
+        son_arama_zamani: customer.son_arama_zamani || null,
+
+        // Legal & Assets
         icra_durumu: {
             acik_icra: customer.acik_icra_varmi,
             kapali_icra: customer.kapali_icra_varmi,
             detay: customer.acik_icra_detay
         },
         dava_durumu: { varmi: customer.dava_dosyasi_varmi, detay: customer.dava_detay },
+        kapali_icra_kapanis_sekli: customer.kapali_icra_kapanis_sekli,
+        gizli_dosya_varmi: customer.gizli_dosya_varmi,
+        gizli_dosya_detay: customer.gizli_dosya_detay,
+        mulkiyet_durumu: customer.mulkiyet_durumu,
+        arac_varmi: customer.arac_varmi,
+        arac_detay: customer.arac_detay,
+        tapu_varmi: customer.tapu_varmi,
+        tapu_detay: customer.tapu_detay,
 
-        // Missing Fields Added:
+        // Work & Docs
+        ayni_isyerinde_sure_ay: customer.ayni_isyerinde_sure_ay,
+        psikoteknik_varmi: customer.psikoteknik_varmi,
+        psikoteknik_notu: customer.psikoteknik_notu,
+        ikametgah_varmi: customer.ikametgah_varmi,
+        hizmet_dokumu_varmi: customer.hizmet_dokumu_varmi,
+
+        // Attorney Check
+        avukat_sorgu_durumu: customer.avukat_sorgu_durumu,
+        avukat_sorgu_sonuc: customer.avukat_sorgu_sonuc,
+
+        // Main Extras
         winner_musteri_no: customer.winner_musteri_no,
         e_devlet_sifre: customer.e_devlet_sifre,
         iptal_nedeni: customer.iptal_nedeni,
+
+        // Guarantor (Kefil) Full Profile
         kefil_ad_soyad: customer.kefil_ad_soyad,
         kefil_telefon: customer.kefil_telefon,
         kefil_tc_kimlik: customer.kefil_tc_kimlik,
+        kefil_meslek_is: customer.kefil_meslek_is,
+        kefil_son_yatan_maas: customer.kefil_son_yatan_maas,
+        kefil_ayni_isyerinde_sure_ay: customer.kefil_ayni_isyerinde_sure_ay,
+        kefil_e_devlet_sifre: customer.kefil_e_devlet_sifre,
+        kefil_ikametgah_varmi: customer.kefil_ikametgah_varmi,
+        kefil_hizmet_dokumu_varmi: customer.kefil_hizmet_dokumu_varmi,
+        kefil_dava_dosyasi_varmi: customer.kefil_dava_dosyasi_varmi,
+        kefil_dava_detay: customer.kefil_dava_detay,
+        kefil_acik_icra_varmi: customer.kefil_acik_icra_varmi,
+        kefil_acik_icra_detay: customer.kefil_acik_icra_detay,
+        kefil_kapali_icra_varmi: customer.kefil_kapali_icra_varmi,
+        kefil_kapali_icra_kapanis_sekli: customer.kefil_kapali_icra_kapanis_sekli,
+        kefil_mulkiyet_durumu: customer.kefil_mulkiyet_durumu,
+        kefil_arac_varmi: customer.kefil_arac_varmi,
+        kefil_tapu_varmi: customer.kefil_tapu_varmi,
+        kefil_notlar: customer.kefil_notlar,
+
+        // Delivery
         teslim_tarihi: customer.teslim_tarihi || null,
         teslim_eden: customer.teslim_eden,
         urun_imei: customer.urun_imei,
         urun_seri_no: customer.urun_seri_no,
-        satilan_urunler: customer.satilan_urunler // JSON string or object? DB expects JSONB. 
-        // Frontend stores it as stringified JSON in `satilan_urunler` string field?
-        // Let's check type. Customer type says string. DB needs JSONB.
-        // If Customer type says string, we should probably parse it if it looks like JSON, or pass as is if Postgres handles string->jsonb cast.
-        // Postgres handles string literal to jsonb.
+        satilan_urunler: typeof customer.satilan_urunler === 'object' ? JSON.stringify(customer.satilan_urunler) : customer.satilan_urunler
     };
 
     const { data, error } = await supabaseAdmin.from('leads').update(updates).eq('id', customer.id).select().single();
@@ -402,6 +440,7 @@ export async function addLead(customer: Partial<Customer>, userEmail: string): P
         basvuru_kanali: 'Panel',
         sahip_email: userEmail,
         created_at: new Date().toISOString(),
+        // Add basic defaults if needed, but 'update' usually handles details afterwards.
     };
     const { data, error } = await supabaseAdmin.from('leads').insert(dbRow).select().single();
     if (error) throw error;
@@ -431,8 +470,54 @@ export async function getRecentLogs(limit: number = 50): Promise<LogEntry[]> {
 
 function mapRowToCustomer(row: any): Customer {
     return {
-        id: row.id, created_at: row.created_at, created_by: row.created_by, ad_soyad: row.ad_soyad, telefon: row.telefon, tc_kimlik: row.tc_kimlik, email: row.email, dogum_tarihi: row.dogum_tarihi, durum: row.durum, sahip: row.sahip_email, sehir: row.sehir, ilce: row.ilce, meslek_is: row.meslek_is, son_yatan_maas: row.maas_bilgisi, acik_icra_varmi: row.icra_durumu?.acik_icra, kapali_icra_varmi: row.icra_durumu?.kapali_icra, acik_icra_detay: row.icra_durumu?.detay, dava_dosyasi_varmi: row.dava_durumu?.varmi, dava_detay: row.dava_durumu?.detay, admin_notu: row.admin_notu, arama_not_kisa: row.arama_notu, basvuru_kanali: row.basvuru_kanali, talep_edilen_urun: row.talep_edilen_urun, talep_edilen_tutar: row.talep_edilen_tutar, onay_durumu: row.onay_durumu, sonraki_arama_zamani: row.sonraki_arama_zamani, son_arama_zamani: row.son_arama_zamani, kilitli_mi: false,
+        id: row.id, created_at: row.created_at, created_by: row.created_by, ad_soyad: row.ad_soyad, telefon: row.telefon, tc_kimlik: row.tc_kimlik, email: row.email, dogum_tarihi: row.dogum_tarihi, durum: row.durum, sahip: row.sahip_email, sehir: row.sehir, ilce: row.ilce, meslek_is: row.meslek_is, son_yatan_maas: row.maas_bilgisi,
+
+        // JSONB Fields (Legacy support + new structure)
+        acik_icra_varmi: row.icra_durumu?.acik_icra,
+        kapali_icra_varmi: row.icra_durumu?.kapali_icra,
+        acik_icra_detay: row.icra_durumu?.detay,
+        dava_dosyasi_varmi: row.dava_durumu?.varmi,
+        dava_detay: row.dava_durumu?.detay,
+
+        admin_notu: row.admin_notu, arama_not_kisa: row.arama_notu, basvuru_kanali: row.basvuru_kanali, talep_edilen_urun: row.talep_edilen_urun, talep_edilen_tutar: row.talep_edilen_tutar, onay_durumu: row.onay_durumu, sonraki_arama_zamani: row.sonraki_arama_zamani, son_arama_zamani: row.son_arama_zamani, kilitli_mi: false,
         winner_musteri_no: row.winner_musteri_no, e_devlet_sifre: row.e_devlet_sifre, iptal_nedeni: row.iptal_nedeni, kefil_ad_soyad: row.kefil_ad_soyad, kefil_telefon: row.kefil_telefon, kefil_tc_kimlik: row.kefil_tc_kimlik, teslim_tarihi: row.teslim_tarihi, teslim_eden: row.teslim_eden, urun_imei: row.urun_imei, urun_seri_no: row.urun_seri_no, satilan_urunler: typeof row.satilan_urunler === 'object' ? JSON.stringify(row.satilan_urunler) : row.satilan_urunler,
+
+        // NEW FIELDS MAPPING
+        aciklama_uzun: row.aciklama_uzun,
+        avukat_sorgu_durumu: row.avukat_sorgu_durumu,
+        avukat_sorgu_sonuc: row.avukat_sorgu_sonuc,
+        psikoteknik_varmi: row.psikoteknik_varmi,
+        psikoteknik_notu: row.psikoteknik_notu,
+        ikametgah_varmi: row.ikametgah_varmi,
+        hizmet_dokumu_varmi: row.hizmet_dokumu_varmi,
+        ayni_isyerinde_sure_ay: row.ayni_isyerinde_sure_ay,
+        mulkiyet_durumu: row.mulkiyet_durumu,
+        arac_varmi: row.arac_varmi,
+        arac_detay: row.arac_detay,
+        tapu_varmi: row.tapu_varmi,
+        tapu_detay: row.tapu_detay,
+        kapali_icra_kapanis_sekli: row.kapali_icra_kapanis_sekli,
+        gizli_dosya_varmi: row.gizli_dosya_varmi,
+        gizli_dosya_detay: row.gizli_dosya_detay,
+
+        // Guarantor
+        kefil_meslek_is: row.kefil_meslek_is,
+        kefil_son_yatan_maas: row.kefil_son_yatan_maas,
+        kefil_ayni_isyerinde_sure_ay: row.kefil_ayni_isyerinde_sure_ay,
+        kefil_e_devlet_sifre: row.kefil_e_devlet_sifre,
+        kefil_ikametgah_varmi: row.kefil_ikametgah_varmi,
+        kefil_hizmet_dokumu_varmi: row.kefil_hizmet_dokumu_varmi,
+        kefil_dava_dosyasi_varmi: row.kefil_dava_dosyasi_varmi,
+        kefil_dava_detay: row.kefil_dava_detay,
+        kefil_acik_icra_varmi: row.kefil_acik_icra_varmi,
+        kefil_acik_icra_detay: row.kefil_acik_icra_detay,
+        kefil_kapali_icra_varmi: row.kefil_kapali_icra_varmi,
+        kefil_kapali_icra_kapanis_sekli: row.kefil_kapali_icra_kapanis_sekli,
+        kefil_mulkiyet_durumu: row.kefil_mulkiyet_durumu,
+        kefil_arac_varmi: row.kefil_arac_varmi,
+        kefil_tapu_varmi: row.kefil_tapu_varmi,
+        kefil_notlar: row.kefil_notlar,
+
         ...row
     };
 }
