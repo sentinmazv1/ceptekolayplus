@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
         // 2. Check Linkage (How many logs have a valid customer_id?)
         // We fetch a few logs and check if their IDs exist in leads
-        let sampleCheck = [];
+        let sampleCheck: any[] = [];
         if (sampleLogs && sampleLogs.length > 0) {
             const ids = sampleLogs.map(l => l.customer_id);
             const { data: matchingLeads } = await supabaseAdmin.from('leads').select('id').in('id', ids);
