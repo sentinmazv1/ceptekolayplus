@@ -320,7 +320,7 @@ export async function getAllLogs(dateFilter?: string) {
 
     // Build base query function
     const fetchPage = async (p: number) => {
-        let query = supabaseAdmin.from('activity_logs').select('id, created_at, user_email, customer_id, action');
+        let query = supabaseAdmin.from('activity_logs').select('id, created_at, user_email, lead_id, action');
 
         if (dateFilter) {
             query = query.ilike('created_at', `${dateFilter}%`);
@@ -350,7 +350,7 @@ export async function getAllLogs(dateFilter?: string) {
         log_id: row.id,
         timestamp: row.created_at,
         user_email: row.user_email,
-        customer_id: row.customer_id,
+        customer_id: row.lead_id,
         action: row.action
     }));
 }
@@ -472,19 +472,19 @@ export async function deleteCustomer(id: string, userEmail: string) {
 }
 
 export async function logAction(entry: LogEntry) {
-    await supabaseAdmin.from('activity_logs').insert({ id: entry.log_id, user_email: entry.user_email, customer_id: entry.customer_id, action: entry.action, old_value: entry.old_value, new_value: entry.new_value, note: entry.note });
+    await supabaseAdmin.from('activity_logs').insert({ id: entry.log_id, user_email: entry.user_email, lead_id: entry.customer_id, action: entry.action, old_value: entry.old_value, new_value: entry.new_value, note: entry.note });
 }
 
 export async function getLogs(customerId?: string): Promise<LogEntry[]> {
     let query = supabaseAdmin.from('activity_logs').select('*');
-    if (customerId) query = query.eq('customer_id', customerId);
+    if (customerId) query = query.eq('lead_id', customerId);
     const { data } = await query.order('created_at', { ascending: false }).limit(200);
-    return (data || []).map(row => ({ log_id: row.id, timestamp: row.created_at, user_email: row.user_email, customer_id: row.customer_id, action: row.action, old_value: row.old_value, new_value: row.new_value, note: row.note }));
+    return (data || []).map(row => ({ log_id: row.id, timestamp: row.created_at, user_email: row.user_email, customer_id: row.lead_id, action: row.action, old_value: row.old_value, new_value: row.new_value, note: row.note }));
 }
 
 export async function getRecentLogs(limit: number = 50): Promise<LogEntry[]> {
     const { data } = await supabaseAdmin.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(limit);
-    return (data || []).map(row => ({ log_id: row.id, timestamp: row.created_at, user_email: row.user_email, customer_id: row.customer_id, action: row.action, old_value: row.old_value, new_value: row.new_value, note: row.note }));
+    return (data || []).map(row => ({ log_id: row.id, timestamp: row.created_at, user_email: row.user_email, customer_id: row.lead_id, action: row.action, old_value: row.old_value, new_value: row.new_value, note: row.note }));
 }
 
 function mapRowToCustomer(row: any): Customer {

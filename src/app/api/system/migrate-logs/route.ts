@@ -115,7 +115,7 @@ export async function GET(req: NextRequest) {
                 logsToInsert.push({
                     created_at: ts,
                     user_email: userStr,
-                    customer_id: rawCustId,
+                    lead_id: rawCustId,
                     action: actionStr,
                     note: noteParts,
                     old_value: 'Legacy Import'
