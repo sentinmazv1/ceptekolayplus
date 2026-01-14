@@ -118,8 +118,13 @@ export async function GET(req: NextRequest) {
                 }
 
                 // Attorney Queries (Log Source)
-                if ((action === 'UPDATE_FIELDS' && l.new_value && l.new_value.match(/avukat|sorgu/i)) ||
-                    (action === 'UPDATE_STATUS' && l.new_value && l.new_value.match(/avukat/i))) {
+                // Check NewValue OR Note (Note usually contains "Avukat Sorgu Updated")
+                const isAttorneyLog =
+                    (l.new_value && l.new_value.match(/avukat|sorgu/i)) ||
+                    (l.note && l.note.match(/avukat|sorgu/i)) ||
+                    (l.action === 'UPDATE_FIELDS' && (l.old_value === 'BEKLİYOR' || l.new_value === 'BEKLİYOR'));
+
+                if ((action === 'UPDATE_FIELDS' || action === 'UPDATE_STATUS') && isAttorneyLog) {
                     attorneyQueryIds.add(l.customer_id);
                 }
             }
@@ -153,27 +158,18 @@ export async function GET(req: NextRequest) {
             }
 
             // C. Funnel: Attorney Queries
-            // [HYBRID FIX]: Broader check. If stats or result exists, count it.
             if (row.avukat_sorgu_durumu || row.avukat_sorgu_sonuc) {
                 if (row.avukat_sorgu_durumu === 'BEKLİYOR') {
                     stats.funnel.attorneyPending++;
                 }
 
-                // Count as "Query Made" if:
-                // 1. Pending (active query)
-                // 2. Result exists AND updated in range (completed recently)
-                // 3. Status has 'avukat' content AND updated in range
-
+                // Count as "Query Made"
                 const hasResult = !!row.avukat_sorgu_sonuc && row.avukat_sorgu_sonuc !== '';
                 const isPending = row.avukat_sorgu_durumu === 'BEKLİYOR';
 
                 if (isPending || (hasResult && isInRange(row.updated_at))) {
                     attorneyQueryIds.add(row.id);
                 }
-                // If not updated today but has result, we miss it if relying only on updated_at.
-                // But for "Daily Report", we only care about activity TODAY.
-                // If they were queried yesterday, they should NOT appear in today's funnel except perhaps as Pending if still pending.
-                // Correct logic: Only count completed queries if they finished TODAY.
             }
 
             // D. Funnel: Approved
@@ -243,26 +239,26 @@ export async function GET(req: NextRequest) {
             if (stats.performance[u]) stats.performance[u].applications = userAppIds[u].size;
         });
 
-        // Goals: Last 7 Days EXCLUDING Today (Static Goal)
+        // Goals: Last 3 Days EXCLUDING Today (Static Goal)
         const todayMidnight = new Date();
         todayMidnight.setHours(0, 0, 0, 0);
-        const sevenDaysAgoMidnight = todayMidnight.getTime() - (7 * 24 * 60 * 60 * 1000);
+        const threeDaysAgoMidnight = todayMidnight.getTime() - (3 * 24 * 60 * 60 * 1000);
         const todayMidnightTime = todayMidnight.getTime();
 
-        const last7DaysCalls: Record<string, number> = {};
+        const last3DaysCalls: Record<string, number> = {};
 
         logs.forEach((l: any) => {
             const user = l.user_email;
             if (!user || ['sistem', 'admin', 'ibrahim'].some(x => user.includes(x))) return;
             const t = new Date(l.timestamp).getTime();
 
-            // Strictly between 7 days ago (inclusive) and today midnight (exclusive)
-            if (t >= sevenDaysAgoMidnight && t < todayMidnightTime && l.action === 'PULL_LEAD') {
-                last7DaysCalls[user] = (last7DaysCalls[user] || 0) + 1;
+            // Strictly between 3 days ago (inclusive) and today midnight (exclusive)
+            if (t >= threeDaysAgoMidnight && t < todayMidnightTime && l.action === 'PULL_LEAD') {
+                last3DaysCalls[user] = (last3DaysCalls[user] || 0) + 1;
             }
         });
         Object.keys(stats.performance).forEach(user => {
-            const avg = Math.round((last7DaysCalls[user] || 0) / 7);
+            const avg = Math.round((last3DaysCalls[user] || 0) / 3);
             stats.performance[user].dailyGoal = Math.max(10, Math.ceil(avg * 1.1));
         });
 
