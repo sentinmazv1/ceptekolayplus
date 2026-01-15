@@ -246,6 +246,10 @@ export async function GET(req: NextRequest) {
         const todayMidnightTime = todayMidnight.getTime();
 
         const last3DaysCalls: Record<string, number> = {};
+        const lastLogTime: Record<string, number> = {};
+
+        // Sort logs by time to ensure correct dedup
+        logs.sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
         logs.forEach((l: any) => {
             const user = l.user_email;
@@ -254,7 +258,12 @@ export async function GET(req: NextRequest) {
 
             // Strictly between 3 days ago (inclusive) and today midnight (exclusive)
             if (t >= threeDaysAgoMidnight && t < todayMidnightTime && l.action === 'PULL_LEAD') {
-                last3DaysCalls[user] = (last3DaysCalls[user] || 0) + 1;
+                // Deduplicate: If same user pulls multiple leads within 10 seconds, count as 1 event (bulk assign protection)
+                const lastTime = lastLogTime[user] || 0;
+                if (t - lastTime > 10000) { // 10 seconds
+                    last3DaysCalls[user] = (last3DaysCalls[user] || 0) + 1;
+                    lastLogTime[user] = t;
+                }
             }
         });
         Object.keys(stats.performance).forEach(user => {
