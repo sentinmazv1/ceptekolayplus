@@ -365,6 +365,7 @@ export async function updateLead(customer: Customer, userEmail: string): Promise
         ad_soyad: customer.ad_soyad,
         telefon: customer.telefon,
         tc_kimlik: customer.tc_kimlik,
+        dogum_tarihi: customer.dogum_tarihi, // Added
         email: customer.email,
         durum: customer.durum,
         onay_durumu: customer.onay_durumu,

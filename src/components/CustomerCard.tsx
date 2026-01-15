@@ -439,7 +439,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                             {isChanged && <span className="text-xs bg-indigo-500/80 px-2 py-1 rounded-full animate-pulse border border-indigo-400/50">Değişiklikler var</span>}
                         </div>
                         <div className="flex items-center gap-4 text-xs text-slate-300 font-medium ml-1">
-                            <span className='flex items-center gap-1 hover:text-white transition-colors cursor-pointer' onClick={() => window.open(`tel:${data.telefon}`)}><Phone className="w-3 h-3" /> {data.telefon}</span>
+                            <span className='flex items-center gap-1 hover:text-white transition-colors cursor-pointer' onClick={() => window.open(`tel:${data.telefon?.startsWith('0') ? data.telefon : '0' + data.telefon}`)}><Phone className="w-3 h-3" /> {data.telefon}</span>
                             <span className='hidden md:flex items-center gap-1 opacity-50'>•</span>
                             <span className='hidden md:flex items-center gap-1 text-slate-400'>Kayıt: {new Date(data.created_at || new Date()).toLocaleDateString('tr-TR')}</span>
                         </div>
@@ -543,6 +543,26 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                             value={data.tc_kimlik || ''}
                                             onChange={(e) => handleChange('tc_kimlik', e.target.value)}
                                             maxLength={11}
+                                        />
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <Input
+                                                label="Doğum Tarihi"
+                                                type="date"
+                                                value={data.dogum_tarihi || ''}
+                                                onChange={(e) => handleChange('dogum_tarihi', e.target.value)}
+                                            />
+                                            <Input
+                                                label="Winner Müşteri No"
+                                                value={data.winner_musteri_no || ''}
+                                                onChange={(e) => handleChange('winner_musteri_no', e.target.value)}
+                                                placeholder="Müşteri No"
+                                            />
+                                        </div>
+                                        <Input
+                                            label="E-Devlet Şifresi"
+                                            value={data.e_devlet_sifre || ''}
+                                            onChange={(e) => handleChange('e_devlet_sifre', e.target.value)}
+                                            placeholder="Şifre"
                                         />
                                         <Input
                                             label="E-Posta"
@@ -671,11 +691,25 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                         onChange={(e) => handleChange('son_yatan_maas', e.target.value)}
                                     />
                                     <Input
-                                        label="Aynı İşyerinde Çalışma Süresi (Ay)"
-                                        type="number"
+                                        label="Aynı İşyerinde Çalışma Süresi"
                                         value={data.ayni_isyerinde_sure_ay || ''}
                                         onChange={(e) => handleChange('ayni_isyerinde_sure_ay', e.target.value)}
+                                        placeholder="Örn: 1 Yıl 3 Ay"
                                     />
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <Select
+                                            label="İkametgah Belgesi"
+                                            value={data.ikametgah_varmi || 'Hayır'}
+                                            onChange={(e) => handleChange('ikametgah_varmi', e.target.value)}
+                                            options={[{ value: 'Evet', label: 'Var' }, { value: 'Hayır', label: 'Yok' }]}
+                                        />
+                                        <Select
+                                            label="Psikoteknik Belgesi"
+                                            value={data.psikoteknik_varmi || 'Hayır'}
+                                            onChange={(e) => handleChange('psikoteknik_varmi', e.target.value)}
+                                            options={[{ value: 'Evet', label: 'Var' }, { value: 'Hayır', label: 'Yok' }]}
+                                        />
+                                    </div>
                                     <Select
                                         label="Çalışma Şekli"
                                         value={data.calisma_sekli || ''}
@@ -1739,8 +1773,12 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
 *Doğum Tarihi :* ${customer.dogum_tarihi || '-'}
 *Talep Edilen Ürün :* ${customer.talep_edilen_urun || '-'}
 *Şehri :* ${customer.sehir || '-'} / ${customer.ilce || '-'}
-*Meslek / Son iş yeri çalışma süresi :* ${customer.meslek_is || '-'} / ${customer.ayni_isyerinde_sure_ay || '?'} aydır aynı iş yerinde
+*Meslek / Son iş yeri çalışma süresi :* ${customer.meslek_is || '-'} / ${customer.ayni_isyerinde_sure_ay || '?'}
 *Son yatan maaş:* ${customer.son_yatan_maas || '-'}
+*Winner No:* ${customer.winner_musteri_no || '-'}
+*E-Devlet Şifre:* ${customer.e_devlet_sifre || '-'}
+*İkametgah:* ${customer.ikametgah_varmi || '-'}
+*Psikoteknik:* ${customer.psikoteknik_varmi || '-'}
 *Mülkiyet :* ${customer.mulkiyet_durumu || '-'}
 *Dava Dosyası :* ${customer.dava_dosyasi_varmi || '-'} ${customer.dava_detay || ''}
 *Gizli Dosyası :* ${customer.gizli_dosya_varmi || '-'} ${customer.gizli_dosya_detay || ''}
