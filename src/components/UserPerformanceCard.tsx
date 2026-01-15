@@ -46,7 +46,7 @@ export function UserPerformanceCard({ user, stats }: { user: string, stats: any 
                 <div className="pr-2 space-y-4">
                     <h4 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
                         <Target className="w-3 h-3" />
-                        AKTİVİTE
+                        İLETİŞİM
                     </h4>
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2 text-gray-600">
@@ -68,6 +68,21 @@ export function UserPerformanceCard({ user, stats }: { user: string, stats: any 
                             <span className="text-xs font-bold">WP</span>
                         </div>
                         <span className="text-base font-bold text-gray-700">{stats.whatsapp || 0}</span>
+                    </div>
+                </div>
+
+                <div className="space-y-4 pt-2 border-t border-gray-100 col-span-2">
+                    <div className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
+                        <div className="flex items-center gap-2 text-gray-500">
+                            <Target className="w-4 h-4 text-orange-500" />
+                            <span className="text-[10px] font-black uppercase tracking-wider">Back Office / İşlem</span>
+                        </div>
+                        <span className="text-lg font-black text-gray-800">
+                            {/* Back Office = Total Logs - (Calls + SMS + WP) roughly, 
+                                but simpler is just to show Total Logs as "Total Touchpoints" 
+                                OR subtract communication logs to show "Admin Work" */}
+                            {Math.max(0, (stats.totalLogs || 0) - (stats.calls + (stats.sms || 0) + (stats.whatsapp || 0)))}
+                        </span>
                     </div>
                 </div>
 

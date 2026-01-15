@@ -68,7 +68,8 @@ export async function GET(req: NextRequest) {
                 sms: number,
                 whatsapp: number,
                 dailyGoal: number,
-                image: string
+                image: string,
+                totalLogs: number
             }>,
             hourly: {} as Record<string, Record<string, Record<number, number>>>,
         };
@@ -103,8 +104,11 @@ export async function GET(req: NextRequest) {
 
             if (ts >= start && ts <= end) {
                 // Init Perf
-                if (!stats.performance[user]) stats.performance[user] = { calls: 0, approvals: 0, approvedLimit: 0, applications: 0, paceMinutes: 0, sms: 0, whatsapp: 0, dailyGoal: 0, image: '' };
+                if (!stats.performance[user]) stats.performance[user] = { calls: 0, approvals: 0, approvedLimit: 0, applications: 0, paceMinutes: 0, sms: 0, whatsapp: 0, dailyGoal: 0, image: '', totalLogs: 0 };
                 if (!userAppIds[user]) userAppIds[user] = new Set();
+
+                // Increment Total Activity (Back Office)
+                stats.performance[user].totalLogs++;
 
                 // Calls
                 if (action === 'PULL_LEAD') stats.performance[user].calls++;
