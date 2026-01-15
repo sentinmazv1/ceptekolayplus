@@ -443,6 +443,8 @@ export async function updateLead(customer: Customer, userEmail: string): Promise
         teslim_eden: customer.teslim_eden,
         urun_imei: customer.urun_imei,
         urun_seri_no: customer.urun_seri_no,
+        gorsel_1_url: customer.gorsel_1_url,
+        gorsel_2_url: customer.gorsel_2_url,
         satilan_urunler: typeof customer.satilan_urunler === 'object' ? JSON.stringify(customer.satilan_urunler) : customer.satilan_urunler
     };
 
