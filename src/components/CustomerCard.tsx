@@ -7,7 +7,7 @@ import { WHATSAPP_TEMPLATES } from '@/lib/whatsapp-templates';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Select } from './ui/Select';
-import { Loader2, AlertCircle, CheckCircle, Info, Phone, Package, Smartphone, Search, RefreshCw, MessageSquare, Scale, UploadCloud, FileText, Image as ImageIcon } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle, Info, Phone, Package, Smartphone, Search, RefreshCw, MessageSquare, Scale, UploadCloud, FileText, Image as ImageIcon, Briefcase, Home, ShieldCheck, X } from 'lucide-react';
 import { cityList, getDistrictsByCityCode } from 'turkey-neighbourhoods';
 
 

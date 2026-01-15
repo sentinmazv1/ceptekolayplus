@@ -241,16 +241,30 @@ export async function lockNextLead(userEmail: string): Promise<(Customer & { sou
     }
     // 4. Retry
     else if (resRetry.data && resRetry.data.length > 0) {
-        // Find first valid time
+        // User Request: "son 24 saat içerisinde olanlar olsun"
+        // Prioritize leads called in the last 24 hours.
+        // But still keep a small safety buffer (e.g. 15-30 mins) to avoid immediate spam.
         const nowTime = Date.now();
+        const oneDayMs = 24 * 60 * 60 * 1000;
+        const safetyBufferMs = 15 * 60 * 1000; // 15 Minutes
+
         const validRetry = resRetry.data.find((c: any) => {
-            if (!c.son_arama_zamani) return true;
-            return (nowTime - new Date(c.son_arama_zamani).getTime()) > (2 * 60 * 60 * 1000);
+            if (!c.son_arama_zamani) return true; // Never called? Should rely on 'Yeni'. But if here, take it.
+            const diff = nowTime - new Date(c.son_arama_zamani).getTime();
+
+            // Logic: Must be within last 24h (diff < oneDay) AND older than safety buffer (diff > safety)
+            // If the user wants strictly "last 24h", we only pick those.
+            return diff < oneDayMs && diff > safetyBufferMs;
         });
+
+        // Fallback: If no recent retries found, do we return nothing? or Old ones?
+        // User said "olsun" (let them be). It usually implies a constraint.
+        // If we strictly follow, we return null if no recent retry found.
+        // Let's assume strict for now.
 
         if (validRetry) {
             target = validRetry;
-            source = '♻️ Tekrar Arama (' + validRetry.durum + ')';
+            source = '♻️ Tekrar Arama (Son 24s)';
         }
     }
 
