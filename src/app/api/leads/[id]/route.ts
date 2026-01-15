@@ -93,6 +93,7 @@ export async function PUT(
             }
         }
 
+
         // Detect Attorney Query Updates
         if (existing && existing.avukat_sorgu_durumu !== updated.avukat_sorgu_durumu) {
             const { logAction } = await import('@/lib/leads');
@@ -105,6 +106,21 @@ export async function PUT(
                 old_value: existing.avukat_sorgu_durumu || '',
                 new_value: updated.avukat_sorgu_durumu || '',
                 note: 'Avukat Sorgu Durumu Updated'
+            });
+        }
+
+        // Detect Kefil Attorney Query Updates
+        if (existing && existing.kefil_avukat_sorgu_durumu !== updated.kefil_avukat_sorgu_durumu) {
+            const { logAction } = await import('@/lib/leads');
+            await logAction({
+                log_id: crypto.randomUUID(),
+                timestamp: new Date().toISOString(),
+                user_email: session.user.email,
+                customer_id: updated.id,
+                action: 'UPDATE_FIELDS',
+                old_value: existing.kefil_avukat_sorgu_durumu || '',
+                new_value: updated.kefil_avukat_sorgu_durumu || '',
+                note: 'Kefil Avukat Sorgu Durumu Updated'
             });
         }
 
