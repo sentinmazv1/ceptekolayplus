@@ -209,62 +209,47 @@ export async function lockNextLead(userEmail: string): Promise<(Customer & { sou
     let target: any = null;
     let source = '';
 
-    // PRIORITY 1: Automation / New
-    // Previous logic was: Empty -> Scheduled -> New -> Retry
-    // User complaint: "Eski kodumuzda önce boş olanlar, sonra randevu, sonra yeni"
-    // Wait, "Yeni" IS "Empty"? 
-    // Let's assume:
-    // 1. Empty/Null (Automation)
-    // 2. Scheduled
-    // 3. Yeni
-    // 4. Retry
+    // PRIORITY LOGIC REORDERED
+    // 1. Scheduled (Randevu) - Highest Priority (Must be called on time)
+    // 2. Retry (Tekrar Arama) - High Priority (Keep them warm, call back within 24h)
+    // 3. New/Automation (Yeni/Otomasyon) - Standard Priority (Fill gaps)
 
-    // Check Automation (Empty/Null)
-    const autoLeads = resAuto.data || [];
-    const emptyLead = autoLeads.find((l: any) => !l.durum || l.durum === '');
-    const newLead = autoLeads.find((l: any) => l.durum === 'Yeni');
-
-    // 1. Empty/Null
-    if (emptyLead) {
-        target = emptyLead;
-        source = '🤖 Otomasyon';
-    }
-    // 2. Scheduled
-    else if (resSched.data && resSched.data.length > 0) {
+    // Check Scheduled
+    if (resSched.data && resSched.data.length > 0) {
         target = resSched.data[0];
         source = '📅 Randevu';
     }
-    // 3. Yeni (Explicit)
-    else if (newLead) {
-        target = newLead;
-        source = '🆕 Yeni Kayıt';
-    }
-    // 4. Retry
+    // Check Retry (Warm leads)
     else if (resRetry.data && resRetry.data.length > 0) {
-        // User Request: "son 24 saat içerisinde olanlar olsun"
-        // Prioritize leads called in the last 24 hours.
-        // But still keep a small safety buffer (e.g. 15-30 mins) to avoid immediate spam.
         const nowTime = Date.now();
         const oneDayMs = 24 * 60 * 60 * 1000;
-        const safetyBufferMs = 15 * 60 * 1000; // 15 Minutes
+        const safetyBufferMs = 15 * 60 * 1000; // 15 Minutes waiting period
 
         const validRetry = resRetry.data.find((c: any) => {
-            if (!c.son_arama_zamani) return true; // Never called? Should rely on 'Yeni'. But if here, take it.
+            if (!c.son_arama_zamani) return true;
             const diff = nowTime - new Date(c.son_arama_zamani).getTime();
-
-            // Logic: Must be within last 24h (diff < oneDay) AND older than safety buffer (diff > safety)
-            // If the user wants strictly "last 24h", we only pick those.
+            // Must be within last 24h AND older than safety buffer
             return diff < oneDayMs && diff > safetyBufferMs;
         });
-
-        // Fallback: If no recent retries found, do we return nothing? or Old ones?
-        // User said "olsun" (let them be). It usually implies a constraint.
-        // If we strictly follow, we return null if no recent retry found.
-        // Let's assume strict for now.
 
         if (validRetry) {
             target = validRetry;
             source = '♻️ Tekrar Arama (Son 24s)';
+        }
+    }
+
+    // Check Automation / New (If no scheduled or valid retry found)
+    if (!target) {
+        const autoLeads = resAuto.data || [];
+        const emptyLead = autoLeads.find((l: any) => !l.durum || l.durum === '');
+        const newLead = autoLeads.find((l: any) => l.durum === 'Yeni');
+
+        if (emptyLead) {
+            target = emptyLead;
+            source = '🤖 Otomasyon';
+        } else if (newLead) {
+            target = newLead;
+            source = '🆕 Yeni Kayıt';
         }
     }
 

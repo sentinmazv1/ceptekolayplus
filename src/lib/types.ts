@@ -119,6 +119,20 @@ export interface Customer {
   email?: string;
   iptal_nedeni?: string;
   satilan_urunler?: string; // JSON string of SoldItem[]
+
+  // Missing fields added for CustomerCard
+  ozel_musteri_mi?: boolean;
+  calisma_sekli?: string;
+  ek_gelir?: string;
+  findeks_risk_durumu?: string;
+  finansal_notlar?: string;
+  renk?: string;
+  satis_tarihi?: string;
+  marka?: string;
+  model?: string;
+  kargo_takip_no?: string;
+  gorsel_1?: string;
+  gorsel_2?: string;
 }
 
 export interface SoldItem {
