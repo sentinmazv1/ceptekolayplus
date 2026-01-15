@@ -107,9 +107,24 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
     const [stockSearch, setStockSearch] = useState('');
 
     // Logs State
-    const [activeTab, setActiveTab] = useState<'details' | 'is' | 'yasal' | 'urun' | 'dosya' | 'history'>('details');
+    const [activeTab, setActiveTab] = useState<'details' | 'is' | 'yasal' | 'urun' | 'dosya' | 'history' | 'kefil'>('details');
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [logsLoading, setLogsLoading] = useState(false);
+
+    // Dynamic Statuses
+    const [statusOptions, setStatusOptions] = useState<{ value: string, label: string }[]>([]);
+
+    useEffect(() => {
+        // Fetch statuses from API
+        fetch('/api/admin/statuses')
+            .then(res => res.json())
+            .then(data => {
+                if (data.statuses) {
+                    setStatusOptions(data.statuses.map((s: any) => ({ value: s.label, label: s.label })));
+                }
+            })
+            .catch(err => console.error('Status fetch error:', err));
+    }, []);
 
     // SMS Modal State
     const [isSmsModalOpen, setIsSmsModalOpen] = useState(false);
@@ -295,8 +310,8 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
         setLoading(true);
 
         // Validation
-        if (!data.ad_soyad || !data.telefon || !data.tc_kimlik) {
-            setError('Ad Soyad, Telefon ve TC Kimlik zorunludur.');
+        if (!data.ad_soyad || !data.telefon) {
+            setError('Ad Soyad ve Telefon zorunludur.');
             setLoading(false);
             return;
         }
@@ -449,6 +464,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                 <TabButton id="yasal" label="Yasal & Varlık" icon={Scale} />
                 <TabButton id="urun" label="Ürün & Teslimat" icon={Package} />
                 <TabButton id="dosya" label="Dosyalar" icon={ImageIcon} />
+                <TabButton id="kefil" label="Kefil Bilgileri" icon={ShieldCheck} />
                 <TabButton id="history" label="Geçmiş & Loglar" icon={RefreshCw} />
             </div>
 
@@ -532,22 +548,10 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                         label="Arama Durumu (Statü)"
                                         value={data.durum}
                                         onChange={(e) => handleChange('durum', e.target.value as any)}
-                                        options={[
+                                        options={statusOptions.length > 0 ? statusOptions : [
                                             { value: 'Yeni', label: 'Yeni' },
                                             { value: 'Aranacak', label: 'Aranacak' },
-                                            { value: 'Ulaşılamadı', label: 'Ulaşılamadı' },
-                                            { value: 'Meşgul/Hattı kapalı', label: 'Meşgul/Hattı kapalı' },
-                                            { value: 'Yanlış numara', label: 'Yanlış numara' },
-                                            { value: 'Daha sonra aranmak istiyor', label: 'Randevu (Daha sonra)' },
-                                            { value: 'Cevap Yok', label: 'Cevap Yok' },
-                                            { value: 'SMS Atıldı', label: 'SMS Atıldı' },
-                                            { value: 'Başvuru alındı', label: '✅ Başvuru Alındı' },
-                                            { value: 'Kefil bekleniyor', label: '⏳ Kefil Bekleniyor' },
-                                            { value: 'Satış yapıldı/Tamamlandı', label: '💰 Satış Yapıldı' },
-                                            { value: 'Teslim edildi', label: '📦 Teslim Edildi' },
-                                            { value: 'Reddetti', label: '❌ Reddetti' },
-                                            { value: 'Uygun değil', label: '🚫 Uygun Değil' },
-                                            { value: 'İptal/Vazgeçti', label: '🚫 İptal/Vazgeçti' },
+                                            // ... fallback defaults if needed
                                         ]}
                                     />
 
@@ -703,18 +707,38 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                 )}
 
                                 <div className="grid grid-cols-2 gap-4">
-                                    <Select
-                                        label="Dava Dosyası"
-                                        value={data.dava_dosyasi_varmi || 'Hayır'}
-                                        onChange={(e) => handleChange('dava_dosyasi_varmi', e.target.value)}
-                                        options={[{ value: 'Evet', label: 'Evet' }, { value: 'Hayır', label: 'Hayır' }]}
-                                    />
-                                    <Select
-                                        label="Kapalı İcra"
-                                        value={data.kapali_icra_varmi || 'Hayır'}
-                                        onChange={(e) => handleChange('kapali_icra_varmi', e.target.value)}
-                                        options={[{ value: 'Evet', label: 'Evet' }, { value: 'Hayır', label: 'Hayır' }]}
-                                    />
+                                    <div>
+                                        <Select
+                                            label="Dava Dosyası"
+                                            value={data.dava_dosyasi_varmi || 'Hayır'}
+                                            onChange={(e) => handleChange('dava_dosyasi_varmi', e.target.value)}
+                                            options={[{ value: 'Evet', label: 'Evet' }, { value: 'Hayır', label: 'Hayır' }]}
+                                        />
+                                        {data.dava_dosyasi_varmi === 'Evet' && (
+                                            <Input
+                                                placeholder="Dava Detayı"
+                                                value={data.dava_detay || ''}
+                                                onChange={(e) => handleChange('dava_detay', e.target.value)}
+                                                className="mt-1 border-orange-200 bg-orange-50"
+                                            />
+                                        )}
+                                    </div>
+                                    <div>
+                                        <Select
+                                            label="Kapalı İcra"
+                                            value={data.kapali_icra_varmi || 'Hayır'}
+                                            onChange={(e) => handleChange('kapali_icra_varmi', e.target.value)}
+                                            options={[{ value: 'Evet', label: 'Evet' }, { value: 'Hayır', label: 'Hayır' }]}
+                                        />
+                                        {data.kapali_icra_varmi === 'Evet' && (
+                                            <Input
+                                                placeholder="Kapanış Şekli"
+                                                value={data.kapali_icra_kapanis_sekli || ''}
+                                                onChange={(e) => handleChange('kapali_icra_kapanis_sekli', e.target.value)}
+                                                className="mt-1 border-green-200 bg-green-50"
+                                            />
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="pt-4 border-t">
@@ -798,33 +822,208 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                 </div>
                             </div>
 
-                            {/* Guarantor Section */}
-                            <div className="mt-6 pt-6 border-t border-gray-100">
-                                <h4 className="text-sm font-bold text-gray-800 mb-3 block">Kefil Bilgileri</h4>
-                                <div className="space-y-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            {/* Guarantor Section Removed - Moved to own tab */}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'kefil' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        {/* Kefil Personal Info */}
+                        <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
+                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-2">
+                                <ShieldCheck className="w-4 h-4 text-indigo-500" /> Kefil Kimlik & İş
+                            </h3>
+                            <div className="space-y-4">
+                                <Input
+                                    label="Ad Soyad"
+                                    value={data.kefil_ad_soyad || ''}
+                                    onChange={(e) => handleChange('kefil_ad_soyad', e.target.value)}
+                                />
+                                <div className="grid grid-cols-2 gap-4">
                                     <Input
-                                        label="Kefil Ad Soyad"
-                                        value={data.kefil_ad_soyad || ''}
-                                        onChange={(e) => handleChange('kefil_ad_soyad', e.target.value)}
+                                        label="TC Kimlik"
+                                        value={data.kefil_tc_kimlik || ''}
+                                        onChange={(e) => handleChange('kefil_tc_kimlik', e.target.value)}
+                                        maxLength={11}
                                     />
-                                    <div className="grid grid-cols-2 gap-2">
+                                    <Input
+                                        label="Telefon"
+                                        value={data.kefil_telefon || ''}
+                                        onChange={(e) => handleChange('kefil_telefon', e.target.value)}
+                                    />
+                                </div>
+                                <Input
+                                    label="Meslek / İş"
+                                    value={data.kefil_meslek_is || ''}
+                                    onChange={(e) => handleChange('kefil_meslek_is', e.target.value)}
+                                />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Input
+                                        label="Maaş Bilgisi"
+                                        value={data.kefil_son_yatan_maas || ''}
+                                        onChange={(e) => handleChange('kefil_son_yatan_maas', e.target.value)}
+                                    />
+                                    <Input
+                                        label="Çalışma Süresi (Ay)"
+                                        type="number"
+                                        value={data.kefil_ayni_isyerinde_sure_ay || ''}
+                                        onChange={(e) => handleChange('kefil_ayni_isyerinde_sure_ay', e.target.value)}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Select
+                                        label="İkametgah"
+                                        value={data.kefil_ikametgah_varmi || 'Yok'}
+                                        onChange={(e) => handleChange('kefil_ikametgah_varmi', e.target.value)}
+                                        options={[{ value: 'Var', label: 'Var' }, { value: 'Yok', label: 'Yok' }]}
+                                    />
+                                    <Select
+                                        label="Hizmet Dökümü"
+                                        value={data.kefil_hizmet_dokumu_varmi || 'Yok'}
+                                        onChange={(e) => handleChange('kefil_hizmet_dokumu_varmi', e.target.value)}
+                                        options={[{ value: 'Var', label: 'Var' }, { value: 'Yok', label: 'Yok' }]}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Kefil Legal & Assets (Combined for layout balance) */}
+                        <div className="space-y-6">
+                            {/* Legal */}
+                            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
+                                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-2">
+                                    <Scale className="w-4 h-4 text-red-500" /> Kefil Yasal Durum
+                                </h3>
+                                <div className="space-y-4">
+                                    <Select
+                                        label="Açık İcra Dosyası"
+                                        value={data.kefil_acik_icra_varmi || 'Hayır'}
+                                        onChange={(e) => handleChange('kefil_acik_icra_varmi', e.target.value)}
+                                        options={[{ value: 'Evet', label: 'Evet (Var)' }, { value: 'Hayır', label: 'Hayır (Yok)' }]}
+                                    />
+                                    {data.kefil_acik_icra_varmi === 'Evet' && (
                                         <Input
-                                            label="Kefil TC"
-                                            value={data.kefil_tc_kimlik || ''}
-                                            onChange={(e) => handleChange('kefil_tc_kimlik', e.target.value)}
-                                            maxLength={11}
+                                            label="İcra Detayı"
+                                            value={data.kefil_acik_icra_detay || ''}
+                                            onChange={(e) => handleChange('kefil_acik_icra_detay', e.target.value)}
+                                            className="border-red-200 bg-red-50"
                                         />
-                                        <Input
-                                            label="Kefil Telefon"
-                                            value={data.kefil_telefon || ''}
-                                            onChange={(e) => handleChange('kefil_telefon', e.target.value)}
+                                    )}
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <Select
+                                                label="Dava Dosyası"
+                                                value={data.kefil_dava_dosyasi_varmi || 'Hayır'}
+                                                onChange={(e) => handleChange('kefil_dava_dosyasi_varmi', e.target.value)}
+                                                options={[{ value: 'Evet', label: 'Evet' }, { value: 'Hayır', label: 'Hayır' }]}
+                                            />
+                                            {data.kefil_dava_dosyasi_varmi === 'Evet' && (
+                                                <Input
+                                                    placeholder="Dava Detayı"
+                                                    value={data.kefil_dava_detay || ''}
+                                                    onChange={(e) => handleChange('kefil_dava_detay', e.target.value)}
+                                                    className="mt-1 border-orange-200 bg-orange-50"
+                                                />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <Select
+                                                label="Kapalı İcra"
+                                                value={data.kefil_kapali_icra_varmi || 'Hayır'}
+                                                onChange={(e) => handleChange('kefil_kapali_icra_varmi', e.target.value)}
+                                                options={[{ value: 'Evet', label: 'Evet' }, { value: 'Hayır', label: 'Hayır' }]}
+                                            />
+                                            {data.kefil_kapali_icra_varmi === 'Evet' && (
+                                                <Input
+                                                    placeholder="Kapanış Şekli"
+                                                    value={data.kefil_kapali_icra_kapanis_sekli || ''}
+                                                    onChange={(e) => handleChange('kefil_kapali_icra_kapanis_sekli', e.target.value)}
+                                                    className="mt-1 border-green-200 bg-green-50"
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-4 border-t">
+                                        <h4 className="text-xs font-bold text-gray-700 mb-2 uppercase">Kefil Avukat Sorgusu</h4>
+                                        <div className="grid grid-cols-2 gap-3 mb-2">
+                                            <Select
+                                                value={data.kefil_avukat_sorgu_durumu || 'Yapılmadı'}
+                                                onChange={(e) => handleChange('kefil_avukat_sorgu_durumu', e.target.value)}
+                                                options={[
+                                                    { value: 'Yapılmadı', label: 'Yapılmadı' },
+                                                    { value: 'Sorgu Bekleniyor', label: '⏳ Bekliyor' },
+                                                    { value: 'Temiz', label: '✅ Temiz' },
+                                                    { value: 'Riskli', label: '⚠️ Riskli/Sorunlu' },
+                                                    { value: 'Onaylandı', label: 'Olumlu' },
+                                                    { value: 'Reddedildi', label: 'Olumsuz' },
+                                                ]}
+                                            />
+                                        </div>
+                                        <textarea
+                                            className="w-full border p-2 rounded text-sm bg-gray-50 focus:bg-white transition-colors"
+                                            rows={2}
+                                            placeholder="Avukatın kefil notu..."
+                                            value={data.kefil_avukat_sorgu_sonuc || ''}
+                                            onChange={(e) => handleChange('kefil_avukat_sorgu_sonuc', e.target.value)}
                                         />
                                     </div>
-                                    <Input
-                                        label="Kefil Meslek"
-                                        value={data.kefil_meslek_is || ''}
-                                        onChange={(e) => handleChange('kefil_meslek_is', e.target.value)}
+                                </div>
+                            </div>
+
+                            {/* Assets */}
+                            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
+                                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-2">
+                                    <Home className="w-4 h-4 text-emerald-500" /> Kefil Varlık Bilgileri
+                                </h3>
+                                <div className="space-y-4">
+                                    <Select
+                                        label="Mülkiyet Durumu"
+                                        value={data.kefil_mulkiyet_durumu || ''}
+                                        onChange={(e) => handleChange('kefil_mulkiyet_durumu', e.target.value)}
+                                        options={[
+                                            { value: 'Aile evi', label: 'Aile Evi' },
+                                            { value: 'Kira', label: 'Kira' },
+                                            { value: 'Kendi evi', label: 'Kendi Evi' },
+                                            { value: 'Lojman', label: 'Lojman' },
+                                        ]}
                                     />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <Select
+                                                label="Tapu Var mı?"
+                                                value={data.kefil_tapu_varmi || 'Hayır'}
+                                                onChange={(e) => handleChange('kefil_tapu_varmi', e.target.value)}
+                                                options={[{ value: 'Evet', label: 'Evet' }, { value: 'Hayır', label: 'Hayır' }]}
+                                            />
+                                            {data.kefil_tapu_varmi === 'Evet' && (
+                                                <Input
+                                                    placeholder="İl/İlçe/Değer"
+                                                    value={data.kefil_tapu_detay || ''}
+                                                    onChange={(e) => handleChange('kefil_tapu_detay', e.target.value)}
+                                                    className="mt-1"
+                                                />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <Select
+                                                label="Araç Var mı?"
+                                                value={data.kefil_arac_varmi || 'Hayır'}
+                                                onChange={(e) => handleChange('kefil_arac_varmi', e.target.value)}
+                                                options={[{ value: 'Evet', label: 'Evet' }, { value: 'Hayır', label: 'Hayır' }]}
+                                            />
+                                            {data.kefil_arac_varmi === 'Evet' && (
+                                                <Input
+                                                    placeholder="Marka/Model"
+                                                    value={data.kefil_arac_detay || ''}
+                                                    onChange={(e) => handleChange('kefil_arac_detay', e.target.value)}
+                                                    className="mt-1"
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

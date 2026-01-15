@@ -97,6 +97,12 @@ export interface Customer {
   kefil_tapu_varmi?: string;
   kefil_notlar?: string;
 
+  // New Guarantor Fields (Mirroring Main Customer)
+  kefil_avukat_sorgu_durumu?: string;
+  kefil_avukat_sorgu_sonuc?: string;
+  kefil_tapu_detay?: string;
+  kefil_arac_detay?: string;
+
   // Approval workflow fields
   onay_durumu?: 'Beklemede' | 'Onaylandı' | 'Reddedildi' | 'Kefil İstendi';
   kredi_limiti?: string;

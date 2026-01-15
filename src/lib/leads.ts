@@ -434,6 +434,10 @@ export async function updateLead(customer: Customer, userEmail: string): Promise
         kefil_mulkiyet_durumu: customer.kefil_mulkiyet_durumu,
         kefil_arac_varmi: customer.kefil_arac_varmi,
         kefil_tapu_varmi: customer.kefil_tapu_varmi,
+        kefil_tapu_detay: customer.kefil_tapu_detay,
+        kefil_arac_detay: customer.kefil_arac_detay,
+        kefil_avukat_sorgu_durumu: customer.kefil_avukat_sorgu_durumu,
+        kefil_avukat_sorgu_sonuc: customer.kefil_avukat_sorgu_sonuc,
         kefil_notlar: customer.kefil_notlar,
 
         // Delivery
@@ -537,6 +541,10 @@ function mapRowToCustomer(row: any): Customer {
         kefil_mulkiyet_durumu: row.kefil_mulkiyet_durumu,
         kefil_arac_varmi: row.kefil_arac_varmi,
         kefil_tapu_varmi: row.kefil_tapu_varmi,
+        kefil_tapu_detay: row.kefil_tapu_detay,
+        kefil_arac_detay: row.kefil_arac_detay,
+        kefil_avukat_sorgu_durumu: row.kefil_avukat_sorgu_durumu,
+        kefil_avukat_sorgu_sonuc: row.kefil_avukat_sorgu_sonuc,
         kefil_notlar: row.kefil_notlar,
 
         ...row
