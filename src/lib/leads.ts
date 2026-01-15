@@ -380,6 +380,13 @@ export async function updateLead(customer: Customer, userEmail: string): Promise
         basvuru_kanali: customer.basvuru_kanali,
         talep_edilen_urun: customer.talep_edilen_urun,
         talep_edilen_tutar: customer.talep_edilen_tutar,
+        renk: customer.renk,
+        // New Financial & VIP Fields
+        ozel_musteri_mi: customer.ozel_musteri_mi,
+        calisma_sekli: customer.calisma_sekli,
+        ek_gelir: customer.ek_gelir,
+        findeks_risk_durumu: customer.findeks_risk_durumu,
+        finansal_notlar: customer.finansal_notlar,
         sonraki_arama_zamani: customer.sonraki_arama_zamani || null,
         son_arama_zamani: customer.son_arama_zamani || null,
 
@@ -448,7 +455,13 @@ export async function updateLead(customer: Customer, userEmail: string): Promise
         urun_seri_no: customer.urun_seri_no,
         gorsel_1_url: customer.gorsel_1_url,
         gorsel_2_url: customer.gorsel_2_url,
-        satilan_urunler: typeof customer.satilan_urunler === 'object' ? JSON.stringify(customer.satilan_urunler) : customer.satilan_urunler
+        satilan_urunler: typeof customer.satilan_urunler === 'object' ? JSON.stringify(customer.satilan_urunler) : customer.satilan_urunler,
+
+        // Product Details
+        marka: customer.marka,
+        model: customer.model,
+        satis_tarihi: customer.satis_tarihi || null,
+        kargo_takip_no: customer.kargo_takip_no
     };
 
     const { data, error } = await supabaseAdmin.from('leads').update(updates).eq('id', customer.id).select().single();
