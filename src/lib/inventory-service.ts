@@ -1,128 +1,77 @@
-import { getSheetsClient } from './google';
+
+import { supabaseAdmin } from './supabase';
 import { InventoryItem, InventoryStatus } from './types';
 
-const SHEET_ID = process.env.GOOGLE_SHEET_ID;
-
-export const INVENTORY_COLUMNS = [
-    'id',
-    'marka',
-    'model',
-    'seri_no',
-    'imei',
-    'durum',
-    'giris_tarihi',
-    'cikis_tarihi',
-    'musteri_id',
-    'ekleyen',
-    'fiyat_3_taksit',
-    'fiyat_6_taksit',
-    'fiyat_12_taksit',
-    'fiyat_15_taksit'
-] as const;
-
-// Helper to map Row to Object
-function rowToInventoryItem(row: any[]): InventoryItem {
-    const item: any = {};
-    INVENTORY_COLUMNS.forEach((col, idx) => {
-        item[col] = row[idx] || undefined;
-    });
-    return item as InventoryItem;
-}
-
-// Helper to map Object to Row
-function inventoryItemToRow(item: Partial<InventoryItem>): any[] {
-    const row = new Array(INVENTORY_COLUMNS.length).fill('');
-    INVENTORY_COLUMNS.forEach((col, idx) => {
-        if (item[col as keyof InventoryItem] !== undefined) {
-            row[idx] = item[col as keyof InventoryItem];
-        }
-    });
-    return row;
-}
+// Map Supabase 'inventory' table rows to our 'InventoryItem' type
+// If the table columns match the type keys exactly, this might be simple casting.
+// Reviewing schema:
+// id, marka, model, seri_no, imei, durum, giris_tarihi, cikis_tarihi, musteri_id, ekleyen, prices...
 
 export async function getInventoryItems(status?: InventoryStatus): Promise<InventoryItem[]> {
-    const client = getSheetsClient();
-
     try {
-        const response = await client.spreadsheets.values.get({
-            spreadsheetId: SHEET_ID,
-            range: 'Inventory!A2:N', // Extended to N for pricing columns
-        });
-
-        const rows = response.data.values || [];
-        const items = rows.map(row => rowToInventoryItem(row));
+        let query = supabaseAdmin
+            .from('inventory')
+            .select('*');
 
         if (status) {
-            return items.filter(i => i.durum === status);
+            query = query.eq('durum', status);
         }
 
-        // Sort by input date (newest first)
-        return items.sort((a, b) =>
-            new Date(b.giris_tarihi).getTime() - new Date(a.giris_tarihi).getTime()
-        );
+        // Order by giris_tarihi desc
+        query = query.order('giris_tarihi', { ascending: false });
+
+        const { data, error } = await query;
+
+        if (error) {
+            console.error('Supabase Inventory Fetch Error:', error);
+            throw error;
+        }
+
+        return (data || []) as InventoryItem[];
     } catch (error) {
-        console.error('Error fetching inventory:', error);
+        console.error('Error fetching inventory from Supabase:', error);
         return [];
     }
 }
 
-export async function addInventoryItem(item: Omit<InventoryItem, 'id'>) {
-    const client = getSheetsClient();
-    const newItem = { ...item, id: crypto.randomUUID() };
-    const row = inventoryItemToRow(newItem);
+export async function addInventoryItem(item: Omit<InventoryItem, 'id'>): Promise<InventoryItem> {
+    try {
+        // Supabase generates ID automatically (default gen_random_uuid())
+        const { data, error } = await supabaseAdmin
+            .from('inventory')
+            .insert([item])
+            .select()
+            .single();
 
-    await client.spreadsheets.values.append({
-        spreadsheetId: SHEET_ID,
-        range: 'Inventory!A:N',
-        valueInputOption: 'USER_ENTERED',
-        requestBody: {
-            values: [row]
+        if (error) {
+            console.error('Supabase Inventory Insert Error:', error);
+            throw error;
         }
-    });
 
-    return newItem;
+        return data as InventoryItem;
+    } catch (error) {
+        console.error('Error adding inventory item to Supabase:', error);
+        throw error;
+    }
 }
 
-export async function updateInventoryItem(id: string, updates: Partial<InventoryItem>) {
-    const client = getSheetsClient();
+export async function updateInventoryItem(id: string, updates: Partial<InventoryItem>): Promise<InventoryItem> {
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('inventory')
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single();
 
-    // 1. Find the row index
-    const response = await client.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
-        range: 'Inventory!A:A', // Fetch IDs only
-    });
-
-    const rows = response.data.values || [];
-    const rowIndex = rows.findIndex(row => row[0] === id);
-
-    if (rowIndex === -1) {
-        throw new Error('Inventory item not found');
-    }
-
-    const sheetRowIndex = rowIndex + 1; // 1-based index
-
-    // 2. Fetch current data to merge
-    const currentResponse = await client.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
-        range: `Inventory!A${sheetRowIndex}:J${sheetRowIndex}`,
-    });
-
-    const currentRow = currentResponse.data.values?.[0] || [];
-    const currentItem = rowToInventoryItem(currentRow);
-
-    // 3. Merge updates
-    const updatedItem = { ...currentItem, ...updates };
-    const newRow = inventoryItemToRow(updatedItem);
-
-    // 4. Update row
-    await client.spreadsheets.values.update({
-        spreadsheetId: SHEET_ID,
-        range: `Inventory!A${sheetRowIndex}:J${sheetRowIndex}`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: {
-            values: [newRow]
+        if (error) {
+            console.error('Supabase Inventory Update Error:', error);
+            throw error;
         }
-    });
 
-    return updatedItem;
+        return data as InventoryItem;
+    } catch (error) {
+        console.error('Error updating inventory item in Supabase:', error);
+        throw error;
+    }
 }
