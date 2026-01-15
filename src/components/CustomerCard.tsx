@@ -7,7 +7,7 @@ import { WHATSAPP_TEMPLATES } from '@/lib/whatsapp-templates';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Select } from './ui/Select';
-import { Loader2, AlertCircle, CheckCircle, Info, Phone, Package, Smartphone, Search, RefreshCw, MessageSquare, Scale } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle, Info, Phone, Package, Smartphone, Search, RefreshCw, MessageSquare, Scale, UploadCloud, FileText, Image as ImageIcon } from 'lucide-react';
 import { cityList, getDistrictsByCityCode } from 'turkey-neighbourhoods';
 
 
@@ -814,6 +814,130 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                     onChange={(e) => handleChange('ayni_isyerinde_sure_ay', e.target.value)}
                                     placeholder="Örn: 12"
                                 />
+                            </div>
+                        </section>
+
+                        {/* Dosya Yükleme Alanı */}
+                        <section>
+                            <h3 className="text-sm font-semibold text-gray-900 bg-gray-50 p-2 rounded mb-3 flex items-center gap-2">
+                                <ImageIcon className="w-4 h-4 text-purple-600" />
+                                📂 Dosya / Görsel Yükleme
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Görsel 1 */}
+                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                                    <span className="text-sm font-medium text-gray-700 mb-2">Görsel / Belge 1</span>
+                                    {data.gorsel_1_url ? (
+                                        <div className="flex flex-col items-center">
+                                            <a href={data.gorsel_1_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline text-xs flex items-center gap-1 mb-2">
+                                                <FileText className="w-4 h-4" /> Görüntüle
+                                            </a>
+                                            <button
+                                                onClick={() => handleChange('gorsel_1_url', '')}
+                                                className="text-red-500 text-xs hover:text-red-700"
+                                            >
+                                                Kaldır
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <label className="cursor-pointer flex flex-col items-center">
+                                            <UploadCloud className="w-8 h-8 text-gray-400 mb-2" />
+                                            <span className="text-xs text-gray-500">Dosya Seç</span>
+                                            <input
+                                                type="file"
+                                                className="hidden"
+                                                onChange={async (e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (!file) return;
+
+                                                    // Upload Logic Inline to keep it simple or extract method
+                                                    setLoading(true);
+                                                    try {
+                                                        const formData = new FormData();
+                                                        formData.append('file', file);
+                                                        formData.append('customerId', data.id);
+                                                        formData.append('label', 'gorsel_1');
+
+                                                        const res = await fetch('/api/upload', {
+                                                            method: 'POST',
+                                                            body: formData
+                                                        });
+
+                                                        const json = await res.json();
+                                                        if (res.ok && json.url) {
+                                                            handleChange('gorsel_1_url', json.url);
+                                                            alert('Görsel 1 yüklendi!');
+                                                        } else {
+                                                            alert('Yükleme başarısız: ' + json.error);
+                                                        }
+                                                    } catch (err) {
+                                                        console.error(err);
+                                                        alert('Yükleme hatası.');
+                                                    } finally {
+                                                        setLoading(false);
+                                                    }
+                                                }}
+                                            />
+                                        </label>
+                                    )}
+                                </div>
+
+                                {/* Görsel 2 */}
+                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                                    <span className="text-sm font-medium text-gray-700 mb-2">Görsel / Belge 2</span>
+                                    {data.gorsel_2_url ? (
+                                        <div className="flex flex-col items-center">
+                                            <a href={data.gorsel_2_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline text-xs flex items-center gap-1 mb-2">
+                                                <FileText className="w-4 h-4" /> Görüntüle
+                                            </a>
+                                            <button
+                                                onClick={() => handleChange('gorsel_2_url', '')}
+                                                className="text-red-500 text-xs hover:text-red-700"
+                                            >
+                                                Kaldır
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <label className="cursor-pointer flex flex-col items-center">
+                                            <UploadCloud className="w-8 h-8 text-gray-400 mb-2" />
+                                            <span className="text-xs text-gray-500">Dosya Seç</span>
+                                            <input
+                                                type="file"
+                                                className="hidden"
+                                                onChange={async (e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (!file) return;
+
+                                                    setLoading(true);
+                                                    try {
+                                                        const formData = new FormData();
+                                                        formData.append('file', file);
+                                                        formData.append('customerId', data.id);
+                                                        formData.append('label', 'gorsel_2');
+
+                                                        const res = await fetch('/api/upload', {
+                                                            method: 'POST',
+                                                            body: formData
+                                                        });
+
+                                                        const json = await res.json();
+                                                        if (res.ok && json.url) {
+                                                            handleChange('gorsel_2_url', json.url);
+                                                            alert('Görsel 2 yüklendi!');
+                                                        } else {
+                                                            alert('Yükleme başarısız: ' + json.error);
+                                                        }
+                                                    } catch (err) {
+                                                        console.error(err);
+                                                        alert('Yükleme hatası.');
+                                                    } finally {
+                                                        setLoading(false);
+                                                    }
+                                                }}
+                                            />
+                                        </label>
+                                    )}
+                                </div>
                             </div>
                         </section>
 
