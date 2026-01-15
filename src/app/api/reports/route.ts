@@ -79,8 +79,12 @@ export async function GET(req: NextRequest) {
         };
 
         // Date Helpers
-        const start = new Date(startDate).getTime();
-        const end = new Date(endDate).getTime() + (24 * 60 * 60 * 1000) - 1;
+        // Adjust for Istanbul Time (UTC+3)
+        // new Date('2024-01-01') is UTC 00:00. Istanbul 00:00 is UTC 21:00 (Prev Day).
+        // So we subtract 3 hours from the UTC timestamps.
+        const TZ_OFFSET = 3 * 60 * 60 * 1000;
+        const start = new Date(startDate).getTime() - TZ_OFFSET;
+        const end = new Date(endDate).getTime() + (24 * 60 * 60 * 1000) - TZ_OFFSET - 1;
 
         // Helper: Check if date string is in range
         const isInRange = (dateStr?: string) => {
