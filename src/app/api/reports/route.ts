@@ -137,7 +137,10 @@ export async function GET(req: NextRequest) {
                     (l.action === 'UPDATE_FIELDS' && (l.old_value === 'BEKLİYOR' || l.new_value === 'BEKLİYOR'));
 
                 if ((action === 'UPDATE_FIELDS' || action === 'UPDATE_STATUS') && isAttorneyLog) {
-                    attorneyQueryIds.add(l.customer_id);
+                    const isKefilLog = (l.note && l.note.includes('Kefil')) ||
+                        (l.new_value && typeof l.new_value === 'string' && l.new_value.includes('Kefil'));
+
+                    attorneyQueryIds.add(isKefilLog ? l.customer_id + '_k' : l.customer_id);
                 }
             }
         });
