@@ -8,7 +8,8 @@ import ActivityFeed from '@/components/ActivityFeed';
 import { CustomerCard } from '@/components/CustomerCard';
 import { DashboardStats } from '@/components/DashboardStats';
 import { Customer } from '@/lib/types';
-import { Loader2, LogOut, RefreshCcw, Phone } from 'lucide-react';
+import { Loader2, LogOut, RefreshCcw, Phone, Users } from 'lucide-react';
+import { UserPerformanceCard } from '@/components/UserPerformanceCard';
 
 export default function Dashboard() {
     const { data: session, status } = useSession();
@@ -17,6 +18,7 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     // Removed activeTab state
+    const [performanceStats, setPerformanceStats] = useState<any>(null);
 
     const [stats, setStats] = useState<{ available: number, waiting_new: number, waiting_scheduled: number, waiting_retry: number, total_scheduled?: number } | null>(null);
 
@@ -26,8 +28,12 @@ export default function Dashboard() {
         }
         if (status === 'authenticated') {
             fetchStats();
+            fetchPerformance(); // New Fetch
             // Optional: Poll every 30s
-            const interval = setInterval(fetchStats, 30000);
+            const interval = setInterval(() => {
+                fetchStats();
+                fetchPerformance();
+            }, 30000);
             return () => clearInterval(interval);
         }
     }, [status, router]);
@@ -41,6 +47,22 @@ export default function Dashboard() {
             }
         } catch (e) {
             console.error('Stats fetch failed', e);
+        }
+    };
+
+    const fetchPerformance = async () => {
+        try {
+            // Fetch Today's Report
+            const today = new Date().toISOString().split('T')[0];
+            const res = await fetch(`/api/reports?startDate=${today}&endDate=${today}`);
+            if (res.ok) {
+                const json = await res.json();
+                if (json.success && json.stats && json.stats.performance) {
+                    setPerformanceStats(json.stats.performance);
+                }
+            }
+        } catch (e) {
+            console.error('Performance fetch failed', e);
         }
     };
 
@@ -66,6 +88,7 @@ export default function Dashboard() {
                 // Removed timeout to ensure user sees the popup and clicks OK
             }
             fetchStats(); // Update stats after pulling
+            fetchPerformance(); // Update performance too (calls count increases)
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -92,7 +115,7 @@ export default function Dashboard() {
     const [sourceNotification, setSourceNotification] = useState<string | null>(null);
 
     return (
-        <div className="flex flex-col h-full relative">
+        <div className="flex flex-col h-full relative space-y-8">
             {/* Source Notification Toast */}
             {/* Source Notification Modal Popup */}
             {sourceNotification && (
@@ -126,8 +149,25 @@ export default function Dashboard() {
                 </div>
             )}
 
+            {/* Performance Cards Section */}
+            {performanceStats && (
+                <div className="pt-4">
+                    <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2 mb-6 uppercase tracking-tight px-1">
+                        <Users className="w-6 h-6 text-indigo-600" />
+                        Günün Performans Liderleri
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                        {Object.entries(performanceStats)
+                            .sort((a: any, b: any) => b[1].calls - a[1].calls)
+                            .map(([user, pStats]: any) => (
+                                <UserPerformanceCard key={user} user={user} stats={pStats} />
+                            ))}
+                    </div>
+                </div>
+            )}
+
             {/* Main Content Area - Pull Lead Focus & Activity Feed */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start py-8">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
                 {/* Left: Action Area (3 Cols) */}
                 <div className="lg:col-span-3 flex flex-col items-center justify-center w-full">
                     {!activeLead ? (
@@ -200,6 +240,7 @@ export default function Dashboard() {
                                 onSave={(updatedLead) => {
                                     setActiveLead(null);
                                     fetchStats();
+                                    fetchPerformance();
                                 }}
                             />
                         </div>
