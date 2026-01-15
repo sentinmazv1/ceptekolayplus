@@ -29,6 +29,10 @@ interface ReportStats {
         applications: number;
         attorneyQueries: number;
         attorneyPending: number;
+        attorneyClean: number;
+        attorneyRisky: number;
+        attorneyApproved: number;
+        attorneyRejected: number;
         approved: number;
         approvedLimit: number;
         delivered: number;
@@ -45,6 +49,7 @@ interface ReportStats {
         whatsapp: number;
         dailyGoal: number;
         image: string;
+        totalLogs: number;
     }>;
 }
 
@@ -355,7 +360,21 @@ function SalesFunnel({ stats }: { stats: any }) {
                     <FunnelStep
                         title="AVUKAT SORGUSU"
                         value={f.attorneyQueries}
-                        subValue={`${f.attorneyPending || 0} BEKLEYEN`}
+                        subValue={
+                            <div className="flex flex-col gap-0.5 mt-1">
+                                <span className="text-[9px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-md self-center border border-gray-200">
+                                    {f.attorneyPending || 0} BEKLEYEN
+                                </span>
+                                <div className="flex items-center justify-center gap-1.5 mt-0.5">
+                                    <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100 flex items-center gap-0.5" title="Temiz">
+                                        ✅ {f.attorneyClean || 0}
+                                    </span>
+                                    <span className="text-[9px] font-black text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md border border-amber-100 flex items-center gap-0.5" title="Riskli">
+                                        ⚠️ {f.attorneyRisky || 0}
+                                    </span>
+                                </div>
+                            </div>
+                        }
                         icon={Scale}
                         color="text-purple-600"
                         bg="bg-purple-50"

@@ -54,6 +54,10 @@ export async function GET(req: NextRequest) {
                 applications: 0,
                 attorneyQueries: 0,
                 attorneyPending: 0,
+                attorneyClean: 0,
+                attorneyRisky: 0,
+                attorneyApproved: 0,
+                attorneyRejected: 0,
                 approved: 0,
                 approvedLimit: 0,
                 delivered: 0,
@@ -162,20 +166,44 @@ export async function GET(req: NextRequest) {
             }
 
             // Attorney Queries (Log Source + Snapshot)
-            // 1. Snapshot: Currently Pending
-            if (row.avukat_sorgu_durumu === 'Sorgu Bekleniyor' || row.avukat_sorgu_durumu === 'BEKLİYOR') {
-                stats.funnel.attorneyPending++;
-            }
+            // Function to process attorney status
+            const processAttorney = (status: string | undefined, result: string | undefined, id: string, isKefil: boolean = false) => {
+                const uniqueId = id + (isKefil ? '_k' : '');
 
-            // 2. Activity: Completed or Pending in Range
-            // If it has a result, check if updated_at is in range
-            if (row.avukat_sorgu_sonuc && isInRange(row.updated_at)) {
-                attorneyQueryIds.add(row.id);
-            }
-            // OR if we found a log for it earlier (Log Source Priority)
-            if (attorneyQueryIds.has(row.id)) {
-                // Logic handled in logs already adds to set, so just ensure consistency
-            }
+                // 1. Pending (Snapshot)
+                if (status === 'Sorgu Bekleniyor' || status === 'BEKLİYOR') {
+                    stats.funnel.attorneyPending++;
+                }
+
+                // 2. Completed (Activity in Range)
+                // If it has a result, check if updated_at is in range (or rely on Logs which is better, but fallback here)
+                // We use Log Priority for "Activity Count", but for Breakdown we can use current state if it changed recently
+                if (status && status !== 'Yapılmadı' && status !== 'Sorgu Bekleniyor' && isInRange(row.updated_at)) {
+                    // Logic: If we found a log, we counted it as a Query. 
+                    // To avoid double counting with logs, we use the Set.
+                    if (!attorneyQueryIds.has(uniqueId)) {
+                        attorneyQueryIds.add(uniqueId);
+                    }
+
+                    // Breakdown (Current State)
+                    if (status === 'Temiz') stats.funnel.attorneyClean++;
+                    else if (status === 'Riskli' || status === '⚠️ Riskli/Sorunlu') stats.funnel.attorneyRisky++;
+                    else if (status === 'Onaylandı') stats.funnel.attorneyApproved++;
+                    else if (status === 'Reddedildi') stats.funnel.attorneyRejected++;
+                }
+                // Fallback: If it's in the Log Set (via UPDATE_FIELDS), we assume it happened today. 
+                // We should increment the stats based on the CURRENT value if the log doesn't carry it (logs usually do, but let's use the final state for breakdown consistency)
+                else if (attorneyQueryIds.has(id) && !isKefil) {
+                    // Main customer log found
+                    if (status === 'Temiz') stats.funnel.attorneyClean++;
+                    else if (status === 'Riskli' || status === '⚠️ Riskli/Sorunlu') stats.funnel.attorneyRisky++;
+                    else if (status === 'Onaylandı') stats.funnel.attorneyApproved++;
+                    else if (status === 'Reddedildi') stats.funnel.attorneyRejected++;
+                }
+            };
+
+            processAttorney(row.avukat_sorgu_durumu, row.avukat_sorgu_sonuc, row.id);
+            processAttorney(row.kefil_avukat_sorgu_durumu, row.kefil_avukat_sorgu_sonuc, row.id, true);
 
 
             // D. Funnel: Approved
