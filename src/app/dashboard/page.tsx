@@ -8,7 +8,7 @@ import ActivityFeed from '@/components/ActivityFeed';
 import { CustomerCard } from '@/components/CustomerCard';
 import { DashboardStats } from '@/components/DashboardStats';
 import { Customer } from '@/lib/types';
-import { Loader2, LogOut, RefreshCcw, Phone, Users } from 'lucide-react';
+import { Loader2, LogOut, RefreshCcw, Phone, Users, Activity, Sparkles } from 'lucide-react';
 import { UserPerformanceCard } from '@/components/UserPerformanceCard';
 
 export default function Dashboard() {
@@ -17,10 +17,10 @@ export default function Dashboard() {
     const [activeLead, setActiveLead] = useState<Customer | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    // Removed activeTab state
     const [performanceStats, setPerformanceStats] = useState<any>(null);
 
     const [stats, setStats] = useState<{ available: number, waiting_new: number, waiting_scheduled: number, waiting_retry: number, total_scheduled?: number } | null>(null);
+    const [sourceNotification, setSourceNotification] = useState<string | null>(null);
 
     useEffect(() => {
         if (status === 'unauthenticated') {
@@ -111,8 +111,6 @@ export default function Dashboard() {
 
     // Auth check is handled in layout.tsx, but keeping basic redirect for safety if needed
     // or we can remove it. Let's rely on layout protection to avoid double-rendering logic.
-
-    const [sourceNotification, setSourceNotification] = useState<string | null>(null);
 
     return (
         <div className="flex flex-col h-full relative space-y-8">
