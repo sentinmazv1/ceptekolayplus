@@ -111,8 +111,9 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [logsLoading, setLogsLoading] = useState(false);
 
-    // Dynamic Statuses
+    // Dynamic Statuses & Notes
     const [statusOptions, setStatusOptions] = useState<{ value: string, label: string }[]>([]);
+    const [quickNotes, setQuickNotes] = useState<{ label: string }[]>([]);
 
     useEffect(() => {
         // Fetch statuses from API
@@ -124,6 +125,16 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                 }
             })
             .catch(err => console.error('Status fetch error:', err));
+
+        // Fetch quick notes
+        fetch('/api/admin/quick-notes')
+            .then(res => res.json())
+            .then(data => {
+                if (data.notes) {
+                    setQuickNotes(data.notes.filter((n: any) => n.is_active));
+                }
+            })
+            .catch(err => console.error('Quick Notes fetch error:', err));
     }, []);
 
     // SMS Modal State
@@ -567,16 +578,28 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                         </div>
                                     )}
 
+                                    {data.durum === 'İptal/Vazgeçti' && (
+                                        <div className="bg-red-50 p-3 rounded-lg border border-red-100 animate-in fade-in zoom-in duration-200">
+                                            <Select
+                                                label="İptal / Vazgeçme Nedeni"
+                                                value={data.iptal_nedeni || ''}
+                                                onChange={(e) => handleChange('iptal_nedeni', e.target.value)}
+                                                options={CANCELLATION_REASONS}
+                                                className="border-red-200 text-red-900 focus:ring-red-500"
+                                            />
+                                        </div>
+                                    )}
+
                                     <div>
                                         <label className="block text-xs font-medium text-gray-700 mb-1">Hızlı Notlar</label>
                                         <div className="flex flex-wrap gap-2 mb-2">
-                                            {['Fiyat sordu', 'Düşünüyor', 'Eşine soracak', 'Müsait değil', 'Yanlış no'].map(note => (
+                                            {(quickNotes.length > 0 ? quickNotes : [{ label: 'Fiyat sordu' }, { label: 'Düşünüyor' }, { label: 'Eşine soracak' }, { label: 'Müsait değil' }, { label: 'Yanlış no' }]).map((note, i) => (
                                                 <button
-                                                    key={note}
-                                                    onClick={() => handleChange('arama_not_kisa', (data.arama_not_kisa || '') + ' ' + note)}
+                                                    key={i}
+                                                    onClick={() => handleChange('arama_not_kisa', (data.arama_not_kisa || '') + ' ' + note.label)}
                                                     className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700 transition"
                                                 >
-                                                    {note}
+                                                    {note.label}
                                                 </button>
                                             ))}
                                         </div>

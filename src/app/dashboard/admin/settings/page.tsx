@@ -6,11 +6,12 @@ import { Loader2, Trash2, Edit2, Plus, GripVertical, Check, X, UserPlus, Shield,
 import { Customer } from '@/lib/types';
 
 export default function SettingsPage() {
-    const [activeTab, setActiveTab] = useState<'statuses' | 'products' | 'users' | 'import' | 'duplicates'>('statuses');
+    const [activeTab, setActiveTab] = useState<'statuses' | 'products' | 'users' | 'import' | 'duplicates' | 'quick_notes'>('statuses');
     const [loading, setLoading] = useState(false);
 
     // Data Holders
     const [statuses, setStatuses] = useState<any[]>([]);
+    const [quickNotes, setQuickNotes] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
     const [users, setUsers] = useState<any[]>([]);
     const [duplicateGroups, setDuplicateGroups] = useState<any[]>([]);
@@ -38,6 +39,10 @@ export default function SettingsPage() {
                 const res = await fetch('/api/admin/duplicates');
                 const data = await res.json();
                 if (data.groups) setDuplicateGroups(data.groups);
+            } else if (activeTab === 'quick_notes') {
+                const res = await fetch('/api/admin/quick-notes');
+                const data = await res.json();
+                if (data.notes) setQuickNotes(data.notes);
             }
             // Import tab needs no fetch
         } catch (e) {
@@ -49,6 +54,7 @@ export default function SettingsPage() {
 
     const tabs = [
         { id: 'statuses', label: 'Durumlar (Aşamalar)' },
+        { id: 'quick_notes', label: 'Hızlı Notlar' },
         { id: 'products', label: 'Ürünler & Fiyatlar' },
         { id: 'users', label: 'Kullanıcı Yönetimi' },
         { id: 'import', label: 'Toplu Veri Yükleme' },
@@ -85,6 +91,7 @@ export default function SettingsPage() {
                     {activeTab === 'users' && <UserManager users={users} refresh={fetchData} />}
                     {activeTab === 'import' && <ImportManager />}
                     {activeTab === 'duplicates' && <DuplicateManager groups={duplicateGroups} refresh={fetchData} />}
+                    {activeTab === 'quick_notes' && <QuickNotesManager notes={quickNotes} refresh={fetchData} />}
                 </>
             )}
         </div>
@@ -179,6 +186,86 @@ function StatusManager({ statuses, refresh }: { statuses: any[], refresh: () => 
                                     <button onClick={() => toggleActive(s.id, s.is_active)} className={`text-sm px-2 py-1 rounded ${s.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100'}`}>{s.is_active ? 'Aktif' : 'Pasif'}</button>
                                     <button onClick={() => { setEditingId(s.id); setEditLabel(s.label); setEditColor(s.color); }} className="p-1 hover:bg-gray-100 rounded text-blue-600"><Edit2 className="w-4 h-4" /></button>
                                     <button onClick={() => deleteStatus(s.id)} className="p-1 hover:bg-gray-100 rounded text-red-600"><Trash2 className="w-4 h-4" /></button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+
+function QuickNotesManager({ notes, refresh }: { notes: any[], refresh: () => void }) {
+    const [newLabel, setNewLabel] = useState('');
+    const [newColor, setNewColor] = useState('gray'); // Although quick notes might not use color, we can keep it for UI consistency
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editLabel, setEditLabel] = useState('');
+    const [editColor, setEditColor] = useState('');
+
+    async function addNote(e: React.FormEvent) {
+        e.preventDefault();
+        await fetch('/api/admin/quick-notes', {
+            method: 'POST',
+            body: JSON.stringify({ label: newLabel, color: newColor })
+        });
+        setNewLabel('');
+        refresh();
+    }
+
+    async function toggleActive(id: string, current: boolean) {
+        await fetch('/api/admin/quick-notes', {
+            method: 'PATCH',
+            body: JSON.stringify({ id, is_active: !current })
+        });
+        refresh();
+    }
+
+    async function deleteNote(id: string) {
+        if (!confirm('Bu notu silmek istediğinize emin misiniz?')) return;
+        const res = await fetch(`/api/admin/quick-notes?id=${id}`, { method: 'DELETE' });
+        if (res.ok) refresh();
+        else alert('Silinemedi.');
+    }
+
+    async function saveEdit(id: string) {
+        await fetch('/api/admin/quick-notes', {
+            method: 'PUT',
+            body: JSON.stringify({ id, label: editLabel, color: editColor })
+        });
+        setEditingId(null);
+        refresh();
+    }
+
+    return (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                <h3 className="font-semibold mb-3">Yeni Hızlı Not Ekle</h3>
+                <form onSubmit={addNote} className="flex gap-2">
+                    <input className="border rounded px-3 py-2 flex-1" placeholder="Örn: Fiyat Sordu" value={newLabel} onChange={e => setNewLabel(e.target.value)} required />
+                    <Button type="submit">Ekle</Button>
+                </form>
+            </div>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 divide-y">
+                {notes.map((n) => (
+                    <div key={n.id} className="p-4 flex items-center justify-between">
+                        {editingId === n.id ? (
+                            <div className="flex items-center gap-2 flex-1">
+                                <input value={editLabel} onChange={e => setEditLabel(e.target.value)} className="border rounded px-2 py-1 flex-1" />
+                                <Button size="sm" onClick={() => saveEdit(n.id)}><Check className="w-4 h-4" /></Button>
+                                <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}><X className="w-4 h-4" /></Button>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex items-center gap-3">
+                                    <span className={n.is_active ? 'text-gray-900' : 'text-gray-400 line-through'}>{n.label}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-400 mr-2">Sıra: {n.sort_order}</span>
+                                    <button onClick={() => toggleActive(n.id, n.is_active)} className={`text-sm px-2 py-1 rounded ${n.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100'}`}>{n.is_active ? 'Aktif' : 'Pasif'}</button>
+                                    <button onClick={() => { setEditingId(n.id); setEditLabel(n.label); setEditColor(n.color); }} className="p-1 hover:bg-gray-100 rounded text-blue-600"><Edit2 className="w-4 h-4" /></button>
+                                    <button onClick={() => deleteNote(n.id)} className="p-1 hover:bg-gray-100 rounded text-red-600"><Trash2 className="w-4 h-4" /></button>
                                 </div>
                             </>
                         )}
