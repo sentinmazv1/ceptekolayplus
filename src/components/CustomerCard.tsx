@@ -1119,25 +1119,49 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                 </h3>
 
                                 <div className="space-y-4 relative z-10">
-                                    {data.urun_imei || data.urun_seri_no ? (
-                                        <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <span className="text-xs font-bold text-indigo-800 uppercase">Teslim Edilen</span>
-                                                <span className="text-xs text-indigo-500">{new Date(data.satis_tarihi || new Date()).toLocaleDateString('tr-TR')}</span>
-                                            </div>
-                                            <p className="font-semibold text-gray-900">{data.marka} {data.model}</p>
-                                            <div className="mt-2 text-xs space-y-1 text-gray-600">
-                                                <p><span className="font-medium">IMEI:</span> {data.urun_imei}</p>
-                                                <p><span className="font-medium">SN:</span> {data.urun_seri_no}</p>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="text-center py-6 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50/50">
-                                            <Package className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                                            <p className="text-sm text-gray-500 mb-3">Henüz cihaz atanmamış.</p>
+                                    <div className="grid grid-cols-2 gap-4 mb-4">
+                                        <Input
+                                            label="Marka"
+                                            value={data.marka || ''}
+                                            onChange={(e) => handleChange('marka', e.target.value)}
+                                            placeholder="Örn: Apple"
+                                        />
+                                        <Input
+                                            label="Model"
+                                            value={data.model || ''}
+                                            onChange={(e) => handleChange('model', e.target.value)}
+                                            placeholder="Örn: iPhone 15"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4 mb-4">
+                                        <Input
+                                            label="IMEI Numarası"
+                                            value={data.urun_imei || ''}
+                                            onChange={(e) => handleChange('urun_imei', e.target.value)}
+                                            placeholder="15 haneli IMEI"
+                                        />
+                                        <Input
+                                            label="Seri Numarası"
+                                            value={data.urun_seri_no || ''}
+                                            onChange={(e) => handleChange('urun_seri_no', e.target.value)}
+                                            placeholder="Cihaz seri no"
+                                        />
+                                    </div>
+                                    <div className="mb-4">
+                                        <Input
+                                            label="Satış Tarihi"
+                                            type="date"
+                                            value={data.satis_tarihi ? new Date(data.satis_tarihi).toISOString().split('T')[0] : ''}
+                                            onChange={(e) => handleChange('satis_tarihi', e.target.value ? new Date(e.target.value).toISOString() : null)}
+                                        />
+                                    </div>
+
+                                    {!data.urun_imei && (
+                                        <div className="text-center py-4 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50/50 mb-4">
+                                            <p className="text-xs text-gray-500 mb-2">veya stoktan seçin</p>
                                             <button
                                                 onClick={() => setIsStockModalOpen(true)}
-                                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-all hover:shadow-md active:scale-95"
+                                                className="px-4 py-2 bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-sm font-medium rounded-lg shadow-sm transition"
                                             >
                                                 📦 Stoktan Cihaz Ata
                                             </button>
