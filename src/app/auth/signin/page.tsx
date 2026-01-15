@@ -2,11 +2,25 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Lock, Mail, ArrowRight, ShieldCheck, PieChart, Users, TrendingUp } from 'lucide-react';
+import { Lock, Mail, ArrowRight, ShieldCheck, PieChart, Users, TrendingUp, Loader2 } from 'lucide-react';
 
-export default function SignIn() {
+// Main Page Component
+export default function SignInPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+            </div>
+        }>
+            <SignInForm />
+        </Suspense>
+    );
+}
+
+// Subcomponent with searchParams logic
+function SignInForm() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
