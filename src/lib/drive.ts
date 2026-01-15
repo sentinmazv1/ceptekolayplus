@@ -7,7 +7,8 @@ export async function uploadFileToDrive(file: File, customerId: string, label: s
     const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const path = `${customerId}/${label}_${timestamp}_${safeName}`;
 
-    const buffer = await file.arrayBuffer();
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
     // Storage 'from' bucket needs to exist.
     // We'll use 'customer-files'.
@@ -15,7 +16,7 @@ export async function uploadFileToDrive(file: File, customerId: string, label: s
         .storage
         .from('customer-files')
         .upload(path, buffer, {
-            contentType: file.type,
+            contentType: file.type || 'application/octet-stream',
             upsert: false
         });
 
