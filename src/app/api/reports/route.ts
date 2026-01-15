@@ -161,146 +161,162 @@ export async function GET(req: NextRequest) {
                 if (isTrackedUser) userAppIds[owner]?.add(row.id);
             }
 
-            // C. Funnel: Attorney Queries
-            if (row.avukat_sorgu_durumu || row.avukat_sorgu_sonuc) {
-                if (row.avukat_sorgu_durumu === 'BEKLİYOR') {
-                    stats.funnel.attorneyPending++;
-                }
-
-                // Count as "Query Made"
-                const hasResult = !!row.avukat_sorgu_sonuc && row.avukat_sorgu_sonuc !== '';
-                const isPending = row.avukat_sorgu_durumu === 'BEKLİYOR';
-
-                if (isPending || (hasResult && isInRange(row.updated_at))) {
-                    attorneyQueryIds.add(row.id);
-                }
+            // Attorney Queries (Log Source + Snapshot)
+            // 1. Snapshot: Currently Pending
+            if (row.avukat_sorgu_durumu === 'Sorgu Bekleniyor' || row.avukat_sorgu_durumu === 'BEKLİYOR') {
+                stats.funnel.attorneyPending++;
             }
+
+            // 2. Activity: Completed or Pending in Range
+            // If it has a result, check if updated_at is in range
+            if (row.avukat_sorgu_sonuc && isInRange(row.updated_at)) {
+                attorneyQueryIds.add(row.id);
+            }
+            // OR if we found a log for it earlier (Log Source Priority)
+            if (attorneyQueryIds.has(row.id)) {
+                // Logic handled in logs already adds to set, so just ensure consistency
+            }
+        }
 
             // D. Funnel: Approved
             if (approval === 'Onaylandı' && isInRange(approvalDate)) {
-                approvedIds.add(row.id);
-                const limit = parseFloat(String(row.kredi_limiti || '0').replace(/[^0-9.]/g, '')) || 0;
-                stats.funnel.approvedLimit += limit;
-                if (isTrackedUser && stats.performance[owner]) {
-                    stats.performance[owner].approvals++;
-                    stats.performance[owner].approvedLimit += limit;
-                }
+            approvedIds.add(row.id);
+
+            // Robust parsing for Turkish currency (e.g., "50.000,00 TL" -> 50000.00)
+            let limitStr = String(row.kredi_limiti || '0');
+            // Remove all non-numeric characters EXCEPT comma and dot
+            limitStr = limitStr.replace(/[^0-9,.-]/g, '');
+            // Replace dots (thousand separators) with empty string if they are not decimal
+            // Assumption: Turkish format "100.000,00" -> remove dots, replace comma with dot.
+            if (limitStr.includes(',') && limitStr.includes('.')) {
+                limitStr = limitStr.replace(/\./g, '').replace(',', '.');
+            } else if (limitStr.includes(',')) {
+                limitStr = limitStr.replace(',', '.');
             }
 
-            // E. Funnel: Delivered
-            const isDelivered = (status === 'Teslim edildi' || status === 'Satış yapıldı/Tamamlandı');
+            const limit = parseFloat(limitStr) || 0;
+
+            stats.funnel.approvedLimit += limit;
+            if (isTrackedUser && stats.performance[owner]) {
+                stats.performance[owner].approvals++;
+                stats.performance[owner].approvedLimit += limit;
+            }
+        }
+
+        // E. Funnel: Delivered
+        const isDelivered = (status === 'Teslim edildi' || status === 'Satış yapıldı/Tamamlandı');
+        if (isDelivered) {
+            const dDate = row.teslim_tarihi || row.updated_at;
+            if (isInRange(dDate)) {
+                deliveredIds.add(row.id);
+            }
+        }
+
+        // F. Standard Aggregates
+        if (row.sehir) {
+            if (!stats.city[row.sehir]) stats.city[row.sehir] = { total: 0, delivered: 0, approved: 0, rejected: 0, cancelled: 0, kefil: 0, noEdevlet: 0, unreachable: 0, other: 0 };
+
+            stats.city[row.sehir].total++;
+
             if (isDelivered) {
-                const dDate = row.teslim_tarihi || row.updated_at;
-                if (isInRange(dDate)) {
-                    deliveredIds.add(row.id);
-                }
+                stats.city[row.sehir].delivered++;
+            } else if (approval === 'Onaylandı') {
+                stats.city[row.sehir].approved++;
+            } else if (['Reddetti', 'Uygun değil', 'Kriter Dışı'].includes(status || '') || approval === 'Reddedildi') {
+                stats.city[row.sehir].rejected++;
+            } else if (status === 'İptal/Vazgeçti') {
+                stats.city[row.sehir].cancelled++;
+            } else if (status === 'Kefil bekleniyor' || approval === 'Kefil İstendi') {
+                stats.city[row.sehir].kefil++;
+            } else if (['Ulaşılamadı', 'Cevap Yok', 'Meşgul/Hattı kapalı', 'Yanlış numara', 'Numara kullanılmıyor'].includes(status || '')) {
+                stats.city[row.sehir].unreachable++;
+            } else {
+                stats.city[row.sehir].other++;
             }
+        }
+        if (status) stats.status[status] = (stats.status[status] || 0) + 1;
 
-            // F. Standard Aggregates
-            if (row.sehir) {
-                if (!stats.city[row.sehir]) stats.city[row.sehir] = { total: 0, delivered: 0, approved: 0, rejected: 0, cancelled: 0, kefil: 0, noEdevlet: 0, unreachable: 0, other: 0 };
+        // Rejections
+        if (['Reddetti', 'Uygun değil', 'İptal/Vazgeçti'].includes(status) || approval === 'Reddedildi') {
+            let reason = 'Diğer';
+            if (approval === 'Reddedildi') reason = 'Yönetici Reddi';
+            else if (status === 'Reddetti') reason = 'Müşteri Reddetti';
+            else if (status === 'Uygun değil') reason = 'Kriter Dışı';
+            else if (status === 'İptal/Vazgeçti') reason = 'İptal';
+            stats.rejection[reason] = (stats.rejection[reason] || 0) + 1;
+        }
+    });
 
-                stats.city[row.sehir].total++;
+    // --- 3. FINALIZE --- 
+    stats.funnel.applications = applicationIds.size;
+    stats.funnel.attorneyQueries = attorneyQueryIds.size;
+    stats.funnel.approved = approvedIds.size;
+    stats.funnel.delivered = deliveredIds.size;
+    stats.funnel.sale = deliveredIds.size;
+    stats.funnel.totalCalled = Object.values(stats.performance).reduce((a, b) => a + b.calls, 0);
 
-                if (isDelivered) {
-                    stats.city[row.sehir].delivered++;
-                } else if (approval === 'Onaylandı') {
-                    stats.city[row.sehir].approved++;
-                } else if (['Reddetti', 'Uygun değil', 'Kriter Dışı'].includes(status || '') || approval === 'Reddedildi') {
-                    stats.city[row.sehir].rejected++;
-                } else if (status === 'İptal/Vazgeçti') {
-                    stats.city[row.sehir].cancelled++;
-                } else if (status === 'Kefil bekleniyor' || approval === 'Kefil İstendi') {
-                    stats.city[row.sehir].kefil++;
-                } else if (['Ulaşılamadı', 'Cevap Yok', 'Meşgul/Hattı kapalı', 'Yanlış numara', 'Numara kullanılmıyor'].includes(status || '')) {
-                    stats.city[row.sehir].unreachable++;
-                } else {
-                    stats.city[row.sehir].other++;
-                }
+    Object.keys(userAppIds).forEach(u => {
+        if (stats.performance[u]) stats.performance[u].applications = userAppIds[u].size;
+    });
+
+    // Goals: Last 3 Days EXCLUDING Today (Static Goal)
+    const todayMidnight = new Date();
+    todayMidnight.setHours(0, 0, 0, 0);
+    const threeDaysAgoMidnight = todayMidnight.getTime() - (3 * 24 * 60 * 60 * 1000);
+    const todayMidnightTime = todayMidnight.getTime();
+
+    const last3DaysCalls: Record<string, number> = {};
+    const lastLogTime: Record<string, number> = {};
+
+    // Sort logs by time to ensure correct dedup
+    logs.sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+    logs.forEach((l: any) => {
+        const user = l.user_email;
+        if (!user || ['sistem', 'admin', 'ibrahim'].some(x => user.includes(x))) return;
+        const t = new Date(l.timestamp).getTime();
+
+        // Strictly between 3 days ago (inclusive) and today midnight (exclusive)
+        if (t >= threeDaysAgoMidnight && t < todayMidnightTime && l.action === 'PULL_LEAD') {
+            // Deduplicate: If same user pulls multiple leads within 10 seconds, count as 1 event (bulk assign protection)
+            const lastTime = lastLogTime[user] || 0;
+            if (t - lastTime > 10000) { // 10 seconds
+                last3DaysCalls[user] = (last3DaysCalls[user] || 0) + 1;
+                lastLogTime[user] = t;
             }
-            if (status) stats.status[status] = (stats.status[status] || 0) + 1;
+        }
+    });
+    Object.keys(stats.performance).forEach(user => {
+        const avg = Math.round((last3DaysCalls[user] || 0) / 3);
+        stats.performance[user].dailyGoal = Math.max(10, Math.ceil(avg * 1.1));
+    });
 
-            // Rejections
-            if (['Reddetti', 'Uygun değil', 'İptal/Vazgeçti'].includes(status) || approval === 'Reddedildi') {
-                let reason = 'Diğer';
-                if (approval === 'Reddedildi') reason = 'Yönetici Reddi';
-                else if (status === 'Reddetti') reason = 'Müşteri Reddetti';
-                else if (status === 'Uygun değil') reason = 'Kriter Dışı';
-                else if (status === 'İptal/Vazgeçti') reason = 'İptal';
-                stats.rejection[reason] = (stats.rejection[reason] || 0) + 1;
-            }
-        });
-
-        // --- 3. FINALIZE --- 
-        stats.funnel.applications = applicationIds.size;
-        stats.funnel.attorneyQueries = attorneyQueryIds.size;
-        stats.funnel.approved = approvedIds.size;
-        stats.funnel.delivered = deliveredIds.size;
-        stats.funnel.sale = deliveredIds.size;
-        stats.funnel.totalCalled = Object.values(stats.performance).reduce((a, b) => a + b.calls, 0);
-
-        Object.keys(userAppIds).forEach(u => {
-            if (stats.performance[u]) stats.performance[u].applications = userAppIds[u].size;
-        });
-
-        // Goals: Last 3 Days EXCLUDING Today (Static Goal)
-        const todayMidnight = new Date();
-        todayMidnight.setHours(0, 0, 0, 0);
-        const threeDaysAgoMidnight = todayMidnight.getTime() - (3 * 24 * 60 * 60 * 1000);
-        const todayMidnightTime = todayMidnight.getTime();
-
-        const last3DaysCalls: Record<string, number> = {};
-        const lastLogTime: Record<string, number> = {};
-
-        // Sort logs by time to ensure correct dedup
-        logs.sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-
-        logs.forEach((l: any) => {
-            const user = l.user_email;
-            if (!user || ['sistem', 'admin', 'ibrahim'].some(x => user.includes(x))) return;
-            const t = new Date(l.timestamp).getTime();
-
-            // Strictly between 3 days ago (inclusive) and today midnight (exclusive)
-            if (t >= threeDaysAgoMidnight && t < todayMidnightTime && l.action === 'PULL_LEAD') {
-                // Deduplicate: If same user pulls multiple leads within 10 seconds, count as 1 event (bulk assign protection)
-                const lastTime = lastLogTime[user] || 0;
-                if (t - lastTime > 10000) { // 10 seconds
-                    last3DaysCalls[user] = (last3DaysCalls[user] || 0) + 1;
-                    lastLogTime[user] = t;
-                }
-            }
-        });
-        Object.keys(stats.performance).forEach(user => {
-            const avg = Math.round((last3DaysCalls[user] || 0) / 3);
-            stats.performance[user].dailyGoal = Math.max(10, Math.ceil(avg * 1.1));
-        });
-
-        // Pace: Include today for pace calculation
-        const userActivityMap: Record<string, number[]> = {};
-        logs.forEach((l: any) => {
-            const u = l.user_email;
-            if (u && stats.performance[u] && new Date(l.timestamp).getTime() >= start) {
-                if (!userActivityMap[u]) userActivityMap[u] = [];
-                userActivityMap[u].push(new Date(l.timestamp).getTime());
-            }
-        });
-        Object.keys(userActivityMap).forEach(u => {
-            const times = userActivityMap[u].sort((a, b) => a - b);
-            let total = 0, count = 0;
-            for (let i = 1; i < times.length; i++) {
-                const diff = times[i] - times[i - 1];
-                if (diff < 3600000) { total += diff; count++; }
-            }
-            if (count > 0 && stats.performance[u]) stats.performance[u].paceMinutes = Math.round(total / count / 60000);
-        });
+    // Pace: Include today for pace calculation
+    const userActivityMap: Record<string, number[]> = {};
+    logs.forEach((l: any) => {
+        const u = l.user_email;
+        if (u && stats.performance[u] && new Date(l.timestamp).getTime() >= start) {
+            if (!userActivityMap[u]) userActivityMap[u] = [];
+            userActivityMap[u].push(new Date(l.timestamp).getTime());
+        }
+    });
+    Object.keys(userActivityMap).forEach(u => {
+        const times = userActivityMap[u].sort((a, b) => a - b);
+        let total = 0, count = 0;
+        for (let i = 1; i < times.length; i++) {
+            const diff = times[i] - times[i - 1];
+            if (diff < 3600000) { total += diff; count++; }
+        }
+        if (count > 0 && stats.performance[u]) stats.performance[u].paceMinutes = Math.round(total / count / 60000);
+    });
 
 
-        return NextResponse.json({ success: true, stats });
+    return NextResponse.json({ success: true, stats });
 
-    } catch (error: any) {
-        console.error('Reports Error:', error);
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-    }
+} catch (error: any) {
+    console.error('Reports Error:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+}
 }
 
 function lastCalledInRange(row: any, start: number, end: number) {
