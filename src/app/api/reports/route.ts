@@ -200,8 +200,8 @@ export async function GET(req: NextRequest) {
                 }
                 // Fallback: If it's in the Log Set (via UPDATE_FIELDS), we assume it happened today. 
                 // We should increment the stats based on the CURRENT value if the log doesn't carry it (logs usually do, but let's use the final state for breakdown consistency)
-                else if (attorneyQueryIds.has(id) && !isKefil) {
-                    // Main customer log found
+                else if (attorneyQueryIds.has(uniqueId)) {
+                    // Log found (Main or Kefil)
                     if (status === 'Temiz') stats.funnel.attorneyClean++;
                     else if (status === 'Riskli' || status === '⚠️ Riskli/Sorunlu') stats.funnel.attorneyRisky++;
                     else if (status === 'Onaylandı') stats.funnel.attorneyApproved++;
