@@ -188,6 +188,7 @@ export async function lockNextLead(userEmail: string): Promise<(Customer & { sou
     // 1. Automation (Empty/Null/Yeni)
     const pBucketAuto = supabaseAdmin.from('leads').select('*').is('sahip_email', null)
         .or('durum.eq.Yeni,durum.is.null,durum.eq.""')
+        .order('created_at', { ascending: false })
         .limit(1);
 
     // 2. Scheduled (Ready)
