@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getReportData, getAllLogs } from '@/lib/leads';
+import { getReportData, getAllLogs, getInventoryStats } from '@/lib/leads';
 
 // Helper using Intl for robustness
 const trFormatter = new Intl.DateTimeFormat('en-CA', {
@@ -30,9 +30,10 @@ export async function GET(req: NextRequest) {
         const startDate = url.searchParams.get('startDate') || todayStr;
         const endDate = url.searchParams.get('endDate') || todayStr;
 
-        const [customers, logs] = await Promise.all([
+        const [customers, logs, inventoryStats] = await Promise.all([
             getReportData(),
-            getAllLogs()
+            getAllLogs(),
+            getInventoryStats()
         ]);
 
         if (!customers || customers.length === 0) {
@@ -76,6 +77,7 @@ export async function GET(req: NextRequest) {
                 totalLogs: number
             }>,
             hourly: {} as Record<string, Record<string, Record<number, number>>>,
+            inventory: inventoryStats,
         };
 
         // Date Helpers

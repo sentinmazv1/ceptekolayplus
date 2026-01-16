@@ -13,15 +13,46 @@ export async function PUT(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { id, ...updates } = body;
+        const { id, applyToAll, ...updates } = body;
 
         if (!id) {
             return NextResponse.json({ message: 'Missing item ID' }, { status: 400 });
         }
 
+        // Bulk Update Logic
+        if (applyToAll && updates.marka && updates.model) {
+            // Fields to sync across same models
+            const bulkUpdates = {
+                fiyat_3_taksit: updates.fiyat_3_taksit,
+                fiyat_6_taksit: updates.fiyat_6_taksit,
+                fiyat_12_taksit: updates.fiyat_12_taksit,
+                fiyat_15_taksit: updates.fiyat_15_taksit,
+                alis_fiyati: updates.alis_fiyati
+            };
+
+            const { getInventoryItems } = await import('@/lib/inventory-service');
+            const { supabaseAdmin } = await import('@/lib/supabase');
+
+            // Update ALL items with same Brand/Model that are IN STOCK
+            const { error: bulkError } = await supabaseAdmin
+                .from('inventory')
+                .update(bulkUpdates)
+                .eq('marka', updates.marka)
+                .eq('model', updates.model)
+                .eq('durum', 'STOKTA');
+
+            if (bulkError) throw bulkError;
+
+            // Also update the specific item being edited (in case it wasn't caught or to ensure ID specific fields)
+            const updatedItem = await updateInventoryItem(id, updates);
+            return NextResponse.json({ item: updatedItem, message: "Bulk update successful" });
+        }
+
+        // Single Update
         const updatedItem = await updateInventoryItem(id, updates);
         return NextResponse.json({ item: updatedItem });
     } catch (error) {
+        console.error('Inventory Update Error:', error);
         return NextResponse.json({ message: 'Failed to update item' }, { status: 500 });
     }
 }

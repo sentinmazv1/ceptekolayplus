@@ -293,7 +293,7 @@ export async function getReportData() {
     while (true) {
         const { data, error } = await supabaseAdmin
             .from('leads')
-            .select('id, durum, sehir, meslek_is, maas_bilgisi, talep_edilen_urun, onay_durumu, basvuru_kanali, created_at, son_arama_zamani, sahip_email, onay_tarihi, sonraki_arama_zamani, icra_durumu, dava_durumu, aciklama_uzun, avukat_sorgu_durumu, avukat_sorgu_sonuc, psikoteknik_varmi, psikoteknik_notu, ikametgah_varmi, hizmet_dokumu_varmi, ayni_isyerinde_sure_ay, mulkiyet_durumu, arac_varmi, arac_detay, tapu_varmi, tapu_detay, kapali_icra_kapanis_sekli, gizli_dosya_varmi, gizli_dosya_detay, kefil_meslek_is, kefil_son_yatan_maas, kefil_ayni_isyerinde_sure_ay, kefil_e_devlet_sifre, kefil_ikametgah_varmi, kefil_hizmet_dokumu_varmi, kefil_dava_dosyasi_varmi, kefil_dava_detay, kefil_acik_icra_varmi, kefil_acik_icra_detay, kefil_kapali_icra_varmi, kefil_kapali_icra_kapanis_sekli, kefil_mulkiyet_durumu, kefil_arac_varmi, kefil_tapu_varmi, kefil_notlar, winner_musteri_no, e_devlet_sifre, iptal_nedeni, kefil_ad_soyad, kefil_telefon, kefil_tc_kimlik, teslim_tarihi, teslim_eden, urun_imei, urun_seri_no, satilan_urunler')
+            .select('id, durum, sehir, meslek_is, maas_bilgisi, talep_edilen_urun, onay_durumu, basvuru_kanali, created_at, son_arama_zamani, sahip_email, onay_tarihi, kredi_limiti, sonraki_arama_zamani, icra_durumu, dava_durumu, aciklama_uzun, avukat_sorgu_durumu, avukat_sorgu_sonuc, psikoteknik_varmi, psikoteknik_notu, ikametgah_varmi, hizmet_dokumu_varmi, ayni_isyerinde_sure_ay, mulkiyet_durumu, arac_varmi, arac_detay, tapu_varmi, tapu_detay, kapali_icra_kapanis_sekli, gizli_dosya_varmi, gizli_dosya_detay, kefil_meslek_is, kefil_son_yatan_maas, kefil_ayni_isyerinde_sure_ay, kefil_e_devlet_sifre, kefil_ikametgah_varmi, kefil_hizmet_dokumu_varmi, kefil_dava_dosyasi_varmi, kefil_dava_detay, kefil_acik_icra_varmi, kefil_acik_icra_detay, kefil_kapali_icra_varmi, kefil_kapali_icra_kapanis_sekli, kefil_mulkiyet_durumu, kefil_arac_varmi, kefil_tapu_varmi, kefil_notlar, winner_musteri_no, e_devlet_sifre, iptal_nedeni, kefil_ad_soyad, kefil_telefon, kefil_tc_kimlik, teslim_tarihi, teslim_eden, urun_imei, urun_seri_no, satilan_urunler')
             .order('id', { ascending: true }) // Stable ordering for pagination
             .range(page * pageSize, (page + 1) * pageSize - 1);
 
@@ -505,6 +505,29 @@ export async function getLogs(customerId?: string): Promise<LogEntry[]> {
 export async function getRecentLogs(limit: number = 50): Promise<LogEntry[]> {
     const { data } = await supabaseAdmin.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(limit);
     return (data || []).map(row => ({ log_id: row.id, timestamp: row.created_at, user_email: row.user_email, customer_id: row.lead_id, action: row.action, old_value: row.old_value, new_value: row.new_value, note: row.note }));
+}
+
+export async function getInventoryStats() {
+    const { data, error } = await supabaseAdmin
+        .from('inventory')
+        .select('alis_fiyati, satis_fiyati, stok_durumu');
+
+    if (error) {
+        console.error('Inventory Stats Error:', error);
+        return { totalItems: 0, totalCost: 0, totalRevenue: 0 };
+    }
+
+    let totalItems = 0;
+    let totalCost = 0;
+    let totalRevenue = 0; // Uses 15-month price (satis_fiyati)
+
+    data.forEach((item: any) => {
+        totalItems++;
+        totalCost += Number(item.alis_fiyati || 0);
+        totalRevenue += Number(item.satis_fiyati || 0);
+    });
+
+    return { totalItems, totalCost, totalRevenue };
 }
 
 function mapRowToCustomer(row: any): Customer {

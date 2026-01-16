@@ -38,17 +38,22 @@ interface ReportStats {
         delivered: number;
         sale: number;
     };
+    inventory: {
+        totalItems: number;
+        totalCost: number;
+        totalRevenue: number;
+    };
     todayCalledByPerson: Record<string, number>;
     performance: Record<string, {
         calls: number;
         approvals: number;
-        approvedLimit: number;
-        applications: number;
-        paceMinutes: number;
-        sms: number;
-        whatsapp: number;
-        dailyGoal: number;
-        image: string;
+        approvedLimit: number,
+        applications: number,
+        paceMinutes: number,
+        sms: number,
+        whatsapp: number,
+        dailyGoal: number,
+        image: string,
         totalLogs: number;
     }>;
 }
@@ -113,6 +118,9 @@ export default function ReportsPage() {
         return row;
     });
     const userList = Array.from(relevantUsers);
+
+    // Helpers for Inventory Display
+    const formatTRY = (val: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(val);
 
     return (
         <div className="min-h-screen bg-gray-50/50 p-4 md:p-8 pb-24 print:bg-white print:p-0 font-sans">
@@ -187,6 +195,53 @@ export default function ReportsPage() {
                     </div>
                 </div>
             </div>
+
+            {/* --- ROW 0: INVENTORY STATS --- */}
+            {stats.inventory && (
+                <div className="mb-8 animate-in slide-in-from-bottom-2 duration-500">
+                    <div className="flex items-center gap-3 mb-6 px-1">
+                        <div className="p-2.5 bg-slate-900 rounded-xl text-white shadow-sm">
+                            <Package className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Envanter Durumu</h2>
+                            <p className="text-xs font-bold text-gray-500 hidden md:block">Güncel Stok & Maliyet Analizi</p>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Card 1: Total Stock */}
+                        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between group hover:border-indigo-200 transition-colors">
+                            <div>
+                                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Toplam Stok Adeti</p>
+                                <p className="text-3xl font-black text-slate-800 tabular-nums">{stats.inventory.totalItems || 0} <span className="text-sm font-bold text-gray-400">Adet</span></p>
+                            </div>
+                            <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                <Package className="w-6 h-6" />
+                            </div>
+                        </div>
+                        {/* Card 2: Cost Volume */}
+                        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between group hover:border-rose-200 transition-colors">
+                            <div>
+                                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Toplam Alış Hacmi (Maliyet)</p>
+                                <p className="text-3xl font-black text-slate-800 tabular-nums">{formatTRY(stats.inventory.totalCost || 0)}</p>
+                            </div>
+                            <div className="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-colors">
+                                <TrendingUp className="w-6 h-6" />
+                            </div>
+                        </div>
+                        {/* Card 3: Potential Volume */}
+                        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between group hover:border-emerald-200 transition-colors">
+                            <div>
+                                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Toplam Potansiyel Ciro (15 Ay)</p>
+                                <p className="text-3xl font-black text-slate-800 tabular-nums">{formatTRY(stats.inventory.totalRevenue || 0)}</p>
+                            </div>
+                            <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                                <BadgeCheck className="w-6 h-6" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* --- ROW 1: SALES FUNNEL (PREMIUM CARD) --- */}
             <div className="mb-8 animate-in slide-in-from-bottom-4 duration-500">

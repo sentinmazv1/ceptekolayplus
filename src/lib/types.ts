@@ -180,4 +180,5 @@ export interface InventoryItem {
   fiyat_6_taksit?: number;
   fiyat_12_taksit?: number;
   fiyat_15_taksit?: number;
+  alis_fiyati?: number;
 }

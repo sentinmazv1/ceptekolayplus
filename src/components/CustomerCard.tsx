@@ -7,7 +7,7 @@ import { WHATSAPP_TEMPLATES } from '@/lib/whatsapp-templates';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Select } from './ui/Select';
-import { Loader2, AlertCircle, CheckCircle, Info, Phone, Package, Smartphone, Search, RefreshCw, MessageSquare, Scale, UploadCloud, FileText, Image as ImageIcon, Briefcase, Home, ShieldCheck, X, Shield } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle, Info, Phone, Package, Smartphone, Search, RefreshCw, MessageSquare, Scale, UploadCloud, FileText, Image as ImageIcon, Briefcase, Home, ShieldCheck, X, Shield, Printer, User, Calendar } from 'lucide-react';
 import { cityList, getDistrictsByCityCode } from 'turkey-neighbourhoods';
 
 
@@ -327,6 +327,28 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
             return;
         }
 
+        // Phone Validation (Basic)
+        if (data.telefon.length < 10) {
+            setError('Telefon numarası eksik veya hatalı.');
+            setLoading(false);
+            return;
+        }
+
+        // TC Validation (If provided)
+        if (data.tc_kimlik && (data.tc_kimlik.length !== 11 || !/^\d+$/.test(data.tc_kimlik))) {
+            setError('TC Kimlik Numarası 11 haneli ve sayısal olmalıdır.');
+            setLoading(false);
+            return;
+        }
+
+        // IMEI Validation (If provided, strictly 15 digits)
+        if (data.urun_imei && (data.urun_imei.length !== 15 || !/^\d+$/.test(data.urun_imei))) {
+            setError('Ürün IMEI numarası tam 15 hane ve sayısal olmalıdır.');
+            setLoading(false);
+            return;
+        }
+
+        // Status Logic
         if (data.durum === 'Daha sonra aranmak istiyor' && !data.sonraki_arama_zamani) {
             setError('"Daha sonra aranmak istiyor" durumu için Sonraki Arama Zamanı zorunludur.');
             setLoading(false);
@@ -345,6 +367,12 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
         if (data.onay_durumu === 'Kefil İstendi' && data.durum === 'Başvuru alındı') {
             if (!data.kefil_ad_soyad || !data.kefil_telefon || !data.kefil_tc_kimlik) {
                 setError('Kefil İstendiği ve onay süreci için; Kefil Ad Soyad, Telefon ve TC Kimlik zorunludur.');
+                setLoading(false);
+                return;
+            }
+            // Kefil TC Check
+            if (data.kefil_tc_kimlik && (data.kefil_tc_kimlik.length !== 11 || !/^\d+$/.test(data.kefil_tc_kimlik))) {
+                setError('Kefil TC Kimlik Numarası 11 haneli olmalıdır.');
                 setLoading(false);
                 return;
             }
@@ -391,16 +419,29 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
             const json = await res.json();
 
             if (isNew) {
-                alert('Müşteri başarıyla oluşturuldu!');
-                // Reset form or redirect handled by parent usually, but here we just update local state if we want to continue editing
+                // Determine source for analytics
+                // If created manually, it's 'Panel'
+                alert('✨ Müşteri Kartı Oluşturuldu!\n\nYeni müşteri başarıyla sisteme eklendi.');
                 if (onSave) onSave(json.lead);
             } else {
-                setData(json.lead); // Update local state with server response
+                setData(json.lead);
                 if (onSave) onSave(json.lead);
-                alert('Kaydedildi!');
+
+                // Show a more "Premium" feedback if possible, otherwise standard alert
+                alert('✅ Değişiklikler Kaydedildi.\n\nMüşteri kartı başarıyla güncellendi.');
             }
+
+            setIsApprovalModalOpen(false); // Close modal if open
+
         } catch (err: any) {
-            setError(err.message || 'Kaydedilemedi. Lütfen tekrar deneyin.');
+            console.error('Save Error:', err);
+            // Detailed Error Feedback
+            let msg = 'Kaydedilemedi.';
+            if (err.message) msg += '\n\nHata: ' + err.message;
+            if (err.message.includes('Payload')) msg += '\n(Dosya boyutu çok yüksek olabilir)';
+
+            alert('❌ ' + msg);
+            setError(msg);
         } finally {
             setLoading(false);
         }
@@ -438,10 +479,21 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                             )}
                             {isChanged && <span className="text-xs bg-indigo-500/80 px-2 py-1 rounded-full animate-pulse border border-indigo-400/50">Değişiklikler var</span>}
                         </div>
-                        <div className="flex items-center gap-4 text-xs text-slate-300 font-medium ml-1">
+                        <div className="flex flex-wrap items-center gap-4 text-xs text-slate-300 font-medium ml-1 mt-2">
+                            <div className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded border border-white/5">
+                                <User className="w-3 h-3 text-indigo-200" />
+                                <span className="text-indigo-200">Satıcı:</span>
+                                <span className="text-white">{data.created_by?.split('@')[0] || 'Sistem'}</span>
+                            </div>
+                            {data.sahip && (
+                                <div className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded border border-white/5">
+                                    <Briefcase className="w-3 h-3 text-amber-200" />
+                                    <span className="text-amber-200">Sahip:</span>
+                                    <span className="text-white">{data.sahip === session?.user.email ? 'Siz' : data.sahip.split('@')[0]}</span>
+                                </div>
+                            )}
                             <span className='flex items-center gap-1 hover:text-white transition-colors cursor-pointer' onClick={() => window.open(`tel:${data.telefon?.startsWith('0') ? data.telefon : '0' + data.telefon}`)}><Phone className="w-3 h-3" /> {data.telefon}</span>
-                            <span className='hidden md:flex items-center gap-1 opacity-50'>•</span>
-                            <span className='hidden md:flex items-center gap-1 text-slate-400'>Kayıt: {new Date(data.created_at || new Date()).toLocaleDateString('tr-TR')}</span>
+                            <span className='hidden md:flex items-center gap-1 text-slate-400'> <Calendar className="w-3 h-3" /> {new Date(data.created_at || new Date()).toLocaleDateString('tr-TR')}</span>
                         </div>
                     </div>
 
@@ -460,6 +512,14 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                 {/* GLOBAL ACTION BAR */}
                 <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between gap-3 sticky top-[73px] z-20 shadow-sm animate-in slide-in-from-top-1">
                     <div className="flex items-center gap-2">
+                        <Button
+                            variant="secondary"
+                            onClick={() => window.print()}
+                            className="bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 text-xs shadow-sm"
+                            title="Yazdır"
+                        >
+                            <Printer className="w-4 h-4 mr-2" /> Yazdır
+                        </Button>
                         <Button
                             variant="secondary"
                             onClick={() => window.open('https://portal.uyap.gov.tr/vatandas/', '_blank')}
@@ -492,8 +552,8 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
             {/* --- TABS NAVIGATION --- */}
             <div className="flex overflow-x-auto border-b border-gray-200 bg-white sticky top-0 z-10 scrollbar-hide shadow-sm">
                 <TabButton id="details" label="Genel Bilgiler" icon={Info} />
-                <TabButton id="is" label="İş & Finans" icon={Briefcase} />
                 <TabButton id="yasal" label="Yasal & Varlık" icon={Scale} />
+                <TabButton id="is" label="İş & Finans" icon={Briefcase} />
                 <TabButton id="urun" label="Ürün & Teslimat" icon={Package} />
                 <TabButton id="dosya" label="Dosyalar" icon={ImageIcon} />
                 <TabButton id="kefil" label="Kefil Bilgileri" icon={ShieldCheck} />
@@ -1269,6 +1329,11 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                                         onChange={(e) => {
                                                             const file = e.target.files?.[0];
                                                             if (file) {
+                                                                if (file.size > 5 * 1024 * 1024) {
+                                                                    alert('⚠️ Dosya boyutu 5MB\'dan büyük olamaz!');
+                                                                    return;
+                                                                }
+                                                                loadingToast('Dosya yükleniyor...');
                                                                 setLoading(true);
                                                                 const formData = new FormData();
                                                                 formData.append('file', file);
@@ -1321,6 +1386,11 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                                         onChange={(e) => {
                                                             const file = e.target.files?.[0];
                                                             if (file) {
+                                                                if (file.size > 5 * 1024 * 1024) {
+                                                                    alert('⚠️ Dosya boyutu 5MB\'dan büyük olamaz!');
+                                                                    return;
+                                                                }
+                                                                loadingToast('Dosya yükleniyor...');
                                                                 setLoading(true);
                                                                 const formData = new FormData();
                                                                 formData.append('file', file);
@@ -1788,31 +1858,20 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
 *Araç Var mı :* ${customer.arac_varmi || '-'}
 *Avukat Sorgusu :* ${customer.avukat_sorgu_durumu || '-'} Açıklaması ${customer.avukat_sorgu_sonuc || ''}`;
 
-        // Satıcı Notu Ekleme
-        if (customer.arama_not_kisa) {
-            summary += `\n\n📝 *Satıcı Notu:* ${customer.arama_not_kisa}`;
-        }
+        if (customer.arama_not_kisa) summary += `\n\n📝 *Satıcı Notu:* ${customer.arama_not_kisa}`;
+        if (customer.tapu_varmi === 'Evet' && customer.tapu_detay) summary += `\n\n🏠 *Tapu Detayı:* ${customer.tapu_detay}`;
+        if (customer.arac_varmi === 'Evet' && customer.arac_detay) summary += `\n🚗 *Araç Detayı:* ${customer.arac_detay}`;
 
-        // Varlık Detayları
-        if (customer.tapu_varmi === 'Evet' && customer.tapu_detay) {
-            summary += `\n\n🏠 *Tapu Detayı:* ${customer.tapu_detay}`;
-        }
-        if (customer.arac_varmi === 'Evet' && customer.arac_detay) {
-            summary += `\n🚗 *Araç Detayı:* ${customer.arac_detay}`;
-        }
-
-        // Kefil Bilgileri Ekleme
         if (customer.kefil_ad_soyad) {
             summary += `\n\n--- 🤝 *KEFİL BİLGİLERİ* ---\n`;
             summary += `*Adı Soyadı:* ${customer.kefil_ad_soyad}\n`;
             summary += `*Telefon:* ${customer.kefil_telefon || '-'}\n`;
+            summary += `*TC:* ${customer.kefil_tc_kimlik || '-'}\n`;
             summary += `*Meslek:* ${customer.kefil_meslek_is || '-'}\n`;
             summary += `*Maaş:* ${customer.kefil_son_yatan_maas || '-'}\n`;
             summary += `*Çalışma Süresi:* ${customer.kefil_ayni_isyerinde_sure_ay || '-'} Ay\n`;
             summary += `*İkametgah:* ${customer.kefil_ikametgah_varmi || '-'}\n`;
-            summary += `*Hizmet Dökümü:* ${customer.kefil_hizmet_dokumu_varmi || '-'}\n`;
-            summary += `*İcra Durumu:* ${customer.kefil_acik_icra_varmi || '-'}\n`;
-            summary += `*Tapu/Araç:* ${customer.kefil_tapu_varmi || '-'}`;
+            summary += `*İcra Durumu:* ${customer.kefil_acik_icra_varmi || '-'}`;
         }
 
         return summary;
@@ -1831,50 +1890,119 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
     };
 
     const handlePrint = () => {
-        const printWindow = window.open('', '', 'width=800,height=800');
+        const printWindow = window.open('', '', 'width=900,height=900');
         if (printWindow) {
             printWindow.document.write(`
                 <html>
                     <head>
-                        <title>Onay Özeti - ${customer.ad_soyad}</title>
+                        <title>Teslimat & Onay Raporu - ${customer.ad_soyad}</title>
+                        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
                         <style>
-                            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; line-height: 1.5; color: #333; max-width: 800px; margin: 0 auto; }
-                            h2 { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
-                            .summary-box { white-space: pre-wrap; background: #fff; padding: 0; font-size: 14px; border: none; }
-                            .manual-section { margin-top: 30px; border: 1px solid #ccc; padding: 15px; border-radius: 5px; min-height: 150px; }
-                            .manual-label { font-weight: bold; margin-bottom: 10px; display: block; border-bottom: 1px dashed #ccc; padding-bottom: 5px; }
-                            .grid { display: flex; gap: 20px; margin-top: 30px; }
-                            .col { flex: 1; border: 1px solid #ccc; padding: 15px; border-radius: 5px; height: 100px; }
-                            .date-area { margin-top: 10px; text-align: right; font-size: 12px; }
+                            @page { size: A4; margin: 15mm; }
+                            body { font-family: 'Inter', sans-serif; color: #1e293b; max-width: 800px; margin: 0 auto; line-height: 1.4; }
+                            .header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; items-items: center; }
+                            .brand { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: #0f172a; text-transform: uppercase; }
+                            .meta { text-align: right; font-size: 11px; color: #64748b; }
                             
+                            h2 { font-size: 16px; font-weight: 700; background: #f1f5f9; padding: 8px 12px; border-left: 4px solid #3b82f6; margin-top: 25px; margin-bottom: 15px; border-radius: 0 4px 4px 0; }
+                            
+                            .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+                            .field { margin-bottom: 8px; font-size: 13px; }
+                            .label { font-weight: 600; color: #475569; width: 140px; display: inline-block; }
+                            .value { font-weight: 500; color: #0f172a; }
+                            
+                            .note-box { border: 1px dashed #cbd5e1; background: #f8fafc; padding: 15px; border-radius: 6px; font-size: 12px; margin-top: 10px; min-height: 60px; }
+                            
+                            .signatures { margin-top: 50px; display: flex; gap: 30px; page-break-inside: avoid; }
+                            .sig-box { flex: 1; border: 1px solid #e2e8f0; border-radius: 6px; height: 120px; position: relative; }
+                            .sig-header { background: #f1f5f9; padding: 8px; text-align: center; font-size: 12px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
+                            .sig-line { position: absolute; bottom: 30px; left: 20px; right: 20px; border-top: 1px solid #000; }
+                            .sig-label { position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; font-size: 10px; color: #64748b; }
+
+                            .device-info { background: #eff6ff; border: 1px solid #dbeafe; padding: 15px; border-radius: 6px; }
+
                             @media print {
-                                body { padding: 0; }
-                                .manual-section { break-inside: avoid; }
+                                body { -webkit-print-color-adjust: exact; }
                             }
                         </style>
                     </head>
                     <body>
-                        <h2>Müşteri Onay Özeti</h2>
-                        <div class="date-area">Çıktı Tarihi: ${new Date().toLocaleDateString('tr-TR')} ${new Date().toLocaleTimeString('tr-TR')}</div>
-                        
-                        <div class="summary-box">${summaryText}</div>
-
-                        <div class="manual-section">
-                            <span class="manual-label">✍️ Değerlendirme / Notlar (Elle Doldurulacak Alan)</span>
-                            <!-- Empty space for writing -->
+                        <div class="header">
+                            <div>
+                                <div class="brand">CEPTE KOLAY</div>
+                                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Elektronik Cihaz Satış & Finansman Hizmetleri</div>
+                            </div>
+                            <div class="meta">
+                                Tarih: ${new Date().toLocaleDateString('tr-TR')}<br>
+                                Ref No: ${customer.id.substring(0, 8).toUpperCase()}
+                            </div>
                         </div>
 
-                        <div class="grid">
-                            <div class="col">
-                                <span class="manual-label">Satış Temsilcisi</span>
-                                <div style="text-align: center; font-weight: bold; margin-top: 10px; margin-bottom: 30px; font-size: 12px;">${customer.sahip || ''}</div>
-                                <div style="border-top: 1px dotted #999; width: 80%; margin-left: auto; margin-right: auto;"></div>
-                                <div style="text-align: center; font-size: 10px;">İmza</div>
+                        <h2>Müşteri Bilgileri</h2>
+                        <div class="grid-2">
+                             <div>
+                                <div class="field"><span class="label">Ad Soyad:</span> <span class="value">${customer.ad_soyad}</span></div>
+                                <div class="field"><span class="label">TC Kimlik:</span> <span class="value">${customer.tc_kimlik || '-'}</span></div>
+                                <div class="field"><span class="label">Telefon:</span> <span class="value">${customer.telefon}</span></div>
+                                <div class="field"><span class="label">Doğum Tarihi:</span> <span class="value">${customer.dogum_tarihi || '-'}</span></div>
+                             </div>
+                             <div>
+                                <div class="field"><span class="label">Şehir / İlçe:</span> <span class="value">${customer.sehir} / ${customer.ilce}</span></div>
+                                <div class="field"><span class="label">Meslek:</span> <span class="value">${customer.meslek_is}</span></div>
+                                <div class="field"><span class="label">Winner No:</span> <span class="value">${customer.winner_musteri_no || '-'}</span></div>
+                             </div>
+                        </div>
+
+                        <h2>Cihaz & Teslimat Bilgileri</h2>
+                        <div class="device-info">
+                            <div class="grid-2">
+                                <div>
+                                    <div class="field"><span class="label">Satılan Ürün:</span> <span class="value" style="font-size:14px; color:#1d4ed8;">${customer.talep_edilen_urun}</span></div>
+                                    <div class="field"><span class="label">Teslim Tarihi:</span> <span class="value">${customer.teslim_tarihi ? new Date(customer.teslim_tarihi).toLocaleDateString() : '-'}</span></div>
+                                </div>
+                                <div>
+                                    <div class="field"><span class="label">IMEI No:</span> <span class="value font-mono">${customer.urun_imei || '-'}</span></div>
+                                    <div class="field"><span class="label">Seri No:</span> <span class="value font-mono">${customer.urun_seri_no || '-'}</span></div>
+                                </div>
                             </div>
-                            <div class="col">
-                                <span class="manual-label">Yönetici / Onay</span>
-                                <div style="margin-top: 40px; border-top: 1px dotted #999; width: 80%; margin-left: auto; margin-right: auto;"></div>
-                                <div style="text-align: center; font-size: 10px;">İmza</div>
+                        </div>
+
+                        ${customer.kefil_ad_soyad ? `
+                        <h2>Kefil Bilgileri</h2>
+                        <div class="grid-2">
+                             <div>
+                                <div class="field"><span class="label">Ad Soyad:</span> <span class="value">${customer.kefil_ad_soyad}</span></div>
+                                <div class="field"><span class="label">TC Kimlik:</span> <span class="value">${customer.kefil_tc_kimlik || '-'}</span></div>
+                             </div>
+                             <div>
+                                <div class="field"><span class="label">Telefon:</span> <span class="value">${customer.kefil_telefon}</span></div>
+                                <div class="field"><span class="label">Meslek:</span> <span class="value">${customer.kefil_meslek_is}</span></div>
+                             </div>
+                        </div>
+                        ` : ''}
+
+                        <h2>Satıcı & Onay Notları</h2>
+                        <div class="note-box">
+                            ${customer.arama_not_kisa || 'Not girilmemiş.'}
+                        </div>
+                        
+                        <div style="margin-top:20px; font-size: 11px; text-align: justify; color: #64748b;">
+                            * Yukarıdaki bilgilerin doğruluğunu beyan ederim. Cihazı eksiksiz ve çalışır durumda teslim aldım.
+                            * Ödeme koşullarına uyacağımı taahhüt ederim.
+                        </div>
+
+                        <div class="signatures">
+                            <div class="sig-box">
+                                <div class="sig-header">MÜŞTERİ</div>
+                                <div class="sig-label">${customer.ad_soyad}<br>İmza</div>
+                            </div>
+                            <div class="sig-box">
+                                <div class="sig-header">KEFİL (Varsa)</div>
+                                <div class="sig-label">${customer.kefil_ad_soyad || ''}<br>İmza</div>
+                            </div>
+                            <div class="sig-box">
+                                <div class="sig-header">ONAYLAYAN / SATICI</div>
+                                <div class="sig-label">${customer.sahip ? customer.sahip.split('@')[0] : 'Yetkili'}<br>Kaşe & İmza</div>
                             </div>
                         </div>
 
@@ -1887,29 +2015,37 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl flex flex-col animate-in fade-in zoom-in duration-200">
-                <div className="p-4 border-b flex justify-between items-center bg-indigo-50 rounded-t-xl">
-                    <h3 className="font-bold text-indigo-900 flex items-center gap-2">
-                        📋 Yönetici Onay Özeti
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col animate-in fade-in zoom-in duration-200 overflow-hidden ring-1 ring-gray-900/5">
+                <div className="p-5 border-b flex justify-between items-center bg-gradient-to-r from-indigo-600 to-indigo-800 text-white">
+                    <h3 className="font-bold text-lg flex items-center gap-2">
+                        📋 Yönetici Onay & Teslimat Özeti
                     </h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
+                    <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-full transition-colors"><X className="w-5 h-5" /></button>
                 </div>
 
                 <div className="p-6">
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 font-mono text-sm text-gray-800 whitespace-pre-wrap leading-relaxed shadow-inner">
-                        {summaryText}
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-6 relative group">
+                        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button size="sm" variant="ghost" className="h-8 text-xs bg-white shadow-sm border" onClick={handleCopy}>Kopyala</Button>
+                        </div>
+                        <pre className="font-mono text-xs md:text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
+                            {summaryText}
+                        </pre>
                     </div>
 
-                    <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <Button variant="secondary" onClick={handleCopy} className="w-full justify-center">
-                            📋 Kopyala
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Button
+                            onClick={handleWhatsApp}
+                            className="bg-[#25D366] hover:bg-[#128C7E] text-white border-none h-12 text-md shadow-md hover:shadow-lg transition-all"
+                        >
+                            <MessageSquare className="w-5 h-5 mr-2" /> WhatsApp Gönder
                         </Button>
-                        <Button variant="ghost" onClick={handleWhatsApp} className="w-full justify-center bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border-green-200 border">
-                            💬 WhatsApp
-                        </Button>
-                        <Button variant="ghost" onClick={handlePrint} className="w-full justify-center bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-200 border">
-                            🖨️ Yazdır
+                        <Button
+                            onClick={handlePrint}
+                            className="bg-slate-800 hover:bg-slate-900 text-white border-none h-12 text-md shadow-md hover:shadow-lg transition-all"
+                        >
+                            <Printer className="w-5 h-5 mr-2" /> Resmi Rapor Yazdır
                         </Button>
                     </div>
                 </div>

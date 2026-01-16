@@ -408,68 +408,174 @@ export default function InventoryPage() {
                             </div>
 
                             <div className="border-t pt-4">
-                                <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                    <div className="w-1 h-4 bg-indigo-600 rounded"></div>
-                                    Fiyatlandırma (Toplam Tutar Giriniz)
+                                <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-1 h-4 bg-indigo-600 rounded"></div>
+                                        Fiyatlandırma
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            const alis = parseFloat((formData as any).alis_fiyati);
+                                            if (!alis) return alert('Lütfen önce alış fiyatı giriniz');
+
+                                            // 15 Ay = Alış x 2.6
+                                            const f15 = Math.ceil(alis * 2.6);
+                                            // 12 Ay = 15 Ay / 1.05
+                                            const f12 = Math.ceil(f15 / 1.05);
+                                            // 6 Ay = 12 Ay / 1.10
+                                            const f6 = Math.ceil(f12 / 1.10);
+                                            // 3 Ay = 6 Ay / 1.10
+                                            const f3 = Math.ceil(f6 / 1.10);
+
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                fiyat_15_taksit: f15.toString(),
+                                                fiyat_12_taksit: f12.toString(),
+                                                fiyat_6_taksit: f6.toString(),
+                                                fiyat_3_taksit: f3.toString()
+                                            }));
+                                        }}
+                                        className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-100 transition-colors font-medium border border-indigo-200"
+                                    >
+                                        ✨ Otomatik Hesapla
+                                    </button>
                                 </h3>
+
+                                <div className="mb-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                    <label className="block text-xs font-bold text-blue-800 mb-1">Alış Fiyatı (Maliyet)</label>
+                                    <input
+                                        type="number"
+                                        className="w-full border border-blue-200 rounded-lg p-2 text-right font-bold text-blue-900 bg-white"
+                                        placeholder="0.00"
+                                        value={(formData as any).alis_fiyati || ''}
+                                        onChange={(e) => setFormData({ ...formData, alis_fiyati: e.target.value } as any)}
+                                    />
+                                    <p className="text-[10px] text-blue-600 mt-1">
+                                        * Satış fiyatları bu tutar üzerinden hesaplanır (15 Ay = x2.6 çarpanı)
+                                    </p>
+                                </div>
+
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     <div>
                                         <label className="block text-xs font-medium text-gray-700 mb-1">3 Taksit (Toplam)</label>
-                                        <input
-                                            type="number"
-                                            className="w-full border rounded-lg p-2 text-right"
-                                            placeholder="0.00"
-                                            value={(formData as any).fiyat_3_taksit || ''}
-                                            onChange={(e) => setFormData({ ...formData, fiyat_3_taksit: e.target.value } as any)}
-                                        />
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                className="w-full border rounded-lg p-2 text-right pr-8"
+                                                placeholder="0.00"
+                                                value={(formData as any).fiyat_3_taksit || ''}
+                                                onChange={(e) => setFormData({ ...formData, fiyat_3_taksit: e.target.value } as any)}
+                                            />
+                                            <span className="absolute right-2 top-2 text-gray-400 text-xs">₺</span>
+                                        </div>
+                                        {(formData as any).fiyat_3_taksit && (
+                                            <div className="text-[10px] text-right text-gray-500 mt-0.5">
+                                                {Math.round(parseFloat((formData as any).fiyat_3_taksit) / 3).toLocaleString()} ₺/ay
+                                            </div>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="block text-xs font-medium text-gray-700 mb-1">6 Taksit (Toplam)</label>
-                                        <input
-                                            type="number"
-                                            className="w-full border rounded-lg p-2 text-right"
-                                            placeholder="0.00"
-                                            value={(formData as any).fiyat_6_taksit || ''}
-                                            onChange={(e) => setFormData({ ...formData, fiyat_6_taksit: e.target.value } as any)}
-                                        />
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                className="w-full border rounded-lg p-2 text-right pr-8"
+                                                placeholder="0.00"
+                                                value={(formData as any).fiyat_6_taksit || ''}
+                                                onChange={(e) => setFormData({ ...formData, fiyat_6_taksit: e.target.value } as any)}
+                                            />
+                                            <span className="absolute right-2 top-2 text-gray-400 text-xs">₺</span>
+                                        </div>
+                                        {(formData as any).fiyat_6_taksit && (
+                                            <div className="text-[10px] text-right text-gray-500 mt-0.5">
+                                                {Math.round(parseFloat((formData as any).fiyat_6_taksit) / 6).toLocaleString()} ₺/ay
+                                            </div>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="block text-xs font-medium text-gray-700 mb-1">12 Taksit (Toplam)</label>
-                                        <input
-                                            type="number"
-                                            className="w-full border rounded-lg p-2 text-right"
-                                            placeholder="0.00"
-                                            value={(formData as any).fiyat_12_taksit || ''}
-                                            onChange={(e) => setFormData({ ...formData, fiyat_12_taksit: e.target.value } as any)}
-                                        />
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                className="w-full border rounded-lg p-2 text-right pr-8"
+                                                placeholder="0.00"
+                                                value={(formData as any).fiyat_12_taksit || ''}
+                                                onChange={(e) => setFormData({ ...formData, fiyat_12_taksit: e.target.value } as any)}
+                                            />
+                                            <span className="absolute right-2 top-2 text-gray-400 text-xs">₺</span>
+                                        </div>
+                                        {(formData as any).fiyat_12_taksit && (
+                                            <div className="text-[10px] text-right text-gray-500 mt-0.5">
+                                                {Math.round(parseFloat((formData as any).fiyat_12_taksit) / 12).toLocaleString()} ₺/ay
+                                            </div>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="block text-xs font-medium text-gray-700 mb-1">15 Taksit (Toplam)</label>
-                                        <input
-                                            type="number"
-                                            className="w-full border rounded-lg p-2 text-right"
-                                            placeholder="0.00"
-                                            value={(formData as any).fiyat_15_taksit || ''}
-                                            onChange={(e) => setFormData({ ...formData, fiyat_15_taksit: e.target.value } as any)}
-                                        />
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                className="w-full border rounded-lg p-2 text-right pr-8"
+                                                placeholder="0.00"
+                                                value={(formData as any).fiyat_15_taksit || ''}
+                                                onChange={(e) => setFormData({ ...formData, fiyat_15_taksit: e.target.value } as any)}
+                                            />
+                                            <span className="absolute right-2 top-2 text-gray-400 text-xs">₺</span>
+                                        </div>
+                                        {(formData as any).fiyat_15_taksit && (
+                                            <div className="text-[10px] text-right text-gray-500 mt-0.5">
+                                                {Math.round(parseFloat((formData as any).fiyat_15_taksit) / 15).toLocaleString()} ₺/ay
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex justify-end gap-3 pt-4">
+                            {editingItem && (
+                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-3 mt-4">
+                                    <input
+                                        type="checkbox"
+                                        id="applyAll"
+                                        className="mt-1 w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                                        checked={(formData as any).applyToAll || false}
+                                        onChange={(e) => setFormData({ ...formData, applyToAll: e.target.checked } as any)}
+                                    />
+                                    <label htmlFor="applyAll" className="text-sm text-amber-800 cursor-pointer select-none">
+                                        <strong>Toplu Güncelleme:</strong> Bu fiyatları, aynı <u>Marka ve Model</u>'e sahip olan diğer tüm <strong>STOKTA</strong>'ki cihazlara da uygula.
+                                    </label>
+                                </div>
+                            )}
+
+                            <div className="flex justify-end gap-3 pt-6">
                                 <button
                                     type="button"
                                     onClick={() => setShowModal(false)}
-                                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                                    className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+                                    disabled={submitting}
                                 >
                                     İptal
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                                    className={`px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold shadow-md hover:bg-indigo-700 transition-all flex items-center gap-2 ${submitting ? 'opacity-70 cursor-not-allowed' : 'hover:shadow-lg hover:-translate-y-0.5'}`}
                                 >
-                                    {submitting ? 'Kaydediliyor...' : 'Kaydet'}
+                                    {submitting ? (
+                                        <>
+                                            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Kaydediliyor...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <ClipboardCheck className="w-5 h-5" />
+                                            Kaydet
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </form>
