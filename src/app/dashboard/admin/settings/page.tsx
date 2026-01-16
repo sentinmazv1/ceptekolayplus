@@ -413,6 +413,8 @@ function ImportManager() {
     const [uploading, setUploading] = useState(false);
     const [stats, setStats] = useState<any>(null);
 
+    const [deleting, setDeleting] = useState(false);
+
     const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const f = e.target.files[0];
@@ -479,6 +481,26 @@ function ImportManager() {
         }
     };
 
+    const handleBulkDelete = async () => {
+        if (!confirm('DİKKAT: Üzerinize zimmetli TÜM müşteriler silinecektir. Bu işlem geri alınamaz. Devam etmek istiyor musunuz?')) return;
+        setDeleting(true);
+        try {
+            const res = await fetch('/api/admin/bulk-delete-my-leads', { method: 'DELETE' });
+            const json = await res.json();
+            if (json.success) {
+                alert(`${json.count} adet kayıt silindi.`);
+                setPreview([]);
+                setFile(null);
+            } else {
+                alert('Silme işlemi başarısız: ' + json.error);
+            }
+        } catch (e) {
+            alert('Hata oluştu.');
+        } finally {
+            setDeleting(false);
+        }
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="bg-white p-6 rounded-xl border border-gray-200">
@@ -488,6 +510,13 @@ function ImportManager() {
                     <p className="font-medium text-gray-900">Excel (.xlsx) veya CSV Dosyasını Buraya Sürükleyin</p>
                     <p className="text-sm text-gray-500 mt-2">Format: A Sütunu (İsim), B Sütunu (Telefon), C Sütunu (Durum)</p>
                     {file && <p className="mt-4 text-green-600 font-bold bg-green-50 px-3 py-1 rounded">{file.name}</p>}
+                </div>
+
+                <div className="mt-4 flex justify-end">
+                    <Button variant="outline" onClick={handleBulkDelete} disabled={deleting || uploading} className="text-red-600 border-red-200 hover:bg-red-50">
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        {deleting ? 'Siliniyor...' : 'Hatalı Yüklenenleri Temizle (Bana Ait Olanları Sil)'}
+                    </Button>
                 </div>
             </div>
 

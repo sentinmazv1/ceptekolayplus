@@ -43,7 +43,7 @@ export interface Customer {
   meslek_is?: string;
   mulkiyet_durumu?: string;
   durum: LeadStatus;
-  sahip?: string; // Email of the sales rep
+  sahip?: string | null; // Email of the sales rep
   cekilme_zamani?: string;
   son_arama_zamani?: string;
   sonraki_arama_zamani?: string;
