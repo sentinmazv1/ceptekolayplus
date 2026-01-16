@@ -714,15 +714,19 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                             />
                                         </div>
                                         <div className="pt-2 border-t mt-2">
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={data.basvuru_kanali === 'Whatsapp'}
-                                                    onChange={(e) => handleChange('basvuru_kanali', e.target.checked ? 'Whatsapp' : 'Panel')}
-                                                    className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
-                                                />
-                                                <span className="text-sm text-gray-700">WhatsApp'tan geldi</span>
-                                            </label>
+                                            <Select
+                                                label="Başvuru Kanalı"
+                                                value={data.basvuru_kanali || ''}
+                                                onChange={(e) => handleChange('basvuru_kanali', e.target.value)}
+                                                options={[
+                                                    { value: 'Sosyal Medya', label: 'Sosyal Medya (Facebook/Instagram)' },
+                                                    { value: 'Whatsapp', label: 'WhatsApp' },
+                                                    { value: 'Google / Web', label: 'Google / Web Site' },
+                                                    { value: 'Mağaza / Fiziksel', label: 'Mağaza Ziyareti' },
+                                                    { value: 'Tavsiye / Referans', label: 'Tavsiye / Referans' },
+                                                    { value: 'Sabit Hat / Telefon', label: 'Telefon Araması' },
+                                                ]}
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -1950,9 +1954,9 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                                 <div class="sub-brand">PREMIUM ELEKTRONİK & FİNANS HİZMETLERİ</div>
                             </div>
                             <div class="meta-box">
-                                <div><strong>Müşteri No:</strong> ${customer.id.substring(0, 8).toUpperCase()}</div>
+                                <div><strong>Müşteri No:</strong> ${customer.winner_musteri_no || customer.id.substring(0, 8).toUpperCase()}</div>
                                 <div style="margin-top:2px;"><strong>Tarih:</strong> ${new Date().toLocaleDateString('tr-TR')}</div>
-                                <div style="margin-top:2px;"><strong>Satış Temsilcisi:</strong> ${customer.created_by?.split('@')[0] || '-'}</div>
+                                <div style="margin-top:2px;"><strong>Satış Temsilcisi:</strong> ${customer.sahip ? customer.sahip.split('@')[0] : (customer.created_by?.split('@')[0] || '-')}</div>
                             </div>
                         </div>
 
@@ -1967,6 +1971,7 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                                     <div class="field"><span class="label">Doğum Tarihi</span> <span class="value">${customer.dogum_tarihi || '-'}</span></div>
                                     <div class="field"><span class="label">E-Posta</span> <span class="value">${customer.email || '-'}</span></div>
                                     <div class="field"><span class="label">Şehir / İlçe</span> <span class="value">${customer.sehir || '-'} / ${customer.ilce || '-'}</span></div>
+                                    <div class="field"><span class="label">Başvuru Kanalı</span> <span class="value">${customer.basvuru_kanali || '-'}</span></div>
                                 </div>
                             </div>
                             <div class="col-6">
@@ -1989,24 +1994,45 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                                 <div class="field-group">
                                     <div class="field"><span class="label">İkametgah Belgesi</span> <span class="value">${customer.ikametgah_varmi || '-'}</span></div>
                                     <div class="field"><span class="label">Psikoteknik</span> <span class="value">${customer.psikoteknik_varmi || '-'}</span></div>
-                                    <div class="field"><span class="label">Tapu / Araç</span> <span class="value">${customer.tapu_varmi === 'Evet' ? 'VAR' : '-'} / ${customer.arac_varmi === 'Evet' ? 'VAR' : '-'}</span></div>
-                                    <div class="field"><span class="label">İcra / Dava</span> <span class="value text-red-600">${customer.acik_icra_varmi === 'Evet' || customer.dava_dosyasi_varmi === 'Evet' ? 'RİSKLİ' : 'TEMİZ'}</span></div>
+                                    <div class="field"><span class="label">Tapu Durumu</span> <span class="value">${customer.tapu_varmi === 'Evet' ? 'VAR' : 'Yok'}</span></div>
+                                    <div class="field"><span class="label">Araç Durumu</span> <span class="value">${customer.arac_varmi === 'Evet' ? 'VAR' : 'Yok'}</span></div>
                                     <div class="field"><span class="label">Avukat Sorgusu</span> <span class="value">${customer.avukat_sorgu_durumu || '-'}</span></div>
                                 </div>
                             </div>
                             <div class="col-6">
-                                <h2>📦 Ürün & Teslimat</h2>
-                                <div class="field-group" style="background: #f0f9ff; border-color: #bae6fd;">
-                                    <div class="field"><span class="label">Ürün</span> <span class="value font-bold text-blue-800">${customer.talep_edilen_urun || '-'}</span></div>
-                                    <div class="field"><span class="label">IMEI No</span> <span class="value font-mono">${customer.urun_imei || '-'}</span></div>
-                                    <div class="field"><span class="label">Seri No</span> <span class="value font-mono">${customer.urun_seri_no || '-'}</span></div>
-                                    <div class="field"><span class="label">Teslim Tarihi</span> <span class="value">${customer.teslim_tarihi ? new Date(customer.teslim_tarihi).toLocaleDateString('tr-TR') : '-'}</span></div>
-                                    <div class="field"><span class="label">Durum</span> <span class="value badge">${customer.durum}</span></div>
+                                <h2>⚠️ Risk Analizi (İcra/Dava)</h2>
+                                <div class="field-group" style="background: #fff1f2; border-color: #fecdd3;">
+                                    <div class="field"><span class="label text-red-900">Açık İcra Dosyası</span> <span class="value font-bold ${customer.acik_icra_varmi === 'Evet' ? 'text-red-600' : 'text-green-600'}">${customer.acik_icra_varmi === 'Evet' ? 'VAR' : 'YOK'}</span></div>
+                                    ${customer.acik_icra_varmi === 'Evet' ? `<div class="field" style="border-top:none; padding-top:0;"><span class="label" style="font-weight:normal; font-size:10px;">Detay:</span> <span class="value" style="font-size:10px;">${customer.acik_icra_detay || '-'}</span></div>` : ''}
+                                    
+                                    <div class="field"><span class="label text-red-900">Dava Dosyası</span> <span class="value font-bold ${customer.dava_dosyasi_varmi === 'Evet' ? 'text-red-600' : 'text-green-600'}">${customer.dava_dosyasi_varmi === 'Evet' ? 'VAR' : 'YOK'}</span></div>
+                                    ${customer.dava_dosyasi_varmi === 'Evet' ? `<div class="field" style="border-top:none; padding-top:0;"><span class="label" style="font-weight:normal; font-size:10px;">Detay:</span> <span class="value" style="font-size:10px;">${customer.dava_detay || '-'}</span></div>` : ''}
                                 </div>
                             </div>
                         </div>
 
-                        <!-- ROW 3: GUARANTOR (Conditional) -->
+                        <!-- ROW 3: PRODUCT & DELIVERY -->
+                        <div class="row">
+                             <div class="col-12" style="width:100%">
+                                <h2>📦 Ürün & Teslimat Bilgileri</h2>
+                                <div class="field-group" style="background: #f0f9ff; border-color: #bae6fd; display:flex; gap:20px;">
+                                    <div style="flex:1">
+                                        <div class="field"><span class="label">Talep Edilen Ürün</span> <span class="value font-bold text-blue-800">${customer.talep_edilen_urun || '-'}</span></div>
+                                        <div class="field"><span class="label">Ürün Bedeli / Limit</span> <span class="value font-bold">${customer.kredi_limiti || customer.talep_edilen_tutar || '-'} TL</span></div>
+                                    </div>
+                                    <div style="flex:1">
+                                        <div class="field"><span class="label">IMEI No</span> <span class="value font-mono">${customer.urun_imei || '-'}</span></div>
+                                        <div class="field"><span class="label">Seri No</span> <span class="value font-mono">${customer.urun_seri_no || '-'}</span></div>
+                                    </div>
+                                    <div style="flex:1">
+                                        <div class="field"><span class="label">Teslim Tarihi</span> <span class="value">${customer.teslim_tarihi ? new Date(customer.teslim_tarihi).toLocaleDateString('tr-TR') : '-'}</span></div>
+                                        <div class="field"><span class="label">Durum</span> <span class="value badge">${customer.durum}</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ROW 4: GUARANTOR (Conditional) -->
                         ${customer.kefil_ad_soyad ? `
                         <div class="row">
                             <div class="col-12" style="width:100%">
@@ -2030,7 +2056,8 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                         <!-- NOTES -->
                         <h2>📝 Notlar</h2>
                         <div style="border:1px solid #e2e8f0; padding:10px; font-size:11px; background:#f8fafc; border-radius:4px; min-height:40px;">
-                            ${customer.arama_not_kisa || 'Not bulunmuyor.'}
+                            <strong>Satıcı Notları:</strong> ${customer.arama_not_kisa || 'Not bulunmuyor.'}<br/>
+                            ${customer.admin_notu ? `<div style="margin-top:5px; border-top:1px dashed #cbd5e1; padding-top:5px;"><strong>Yönetici Notu:</strong> ${customer.admin_notu}</div>` : ''}
                         </div>
 
                         <!-- SIGNATURES -->
