@@ -24,7 +24,8 @@
     "react-dom": "latest",
     "recharts": "^3.6.0",
     "tailwind-merge": "^3.4.0",
-    "turkey-neighbourhoods": "^4.0.3"
+    "turkey-neighbourhoods": "^4.0.3",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

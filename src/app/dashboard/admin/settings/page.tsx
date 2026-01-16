@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Loader2, Trash2, Edit2, Plus, GripVertical, Check, X, UserPlus, Shield, Info, Upload, FileSpreadsheet, Download, Search, Phone, RefreshCcw, User, Calendar, CheckCircle } from 'lucide-react';
 import { Customer } from '@/lib/types';
+import * as XLSX from 'xlsx';
 
 export default function SettingsPage() {
     const [activeTab, setActiveTab] = useState<'statuses' | 'products' | 'users' | 'import' | 'duplicates' | 'quick_notes'>('statuses');
@@ -417,93 +418,75 @@ function ImportManager() {
             const f = e.target.files[0];
             setFile(f);
 
-            // Simple CSV Parse
             const reader = new FileReader();
             reader.onload = (evt) => {
-                const text = evt.target?.result as string;
-                if (!text) return;
+                const data = evt.target?.result;
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
 
-                const lines = text.split('\n');
-                const headers = lines[0].split(',').map(h => h.trim());
+                // Get raw data (header: 1 returns array of arrays)
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
 
-                // Preview first 5 lines
-                const parsed = lines.slice(1, 6).map(line => {
-                    const values = line.split(',');
-                    const obj: any = {};
-                    headers.forEach((h, i) => {
-                        obj[h] = values[i]?.trim();
-                    });
-                    return obj;
-                }).filter(o => o.ad_soyad || o.telefon); // Basic filter empty lines
+                // Auto-detect header row
+                let startIndex = 0;
+                if (jsonData.length > 0) {
+                    const firstRow = jsonData[0];
+                    if (firstRow && firstRow[0] && (String(firstRow[0]).toLowerCase().includes('ad') || String(firstRow[0]).toLowerCase().includes('isim'))) {
+                        startIndex = 1; // Skip header
+                    }
+                }
+
+                const parsed = jsonData.slice(startIndex).map(row => {
+                    return {
+                        ad_soyad: row[0] ? String(row[0]).trim() : '',
+                        telefon: row[1] ? String(row[1]).trim() : '',
+                        durum: row[2] ? String(row[2]).trim() : 'Yeni',
+                        tc_kimlik: row[3] ? String(row[3]).trim() : '',
+                        sehir: row[4] ? String(row[4]).trim() : ''
+                    };
+                }).filter(l => l.ad_soyad && l.ad_soyad.length > 2 && l.telefon && l.telefon.length > 6);
 
                 setPreview(parsed);
-                // Also store full data in memory? ideally yes but for simplicity we re-parse on upload or store text
             };
-            reader.readAsText(f);
+            reader.readAsArrayBuffer(f);
         }
     };
 
     const handleUpload = async () => {
-        if (!file) return;
+        if (!file || preview.length === 0) return;
         setUploading(true);
 
-        const reader = new FileReader();
-        reader.onload = async (evt) => {
-            const text = evt.target?.result as string;
-            const lines = text.split('\n');
-            const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(' ', '_'));
-            // Map common headers
-            // We expect: ad_soyad, telefon, tc_kimlik etc.
-
-            const leads = lines.slice(1).map(line => {
-                const values = line.split(',');
-                if (values.length < 2) return null; // skip empty
-
-                const obj: any = {};
-                headers.forEach((h, i) => {
-                    // Simple hygiene
-                    let key = h;
-                    if (h.includes('ad')) key = 'ad_soyad';
-                    if (h.includes('tel')) key = 'telefon';
-                    if (h.includes('tc')) key = 'tc_kimlik';
-                    if (h.includes('durum')) key = 'durum';
-                    if (h.includes('sehir') || h.includes('şehir')) key = 'sehir';
-
-                    obj[key] = values[i]?.trim();
-                });
-                return obj;
-            }).filter(l => l && l.ad_soyad && l.telefon); // Valid leads only
-
-            // Send to API
-            try {
-                const res = await fetch('/api/leads/import', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ leads })
-                });
-                const json = await res.json();
-                setStats(json.stats);
-                if (json.success) {
-                    setFile(null);
-                    setPreview([]);
-                }
-            } catch (e) {
-                alert('Yükleme hatası');
-            } finally {
-                setUploading(false);
+        try {
+            const res = await fetch('/api/leads/import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ leads: preview })
+            });
+            const json = await res.json();
+            setStats(json.stats);
+            if (json.success) {
+                setFile(null);
+                setPreview([]);
+                alert(`İşlem Tamamlandı: ${json.stats.success} başarılı, ${json.stats.error} hatalı.`);
+            } else {
+                alert('Hata: ' + json.error);
             }
-        };
-        reader.readAsText(file);
+        } catch (e) {
+            alert('Yükleme sırasında hata oluştu.');
+        } finally {
+            setUploading(false);
+        }
     };
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="bg-white p-6 rounded-xl border border-gray-200">
                 <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-12 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer relative">
-                    <input type="file" accept=".csv" onChange={handleFile} className="absolute inset-0 opacity-0 cursor-pointer" />
+                    <input type="file" accept=".xlsx, .xls, .csv" onChange={handleFile} className="absolute inset-0 opacity-0 cursor-pointer" />
                     <Upload className="w-12 h-12 text-gray-400 mb-4" />
-                    <p className="font-medium text-gray-900">CSV Dosyasını Buraya Sürükleyin veya Seçin</p>
-                    <p className="text-sm text-gray-500 mt-2">Format: ad_soyad, telefon, tc_kimlik, durum, sehir...</p>
+                    <p className="font-medium text-gray-900">Excel (.xlsx) veya CSV Dosyasını Buraya Sürükleyin</p>
+                    <p className="text-sm text-gray-500 mt-2">Format: A Sütunu (İsim), B Sütunu (Telefon), C Sütunu (Durum)</p>
                     {file && <p className="mt-4 text-green-600 font-bold bg-green-50 px-3 py-1 rounded">{file.name}</p>}
                 </div>
             </div>
