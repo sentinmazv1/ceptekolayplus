@@ -719,6 +719,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                                 value={data.basvuru_kanali || ''}
                                                 onChange={(e) => handleChange('basvuru_kanali', e.target.value)}
                                                 options={[
+                                                    { value: '', label: 'Seçiniz...' },
                                                     { value: 'Sosyal Medya', label: 'Sosyal Medya (Facebook/Instagram)' },
                                                     { value: 'Whatsapp', label: 'WhatsApp' },
                                                     { value: 'Google / Web', label: 'Google / Web Site' },
@@ -779,6 +780,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                         value={data.calisma_sekli || ''}
                                         onChange={(e) => handleChange('calisma_sekli', e.target.value)}
                                         options={[
+                                            { value: '', label: 'Seçiniz...' },
                                             { value: 'Özel Sektör (Sigortalı)', label: 'Özel Sektör (Sigortalı)' },
                                             { value: 'Kamu (Memur/Sözleşmeli)', label: 'Kamu (Memur/Sözleşmeli)' },
                                             { value: 'Emekli', label: 'Emekli' },
