@@ -7,8 +7,10 @@ import { WHATSAPP_TEMPLATES } from '@/lib/whatsapp-templates';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Select } from './ui/Select';
-import { Loader2, AlertCircle, CheckCircle, Info, Phone, Package, Smartphone, Search, RefreshCw, MessageSquare, Scale, UploadCloud, FileText, Image as ImageIcon, Briefcase, Home, ShieldCheck, X, Shield, Printer, User, Calendar } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle, Info, Phone, Package, Smartphone, Search, RefreshCw, MessageSquare, Scale, UploadCloud, FileText, Image as ImageIcon, Briefcase, Home, ShieldCheck, X, Shield, Printer, User, Calendar, ShieldAlert } from 'lucide-react';
 import { cityList, getDistrictsByCityCode } from 'turkey-neighbourhoods';
+
+
 
 
 interface CustomerCardProps {
@@ -562,6 +564,37 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
 
             {/* --- SCROLLABLE CONTENT --- */}
             < div className="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-50/50 font-sans custom-scrollbar" >
+
+                {/* ADMIN ALERTS BOARD */}
+                {(data.onay_durumu === 'Kefil İstendi' || data.onay_durumu === 'Reddedildi' || data.onay_durumu === 'Onaylandı' || (data.admin_notu && data.admin_notu.length > 2)) && (
+                    <div className={`mb-6 p-4 rounded-xl border-l-4 shadow-sm animate-in slide-in-from-top-2 duration-500 ${data.onay_durumu === 'Reddedildi' ? 'bg-red-50 border-red-500 text-red-900' :
+                        data.onay_durumu === 'Kefil İstendi' ? 'bg-orange-50 border-orange-500 text-orange-900' :
+                            data.onay_durumu === 'Onaylandı' ? 'bg-green-50 border-green-500 text-green-900' :
+                                'bg-blue-50 border-blue-500 text-blue-900'
+                        }`}>
+                        <div className="flex items-start gap-3">
+                            {data.onay_durumu === 'Reddedildi' && <ShieldAlert className="w-6 h-6 shrink-0 text-red-600" />}
+                            {data.onay_durumu === 'Kefil İstendi' && <ShieldAlert className="w-6 h-6 shrink-0 text-orange-600" />}
+                            {data.onay_durumu === 'Onaylandı' && <ShieldCheck className="w-6 h-6 shrink-0 text-green-600" />}
+                            {!['Reddedildi', 'Kefil İstendi', 'Onaylandı'].includes(data.onay_durumu || '') && <Info className="w-6 h-6 shrink-0 text-blue-600" />}
+
+                            <div className="flex-1">
+                                <h4 className="font-bold text-lg mb-1 flex items-center gap-2">
+                                    {data.onay_durumu ? data.onay_durumu.toUpperCase() : 'YÖNETİCİ NOTU'}
+                                </h4>
+                                {data.admin_notu && (
+                                    <div className="bg-white/50 p-3 rounded-lg border border-black/5 mt-2">
+                                        <p className="font-medium flex items-start gap-2">
+                                            <span className="font-bold text-sm uppercase opacity-70 shrink-0 mt-0.5">Not:</span>
+                                            {data.admin_notu}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* TABS CONTENT WILL BE INJECTED HERE */}
                 {
                     activeTab === 'details' && (
