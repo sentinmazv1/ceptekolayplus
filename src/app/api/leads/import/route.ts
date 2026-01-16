@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
                         created_at: new Date().toISOString(),
                         durum: lead.durum || 'Yeni',
                         onay_durumu: 'Bekliyor',
+                        sahip: null, // Ensure explicit null to avoid auto-assign
                     };
 
                     await addLead(newLead as Customer, session.user?.email || 'Import');

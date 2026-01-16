@@ -477,7 +477,7 @@ export async function addLead(customer: Partial<Customer>, userEmail: string): P
         tc_kimlik: customer.tc_kimlik,
         durum: customer.durum || 'Yeni',
         basvuru_kanali: 'Panel',
-        sahip_email: userEmail,
+        sahip_email: customer.sahip === null ? null : (customer.sahip || userEmail),
         created_at: new Date().toISOString(),
         // Add basic defaults if needed, but 'update' usually handles details afterwards.
     };
