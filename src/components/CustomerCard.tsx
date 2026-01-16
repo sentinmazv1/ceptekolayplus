@@ -1333,7 +1333,6 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                                                     alert('⚠️ Dosya boyutu 5MB\'dan büyük olamaz!');
                                                                     return;
                                                                 }
-                                                                loadingToast('Dosya yükleniyor...');
                                                                 setLoading(true);
                                                                 const formData = new FormData();
                                                                 formData.append('file', file);
@@ -1390,7 +1389,6 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                                                     alert('⚠️ Dosya boyutu 5MB\'dan büyük olamaz!');
                                                                     return;
                                                                 }
-                                                                loadingToast('Dosya yükleniyor...');
                                                                 setLoading(true);
                                                                 const formData = new FormData();
                                                                 formData.append('file', file);
