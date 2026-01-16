@@ -21,12 +21,37 @@ export async function DELETE(req: NextRequest) {
         // Safest: Delete leads owned by user created > 1 hour ago? No.
         // Let's Just delete ALL leads owned by the current user. They are likely an admin testing.
 
-        const { error, count } = await supabaseAdmin
+        // 1. Get IDs of leads to delete
+        // Filter: Owned by user AND Status = 'Yeni'
+        const { data: leadsToDelete, error: fetchError } = await supabaseAdmin
+            .from('leads')
+            .select('id')
+            .eq('sahip_email', session.user.email)
+            .eq('durum', 'Yeni');
+
+        if (fetchError) throw fetchError;
+
+        if (!leadsToDelete || leadsToDelete.length === 0) {
+            return NextResponse.json({ success: true, count: 0, message: 'Silinecek kayıt bulunamadı.' });
+        }
+
+        const ids = leadsToDelete.map(l => l.id);
+
+        // 2. Delete related activity logs first (Foreign Key Constraint)
+        const { error: logsError } = await supabaseAdmin
+            .from('activity_logs')
+            .delete()
+            .in('lead_id', ids);
+
+        if (logsError) throw logsError;
+
+        // 3. Delete the leads
+        const { error: deleteError, count } = await supabaseAdmin
             .from('leads')
             .delete({ count: 'exact' })
-            .eq('sahip_email', session.user.email);
+            .in('id', ids);
 
-        if (error) throw error;
+        if (deleteError) throw deleteError;
 
         return NextResponse.json({ success: true, count });
     } catch (e: any) {
