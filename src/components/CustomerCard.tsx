@@ -1977,7 +1977,7 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                                     <div class="field"><span class="label">Aylık Gelir</span> <span class="value font-bold">${customer.son_yatan_maas || '-'} TL</span></div>
                                     <div class="field"><span class="label">Kıdem (Ay)</span> <span class="value">${customer.ayni_isyerinde_sure_ay || '-'}</span></div>
                                     <div class="field"><span class="label">Ek Gelir</span> <span class="value">${customer.ek_gelir || '-'}</span></div>
-                                    <div class="field"><span class="label">Kredi Notu</span> <span class="value">${customer.kredi_notu_riski || '-'}</span></div>
+                                    <div class="field"><span class="label">Kredi Notu</span> <span class="value">${customer.findeks_risk_durumu || '-'}</span></div>
                                 </div>
                             </div>
                         </div>
