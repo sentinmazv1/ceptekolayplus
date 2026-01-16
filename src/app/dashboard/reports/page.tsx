@@ -36,6 +36,7 @@ interface ReportStats {
         approved: number;
         approvedLimit: number;
         delivered: number;
+        deliveredVolume: number;
         sale: number;
     };
     inventory: {
@@ -438,23 +439,24 @@ function SalesFunnel({ stats }: { stats: any }) {
                     />
 
                     <FunnelStep
-                        title="ONAYLANAN LİMİT"
+                        title="ONAYLANAN KREDİ"
                         value={f.approved}
                         subValue={f.approvedLimit > 0 ? formatCurrency(f.approvedLimit) : "0 ₺"}
                         icon={BadgeCheck}
                         color="text-emerald-600"
                         bg="bg-emerald-50"
-                        desc="Kiralama Onayı"
+                        desc="Onaylanan Toplam Limit"
                         step={4}
                     />
 
                     <FunnelStep
                         title="TESLİM EDİLEN"
                         value={f.delivered}
+                        subValue={f.deliveredVolume > 0 ? formatCurrency(f.deliveredVolume) : "0 ₺"}
                         icon={Package}
                         color="text-green-700"
                         bg="bg-gradient-to-br from-green-100 to-emerald-100"
-                        desc="Başarılı Satış"
+                        desc="Teslimat & Günün Cirosu"
                         isFinal
                         step={5}
                     />

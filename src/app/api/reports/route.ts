@@ -62,6 +62,7 @@ export async function GET(req: NextRequest) {
                 approved: 0,
                 approvedLimit: 0,
                 delivered: 0,
+                deliveredVolume: 0,
                 sale: 0,
             },
             performance: {} as Record<string, {
@@ -246,6 +247,17 @@ export async function GET(req: NextRequest) {
                 const dDate = row.teslim_tarihi || row.updated_at;
                 if (isInRange(dDate)) {
                     deliveredIds.add(row.id);
+
+                    // Calculate Delivered Volume (using Credit Limit as proxy for Deal Value)
+                    let limitStr = String(row.kredi_limiti || '0');
+                    limitStr = limitStr.replace(/[^0-9,.-]/g, '');
+                    if (limitStr.includes(',') && limitStr.includes('.')) {
+                        limitStr = limitStr.replace(/\./g, '').replace(',', '.');
+                    } else if (limitStr.includes(',')) {
+                        limitStr = limitStr.replace(',', '.');
+                    }
+                    const limit = parseFloat(limitStr) || 0;
+                    stats.funnel.deliveredVolume += limit;
                 }
             }
 

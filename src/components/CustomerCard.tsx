@@ -514,7 +514,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                     <div className="flex items-center gap-2">
                         <Button
                             variant="secondary"
-                            onClick={() => window.print()}
+                            onClick={() => setIsApprovalModalOpen(true)}
                             className="bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 text-xs shadow-sm"
                             title="Yazdır"
                         >
@@ -522,7 +522,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                         </Button>
                         <Button
                             variant="secondary"
-                            onClick={() => window.open('https://portal.uyap.gov.tr/vatandas/', '_blank')}
+                            onClick={handleLegalRequest}
                             className="bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 text-xs shadow-sm"
                         >
                             <Scale className="w-4 h-4 mr-2" /> İcra Servisi
@@ -532,7 +532,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                             onClick={() => setIsApprovalModalOpen(true)}
                             className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 text-xs shadow-sm"
                         >
-                            <Shield className="w-4 h-4 mr-2" /> Onay Sun
+                            <Shield className="w-4 h-4 mr-2" /> Onaya Sun
                         </Button>
                     </div>
 
@@ -1835,41 +1835,32 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
 function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; onClose: () => void; customer: Customer }) {
     if (!isOpen) return null;
 
+    // Generate Text Summary for WhatsApp
     const generateSummary = () => {
-        let summary = `*Adı :* ${customer.ad_soyad || '-'}
-*Telefon :* ${customer.telefon || '-'}
-*Doğum Tarihi :* ${customer.dogum_tarihi || '-'}
-*Talep Edilen Ürün :* ${customer.talep_edilen_urun || '-'}
-*Şehri :* ${customer.sehir || '-'} / ${customer.ilce || '-'}
-*Meslek / Son iş yeri çalışma süresi :* ${customer.meslek_is || '-'} / ${customer.ayni_isyerinde_sure_ay || '?'}
-*Son yatan maaş:* ${customer.son_yatan_maas || '-'}
-*Winner No:* ${customer.winner_musteri_no || '-'}
-*E-Devlet Şifre:* ${customer.e_devlet_sifre || '-'}
-*İkametgah:* ${customer.ikametgah_varmi || '-'}
-*Psikoteknik:* ${customer.psikoteknik_varmi || '-'}
-*Mülkiyet :* ${customer.mulkiyet_durumu || '-'}
-*Dava Dosyası :* ${customer.dava_dosyasi_varmi || '-'} ${customer.dava_detay || ''}
-*Gizli Dosyası :* ${customer.gizli_dosya_varmi || '-'} ${customer.gizli_dosya_detay || ''}
-*Açık icrası :* ${customer.acik_icra_varmi || '-'} ${customer.acik_icra_detay || ''}
-*Kapalı icra :* ${customer.kapali_icra_varmi || '-'} Açıklama: ${customer.kapali_icra_kapanis_sekli || ''}
-*Tapu Var mı :* ${customer.tapu_varmi || '-'}
-*Araç Var mı :* ${customer.arac_varmi || '-'}
-*Avukat Sorgusu :* ${customer.avukat_sorgu_durumu || '-'} Açıklaması ${customer.avukat_sorgu_sonuc || ''}`;
+        let summary = `*MÜŞTERİ KARTI & ONAY ÖZETİ*\n\n`;
+        summary += `👤 *Kişisel Bilgiler*\n`;
+        summary += `Ad Soyad: ${customer.ad_soyad}\n`;
+        summary += `TC: ${customer.tc_kimlik || '-'}\n`;
+        summary += `Tel: ${customer.telefon}\n\n`;
 
-        if (customer.arama_not_kisa) summary += `\n\n📝 *Satıcı Notu:* ${customer.arama_not_kisa}`;
-        if (customer.tapu_varmi === 'Evet' && customer.tapu_detay) summary += `\n\n🏠 *Tapu Detayı:* ${customer.tapu_detay}`;
-        if (customer.arac_varmi === 'Evet' && customer.arac_detay) summary += `\n🚗 *Araç Detayı:* ${customer.arac_detay}`;
+        summary += `💼 *İş & Finans*\n`;
+        summary += `Meslek: ${customer.meslek_is || '-'}\n`;
+        summary += `Maaş: ${customer.son_yatan_maas || '-'} TL\n`;
+        summary += `Çalışma Süresi: ${customer.ayni_isyerinde_sure_ay || '-'}\n\n`;
+
+        summary += `⚖️ *Yasal & Varlık*\n`;
+        summary += `İcra Durumu: ${customer.acik_icra_varmi === 'Evet' ? 'VAR' : 'Yok'}\n`;
+        summary += `Dava Durumu: ${customer.dava_dosyasi_varmi === 'Evet' ? 'VAR' : 'Yok'}\n`;
+        summary += `Tapu/Araç: ${customer.tapu_varmi === 'Evet' ? 'Tapu Var' : ''} ${customer.arac_varmi === 'Evet' ? 'Araç Var' : ''}\n\n`;
+
+        summary += `📱 *Cihaz & Talep*\n`;
+        summary += `Ürün: ${customer.talep_edilen_urun || '-'}\n`;
+        summary += `IMEI: ${customer.urun_imei || '-'}\n`;
 
         if (customer.kefil_ad_soyad) {
-            summary += `\n\n--- 🤝 *KEFİL BİLGİLERİ* ---\n`;
-            summary += `*Adı Soyadı:* ${customer.kefil_ad_soyad}\n`;
-            summary += `*Telefon:* ${customer.kefil_telefon || '-'}\n`;
-            summary += `*TC:* ${customer.kefil_tc_kimlik || '-'}\n`;
-            summary += `*Meslek:* ${customer.kefil_meslek_is || '-'}\n`;
-            summary += `*Maaş:* ${customer.kefil_son_yatan_maas || '-'}\n`;
-            summary += `*Çalışma Süresi:* ${customer.kefil_ayni_isyerinde_sure_ay || '-'} Ay\n`;
-            summary += `*İkametgah:* ${customer.kefil_ikametgah_varmi || '-'}\n`;
-            summary += `*İcra Durumu:* ${customer.kefil_acik_icra_varmi || '-'}`;
+            summary += `\n🤝 *Kefil*\n`;
+            summary += `Adı: ${customer.kefil_ad_soyad}\n`;
+            summary += `TC: ${customer.kefil_tc_kimlik || '-'}\n`;
         }
 
         return summary;
@@ -1879,7 +1870,7 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
 
     const handleCopy = () => {
         navigator.clipboard.writeText(summaryText);
-        alert('Metin kopyalandı! ✅');
+        alert('Özet metni kopyalandı! ✅');
     };
 
     const handleWhatsApp = () => {
@@ -1888,39 +1879,67 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
     };
 
     const handlePrint = () => {
-        const printWindow = window.open('', '', 'width=900,height=900');
+        const printWindow = window.open('', '_blank', 'width=1000,height=1000');
         if (printWindow) {
             printWindow.document.write(`
                 <html>
                     <head>
-                        <title>Teslimat & Onay Raporu - ${customer.ad_soyad}</title>
+                        <title>Müşteri Raporu - ${customer.ad_soyad}</title>
                         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
                         <style>
-                            @page { size: A4; margin: 15mm; }
-                            body { font-family: 'Inter', sans-serif; color: #1e293b; max-width: 800px; margin: 0 auto; line-height: 1.4; }
-                            .header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; items-items: center; }
-                            .brand { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: #0f172a; text-transform: uppercase; }
-                            .meta { text-align: right; font-size: 11px; color: #64748b; }
+                            @page { size: A4; margin: 10mm; }
+                            body { font-family: 'Inter', sans-serif; color: #1e293b; max-width: 210mm; margin: 0 auto; background: white; -webkit-print-color-adjust: exact; }
                             
-                            h2 { font-size: 16px; font-weight: 700; background: #f1f5f9; padding: 8px 12px; border-left: 4px solid #3b82f6; margin-top: 25px; margin-bottom: 15px; border-radius: 0 4px 4px 0; }
+                            /* Layout Utilities */
+                            .row { display: flex; gap: 15px; margin-bottom: 8px; }
+                            .col-6 { flex: 1; }
+                            .col-4 { flex: 0 0 33%; }
                             
-                            .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-                            .field { margin-bottom: 8px; font-size: 13px; }
-                            .label { font-weight: 600; color: #475569; width: 140px; display: inline-block; }
-                            .value { font-weight: 500; color: #0f172a; }
-                            
-                            .note-box { border: 1px dashed #cbd5e1; background: #f8fafc; padding: 15px; border-radius: 6px; font-size: 12px; margin-top: 10px; min-height: 60px; }
-                            
-                            .signatures { margin-top: 50px; display: flex; gap: 30px; page-break-inside: avoid; }
-                            .sig-box { flex: 1; border: 1px solid #e2e8f0; border-radius: 6px; height: 120px; position: relative; }
-                            .sig-header { background: #f1f5f9; padding: 8px; text-align: center; font-size: 12px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
-                            .sig-line { position: absolute; bottom: 30px; left: 20px; right: 20px; border-top: 1px solid #000; }
-                            .sig-label { position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; font-size: 10px; color: #64748b; }
+                            /* Header */
+                            .header { border-bottom: 3px solid #0f172a; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
+                            .brand { font-size: 26px; font-weight: 800; color: #0f172a; line-height: 1; }
+                            .sub-brand { font-size: 12px; color: #64748b; margin-top: 5px; font-weight: 500; }
+                            .meta-box { text-align: right; font-size: 11px; color: #475569; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 4px; background: #f8fafc; }
 
-                            .device-info { background: #eff6ff; border: 1px solid #dbeafe; padding: 15px; border-radius: 6px; }
+                            /* Section Headings */
+                            h2 { 
+                                font-size: 14px; 
+                                font-weight: 700; 
+                                text-transform: uppercase; 
+                                color: #fff;
+                                background: #334155;
+                                padding: 6px 10px;
+                                margin: 15px 0 10px 0;
+                                border-radius: 4px;
+                                display: flex;
+                                align-items: center;
+                                gap: 8px;
+                            }
+                            
+                            /* Data Fields */
+                            .field-group { background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; height: 100%; box-sizing: border-box; }
+                            .field { display: flex; justify-content: space-between; border-bottom: 1px dashed #e2e8f0; padding: 4px 0; font-size: 11px; }
+                            .field:last-child { border-bottom: none; }
+                            .label { font-weight: 600; color: #64748b; }
+                            .value { font-weight: 500; color: #0f172a; text-align: right; }
+                            
+
+                            /* Signatures */
+                            .signatures-container { 
+                                margin-top: 30px; 
+                                border-top: 2px dashed #cbd5e1; 
+                                padding-top: 20px;
+                                page-break-inside: avoid;
+                            }
+                            .legal-text { font-size: 9px; color: #64748b; text-align: justify; margin-bottom: 20px; line-height: 1.3; }
+                            .sig-grid { display: flex; gap: 20px; }
+                            .sig-box { flex: 1; border: 1px solid #cbd5e1; height: 100px; border-radius: 4px; position: relative; background: #fdfdfd; }
+                            .sig-title { background: #f1f5f9; font-size: 10px; font-weight: 700; text-align: center; padding: 4px; border-bottom: 1px solid #cbd5e1; color: #334155; }
+                            .sig-name { position: absolute; bottom: 5px; width: 100%; text-align: center; font-size: 10px; font-weight: 600; color: #0f172a; }
 
                             @media print {
-                                body { -webkit-print-color-adjust: exact; }
+                                body { margin: 0; padding: 0; }
+                                .no-print { display: none; }
                             }
                         </style>
                     </head>
@@ -1928,83 +1947,119 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                         <div class="header">
                             <div>
                                 <div class="brand">CEPTE KOLAY</div>
-                                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Elektronik Cihaz Satış & Finansman Hizmetleri</div>
+                                <div class="sub-brand">PREMIUM ELEKTRONİK & FİNANS HİZMETLERİ</div>
                             </div>
-                            <div class="meta">
-                                Tarih: ${new Date().toLocaleDateString('tr-TR')}<br>
-                                Ref No: ${customer.id.substring(0, 8).toUpperCase()}
+                            <div class="meta-box">
+                                <div><strong>Müşteri No:</strong> ${customer.id.substring(0, 8).toUpperCase()}</div>
+                                <div style="margin-top:2px;"><strong>Tarih:</strong> ${new Date().toLocaleDateString('tr-TR')}</div>
+                                <div style="margin-top:2px;"><strong>Satış Temsilcisi:</strong> ${customer.created_by?.split('@')[0] || '-'}</div>
                             </div>
                         </div>
 
-                        <h2>Müşteri Bilgileri</h2>
-                        <div class="grid-2">
-                             <div>
-                                <div class="field"><span class="label">Ad Soyad:</span> <span class="value">${customer.ad_soyad}</span></div>
-                                <div class="field"><span class="label">TC Kimlik:</span> <span class="value">${customer.tc_kimlik || '-'}</span></div>
-                                <div class="field"><span class="label">Telefon:</span> <span class="value">${customer.telefon}</span></div>
-                                <div class="field"><span class="label">Doğum Tarihi:</span> <span class="value">${customer.dogum_tarihi || '-'}</span></div>
-                             </div>
-                             <div>
-                                <div class="field"><span class="label">Şehir / İlçe:</span> <span class="value">${customer.sehir} / ${customer.ilce}</span></div>
-                                <div class="field"><span class="label">Meslek:</span> <span class="value">${customer.meslek_is}</span></div>
-                                <div class="field"><span class="label">Winner No:</span> <span class="value">${customer.winner_musteri_no || '-'}</span></div>
-                             </div>
-                        </div>
-
-                        <h2>Cihaz & Teslimat Bilgileri</h2>
-                        <div class="device-info">
-                            <div class="grid-2">
-                                <div>
-                                    <div class="field"><span class="label">Satılan Ürün:</span> <span class="value" style="font-size:14px; color:#1d4ed8;">${customer.talep_edilen_urun}</span></div>
-                                    <div class="field"><span class="label">Teslim Tarihi:</span> <span class="value">${customer.teslim_tarihi ? new Date(customer.teslim_tarihi).toLocaleDateString() : '-'}</span></div>
+                        <!-- ROW 1: PERSONAL & WORK -->
+                        <div class="row">
+                            <div class="col-6">
+                                <h2>👤 Müşteri Kimlik Bilgileri</h2>
+                                <div class="field-group">
+                                    <div class="field"><span class="label">Ad Soyad</span> <span class="value">${customer.ad_soyad}</span></div>
+                                    <div class="field"><span class="label">TC Kimlik No</span> <span class="value">${customer.tc_kimlik || '-'}</span></div>
+                                    <div class="field"><span class="label">Telefon</span> <span class="value">${customer.telefon}</span></div>
+                                    <div class="field"><span class="label">Doğum Tarihi</span> <span class="value">${customer.dogum_tarihi || '-'}</span></div>
+                                    <div class="field"><span class="label">E-Posta</span> <span class="value">${customer.email || '-'}</span></div>
+                                    <div class="field"><span class="label">Şehir / İlçe</span> <span class="value">${customer.sehir || '-'} / ${customer.ilce || '-'}</span></div>
                                 </div>
-                                <div>
-                                    <div class="field"><span class="label">IMEI No:</span> <span class="value font-mono">${customer.urun_imei || '-'}</span></div>
-                                    <div class="field"><span class="label">Seri No:</span> <span class="value font-mono">${customer.urun_seri_no || '-'}</span></div>
+                            </div>
+                            <div class="col-6">
+                                <h2>💼 İş & Finansal Durum</h2>
+                                <div class="field-group">
+                                    <div class="field"><span class="label">Meslek / Ünvan</span> <span class="value">${customer.meslek_is || '-'}</span></div>
+                                    <div class="field"><span class="label">Çalışma Şekli</span> <span class="value">${customer.calisma_sekli || '-'}</span></div>
+                                    <div class="field"><span class="label">Aylık Gelir</span> <span class="value font-bold">${customer.son_yatan_maas || '-'} TL</span></div>
+                                    <div class="field"><span class="label">Kıdem (Ay)</span> <span class="value">${customer.ayni_isyerinde_sure_ay || '-'}</span></div>
+                                    <div class="field"><span class="label">Ek Gelir</span> <span class="value">${customer.ek_gelir || '-'}</span></div>
+                                    <div class="field"><span class="label">Kredi Notu</span> <span class="value">${customer.kredi_notu_riski || '-'}</span></div>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- ROW 2: LEGAL & ASSETS -->
+                        <div class="row">
+                            <div class="col-6">
+                                <h2>⚖️ Yasal Durum & Varlıklar</h2>
+                                <div class="field-group">
+                                    <div class="field"><span class="label">İkametgah Belgesi</span> <span class="value">${customer.ikametgah_varmi || '-'}</span></div>
+                                    <div class="field"><span class="label">Psikoteknik</span> <span class="value">${customer.psikoteknik_varmi || '-'}</span></div>
+                                    <div class="field"><span class="label">Tapu / Araç</span> <span class="value">${customer.tapu_varmi === 'Evet' ? 'VAR' : '-'} / ${customer.arac_varmi === 'Evet' ? 'VAR' : '-'}</span></div>
+                                    <div class="field"><span class="label">İcra / Dava</span> <span class="value text-red-600">${customer.acik_icra_varmi === 'Evet' || customer.dava_dosyasi_varmi === 'Evet' ? 'RİSKLİ' : 'TEMİZ'}</span></div>
+                                    <div class="field"><span class="label">Avukat Sorgusu</span> <span class="value">${customer.avukat_sorgu_durumu || '-'}</span></div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <h2>📦 Ürün & Teslimat</h2>
+                                <div class="field-group" style="background: #f0f9ff; border-color: #bae6fd;">
+                                    <div class="field"><span class="label">Ürün</span> <span class="value font-bold text-blue-800">${customer.talep_edilen_urun || '-'}</span></div>
+                                    <div class="field"><span class="label">IMEI No</span> <span class="value font-mono">${customer.urun_imei || '-'}</span></div>
+                                    <div class="field"><span class="label">Seri No</span> <span class="value font-mono">${customer.urun_seri_no || '-'}</span></div>
+                                    <div class="field"><span class="label">Teslim Tarihi</span> <span class="value">${customer.teslim_tarihi ? new Date(customer.teslim_tarihi).toLocaleDateString('tr-TR') : '-'}</span></div>
+                                    <div class="field"><span class="label">Durum</span> <span class="value badge">${customer.durum}</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ROW 3: GUARANTOR (Conditional) -->
                         ${customer.kefil_ad_soyad ? `
-                        <h2>Kefil Bilgileri</h2>
-                        <div class="grid-2">
-                             <div>
-                                <div class="field"><span class="label">Ad Soyad:</span> <span class="value">${customer.kefil_ad_soyad}</span></div>
-                                <div class="field"><span class="label">TC Kimlik:</span> <span class="value">${customer.kefil_tc_kimlik || '-'}</span></div>
-                             </div>
-                             <div>
-                                <div class="field"><span class="label">Telefon:</span> <span class="value">${customer.kefil_telefon}</span></div>
-                                <div class="field"><span class="label">Meslek:</span> <span class="value">${customer.kefil_meslek_is}</span></div>
-                             </div>
+                        <div class="row">
+                            <div class="col-12" style="width:100%">
+                                <h2>🤝 Kefil Bilgileri</h2>
+                                <div class="field-group row" style="display:flex; gap:20px;">
+                                    <div style="flex:1">
+                                        <div class="field"><span class="label">Ad Soyad</span> <span class="value">${customer.kefil_ad_soyad}</span></div>
+                                        <div class="field"><span class="label">TC Kimlik</span> <span class="value">${customer.kefil_tc_kimlik || '-'}</span></div>
+                                        <div class="field"><span class="label">Telefon</span> <span class="value">${customer.kefil_telefon || '-'}</span></div>
+                                    </div>
+                                    <div style="flex:1">
+                                        <div class="field"><span class="label">Meslek</span> <span class="value">${customer.kefil_meslek_is || '-'}</span></div>
+                                        <div class="field"><span class="label">Maaş</span> <span class="value">${customer.kefil_son_yatan_maas || '-'}</span></div>
+                                        <div class="field"><span class="label">İkametgah</span> <span class="value">${customer.kefil_ikametgah_varmi || '-'}</span></div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         ` : ''}
 
-                        <h2>Satıcı & Onay Notları</h2>
-                        <div class="note-box">
-                            ${customer.arama_not_kisa || 'Not girilmemiş.'}
-                        </div>
-                        
-                        <div style="margin-top:20px; font-size: 11px; text-align: justify; color: #64748b;">
-                            * Yukarıdaki bilgilerin doğruluğunu beyan ederim. Cihazı eksiksiz ve çalışır durumda teslim aldım.
-                            * Ödeme koşullarına uyacağımı taahhüt ederim.
+                        <!-- NOTES -->
+                        <h2>📝 Notlar</h2>
+                        <div style="border:1px solid #e2e8f0; padding:10px; font-size:11px; background:#f8fafc; border-radius:4px; min-height:40px;">
+                            ${customer.arama_not_kisa || 'Not bulunmuyor.'}
                         </div>
 
-                        <div class="signatures">
-                            <div class="sig-box">
-                                <div class="sig-header">MÜŞTERİ</div>
-                                <div class="sig-label">${customer.ad_soyad}<br>İmza</div>
+                        <!-- SIGNATURES -->
+                        <div class="signatures-container">
+                            <div class="legal-text">
+                                Yukarıdaki bilgilerin doğruluğunu beyan ederim. Cihazı eksiksiz, ayıpsız ve çalışır durumda, kutusu ve aksesuarları ile birlikte teslim aldım. 
+                                Ödeme planına ve sözleşme şartlarına uyacağımı, aksi takdirde yasal yollara başvurulacağını kabul ve taahhüt ederim.
                             </div>
-                            <div class="sig-box">
-                                <div class="sig-header">KEFİL (Varsa)</div>
-                                <div class="sig-label">${customer.kefil_ad_soyad || ''}<br>İmza</div>
-                            </div>
-                            <div class="sig-box">
-                                <div class="sig-header">ONAYLAYAN / SATICI</div>
-                                <div class="sig-label">${customer.sahip ? customer.sahip.split('@')[0] : 'Yetkili'}<br>Kaşe & İmza</div>
+                            <div class="sig-grid">
+                                <div class="sig-box">
+                                    <div class="sig-title">TESLİM ALAN MÜŞTERİ</div>
+                                    <div class="sig-name">${customer.ad_soyad}</div>
+                                </div>
+                                ${customer.kefil_ad_soyad ? `
+                                <div class="sig-box">
+                                    <div class="sig-title">MÜTESELSİL KEFİL</div>
+                                    <div class="sig-name">${customer.kefil_ad_soyad}</div>
+                                </div>
+                                ` : ''}
+                                <div class="sig-box">
+                                    <div class="sig-title">MAĞAZA YETKİLİSİ</div>
+                                    <div class="sig-name">${customer.sahip ? customer.sahip.split('@')[0] : 'Yetkili'}</div>
+                                </div>
                             </div>
                         </div>
 
-                        <script>window.print();</script>
+                        <script>
+                            window.print();
+                        </script>
                     </body>
                 </html>
             `);
@@ -2014,37 +2069,45 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col animate-in fade-in zoom-in duration-200 overflow-hidden ring-1 ring-gray-900/5">
-                <div className="p-5 border-b flex justify-between items-center bg-gradient-to-r from-indigo-600 to-indigo-800 text-white">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col animate-in fade-in zoom-in duration-200 overflow-hidden ring-1 ring-gray-900/5">
+                <div className="p-4 border-b flex justify-between items-center bg-gradient-to-r from-slate-800 to-slate-900 text-white">
                     <h3 className="font-bold text-lg flex items-center gap-2">
-                        📋 Yönetici Onay & Teslimat Özeti
+                        <Printer className="w-5 h-5 text-indigo-300" /> Rapor & Çıktı Merkezi
                     </h3>
                     <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-full transition-colors"><X className="w-5 h-5" /></button>
                 </div>
 
-                <div className="p-6">
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-6 relative group">
-                        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button size="sm" variant="ghost" className="h-8 text-xs bg-white shadow-sm border" onClick={handleCopy}>Kopyala</Button>
-                        </div>
-                        <pre className="font-mono text-xs md:text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
-                            {summaryText}
-                        </pre>
+                <div className="p-6 space-y-4">
+                    <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-lg text-sm text-indigo-900">
+                        <p className="font-semibold mb-1">🖨️ Premium A4 Çıktı</p>
+                        <p className="opacity-80">Müşterinin tüm bilgilerini (Kişisel, İş, Yasal, Ürün) ve gerekli imza alanlarını içeren resmi teslimat formunu yazdırır.</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Button
-                            onClick={handleWhatsApp}
-                            className="bg-[#25D366] hover:bg-[#128C7E] text-white border-none h-12 text-md shadow-md hover:shadow-lg transition-all"
-                        >
-                            <MessageSquare className="w-5 h-5 mr-2" /> WhatsApp Gönder
-                        </Button>
+                    <div className="grid grid-cols-1 gap-3">
                         <Button
                             onClick={handlePrint}
-                            className="bg-slate-800 hover:bg-slate-900 text-white border-none h-12 text-md shadow-md hover:shadow-lg transition-all"
+                            className="bg-slate-900 hover:bg-slate-800 text-white h-14 text-lg shadow-xl transition-all flex items-center justify-center gap-3"
                         >
-                            <Printer className="w-5 h-5 mr-2" /> Resmi Rapor Yazdır
+                            <Printer className="w-6 h-6" />
+                            <span>RAporu Yazdır (A4)</span>
                         </Button>
+
+                        <div className="grid grid-cols-2 gap-3 mt-2">
+                            <Button
+                                variant="secondary"
+                                onClick={handleWhatsApp}
+                                className="h-10 text-sm border-gray-300"
+                            >
+                                <MessageSquare className="w-4 h-4 mr-2 text-green-600" /> WhatsApp Özet
+                            </Button>
+                            <Button
+                                variant="secondary"
+                                onClick={handleCopy}
+                                className="h-10 text-sm border-gray-300"
+                            >
+                                <FileText className="w-4 h-4 mr-2 text-blue-600" /> Özeti Kopyala
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </div>
