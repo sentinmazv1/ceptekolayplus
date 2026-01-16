@@ -220,8 +220,23 @@ export async function lockNextLead(userEmail: string): Promise<(Customer & { sou
         target = resSched.data[0];
         source = '📅 Randevu';
     }
-    // Check Retry (Warm leads)
-    else if (resRetry.data && resRetry.data.length > 0) {
+    // Check Automation / New (Prioritize Fresh over Retry)
+    if (!target) {
+        const autoLeads = resAuto.data || [];
+        const emptyLead = autoLeads.find((l: any) => !l.durum || l.durum === '');
+        const newLead = autoLeads.find((l: any) => l.durum === 'Yeni');
+
+        if (emptyLead) {
+            target = emptyLead;
+            source = '🤖 Otomasyon';
+        } else if (newLead) {
+            target = newLead;
+            source = '🆕 Yeni Kayıt';
+        }
+    }
+
+    // Check Retry (Warm leads) - Only if no New/Auto found
+    if (!target && resRetry.data && resRetry.data.length > 0) {
         const nowTime = Date.now();
         const oneDayMs = 24 * 60 * 60 * 1000;
         const safetyBufferMs = 15 * 60 * 1000; // 15 Minutes waiting period
@@ -236,21 +251,6 @@ export async function lockNextLead(userEmail: string): Promise<(Customer & { sou
         if (validRetry) {
             target = validRetry;
             source = '♻️ Tekrar Arama (Son 24s)';
-        }
-    }
-
-    // Check Automation / New (If no scheduled or valid retry found)
-    if (!target) {
-        const autoLeads = resAuto.data || [];
-        const emptyLead = autoLeads.find((l: any) => !l.durum || l.durum === '');
-        const newLead = autoLeads.find((l: any) => l.durum === 'Yeni');
-
-        if (emptyLead) {
-            target = emptyLead;
-            source = '🤖 Otomasyon';
-        } else if (newLead) {
-            target = newLead;
-            source = '🆕 Yeni Kayıt';
         }
     }
 
