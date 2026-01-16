@@ -1995,7 +1995,9 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                                     <div class="field"><span class="label">İkametgah Belgesi</span> <span class="value">${customer.ikametgah_varmi || '-'}</span></div>
                                     <div class="field"><span class="label">Psikoteknik</span> <span class="value">${customer.psikoteknik_varmi || '-'}</span></div>
                                     <div class="field"><span class="label">Tapu Durumu</span> <span class="value">${customer.tapu_varmi === 'Evet' ? 'VAR' : 'Yok'}</span></div>
+                                    ${customer.tapu_varmi === 'Evet' ? `<div class="field" style="border-top:none; padding-top:0;"><span class="label" style="font-weight:normal; font-size:10px;">Detay:</span> <span class="value" style="font-size:10px;">${customer.tapu_detay || '-'}</span></div>` : ''}
                                     <div class="field"><span class="label">Araç Durumu</span> <span class="value">${customer.arac_varmi === 'Evet' ? 'VAR' : 'Yok'}</span></div>
+                                    ${customer.arac_varmi === 'Evet' ? `<div class="field" style="border-top:none; padding-top:0;"><span class="label" style="font-weight:normal; font-size:10px;">Detay:</span> <span class="value" style="font-size:10px;">${customer.arac_detay || '-'}</span></div>` : ''}
                                     <div class="field"><span class="label">Avukat Sorgusu</span> <span class="value">${customer.avukat_sorgu_durumu || '-'}</span></div>
                                 </div>
                             </div>
@@ -2007,6 +2009,9 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                                     
                                     <div class="field"><span class="label text-red-900">Dava Dosyası</span> <span class="value font-bold ${customer.dava_dosyasi_varmi === 'Evet' ? 'text-red-600' : 'text-green-600'}">${customer.dava_dosyasi_varmi === 'Evet' ? 'VAR' : 'YOK'}</span></div>
                                     ${customer.dava_dosyasi_varmi === 'Evet' ? `<div class="field" style="border-top:none; padding-top:0;"><span class="label" style="font-weight:normal; font-size:10px;">Detay:</span> <span class="value" style="font-size:10px;">${customer.dava_detay || '-'}</span></div>` : ''}
+
+                                    <div class="field"><span class="label text-gray-700">Kapalı İcra</span> <span class="value font-bold">${customer.kapali_icra_varmi === 'Evet' ? 'VAR' : 'YOK'}</span></div>
+                                    ${customer.kapali_icra_varmi === 'Evet' ? `<div class="field" style="border-top:none; padding-top:0;"><span class="label" style="font-weight:normal; font-size:10px;">Detay:</span> <span class="value" style="font-size:10px;">${customer.kapali_icra_kapanis_sekli || '-'}</span></div>` : ''}
                                 </div>
                             </div>
                         </div>
