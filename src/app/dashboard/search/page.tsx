@@ -16,7 +16,7 @@ interface SearchResult {
     durum: string;
     created_at?: string;
     updated_at?: string;
-    sahip?: string;
+    sahip?: string | null;
 
     // Call Details
     cekilme_zamani?: string;
