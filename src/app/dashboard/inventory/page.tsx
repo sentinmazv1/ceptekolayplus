@@ -165,9 +165,9 @@ export default function InventoryPage() {
             </div>
 
             {/* Filters & Search & Summary */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 print:hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 {/* Main Filters */}
-                <div className="lg:col-span-3 space-y-4">
+                <div className="lg:col-span-3 space-y-4 print:hidden">
                     <div className="bg-white p-1 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
                         {/* Filter Tabs */}
                         <div className="flex p-1 bg-gray-100 rounded-lg w-full md:w-auto">
@@ -206,35 +206,40 @@ export default function InventoryPage() {
                 </div>
 
                 {/* Stock Summary Card */}
-                <div className="lg:col-span-1">
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                        <div className="bg-indigo-50 px-4 py-3 border-b border-indigo-100">
-                            <h3 className="text-xs font-bold text-indigo-800 uppercase tracking-wider flex items-center gap-2">
-                                <TrendingUp className="w-4 h-4" />
-                                Stok Özeti
+                <div className="lg:col-span-1 print:block print:w-full print:mb-8">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden print:border-none print:shadow-none">
+                        <div className="bg-indigo-50 px-4 py-3 border-b border-indigo-100 flex justify-between items-center print:bg-white print:border-b-2 print:border-gray-800 print:px-0">
+                            <h3 className="text-xs font-bold text-indigo-800 uppercase tracking-wider flex items-center gap-2 print:text-black print:text-lg">
+                                <TrendingUp className="w-4 h-4 print:hidden" />
+                                Stok Özeti (Marka & Model)
                             </h3>
+                            <button onClick={() => window.print()} className="text-indigo-600 hover:text-indigo-800 print:hidden" title="Sadece Özeti Yazdır">
+                                <Printer className="w-4 h-4" />
+                            </button>
                         </div>
-                        <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200">
-                            <table className="w-full text-xs">
-                                <thead className="bg-gray-50 text-gray-500 sticky top-0">
+                        <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 print:max-h-none print:overflow-visible">
+                            <table className="w-full text-xs print:text-sm">
+                                <thead className="bg-gray-50 text-gray-500 sticky top-0 print:static print:bg-transparent print:text-black print:border-b">
                                     <tr>
-                                        <th className="px-3 py-2 text-left">Model</th>
+                                        <th className="px-3 py-2 text-left">Cihaz (Marka + Model)</th>
                                         <th className="px-3 py-2 text-right">Adet</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-50">
+                                <tbody className="divide-y divide-gray-50 print:divide-gray-200">
                                     {Object.entries(
                                         items.filter(i => i.durum === 'STOKTA').reduce((acc, curr) => {
-                                            const key = curr.model;
+                                            const key = `${curr.marka || ''} ${curr.model || ''}`.trim();
                                             acc[key] = (acc[key] || 0) + 1;
                                             return acc;
                                         }, {} as Record<string, number>)
                                     )
-                                        .sort((a, b) => b[1] - a[1])
-                                        .map(([model, count]) => (
-                                            <tr key={model} className="hover:bg-gray-50">
-                                                <td className="px-3 py-2 font-medium text-gray-700 truncate max-w-[150px]" title={model}>{model}</td>
-                                                <td className="px-3 py-2 text-right font-bold text-gray-900 bg-gray-50/50">{count}</td>
+                                        .sort((a, b) => b[1] - a[1]) // Sort by count desc
+                                        .map(([name, count]) => (
+                                            <tr key={name} className="hover:bg-gray-50 print:hover:bg-transparent">
+                                                <td className="px-3 py-2 font-medium text-gray-700 truncate max-w-[150px] print:max-w-none print:text-black print:overflow-visible print:whitespace-normal">
+                                                    {name}
+                                                </td>
+                                                <td className="px-3 py-2 text-right font-bold text-gray-900 bg-gray-50/50 print:bg-transparent print:text-black">{count}</td>
                                             </tr>
                                         ))}
                                     {items.filter(i => i.durum === 'STOKTA').length === 0 && (
@@ -243,10 +248,10 @@ export default function InventoryPage() {
                                 </tbody>
                             </table>
                         </div>
-                        <div className="bg-gray-50 px-4 py-2 border-t border-gray-100 flex justify-between items-center text-xs">
-                            <span className="text-gray-500 font-medium">Toplam</span>
-                            <span className="font-black text-gray-900 bg-white px-2 py-0.5 rounded border border-gray-200">
-                                {items.filter(i => i.durum === 'STOKTA').length}
+                        <div className="bg-gray-50 px-4 py-2 border-t border-gray-100 flex justify-between items-center text-xs print:bg-white print:border-t-2 print:border-gray-800 print:px-0 print:mt-2 print:text-sm">
+                            <span className="text-gray-500 font-medium print:text-black">Genel Toplam</span>
+                            <span className="font-black text-gray-900 bg-white px-2 py-0.5 rounded border border-gray-200 print:border-none print:px-0">
+                                {items.filter(i => i.durum === 'STOKTA').length} Cihaz
                             </span>
                         </div>
                     </div>

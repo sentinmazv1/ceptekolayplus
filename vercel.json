@@ -12,10 +12,4 @@
   "regions": [
     "fra1"
   ],
-  "crons": [
-    {
-      "path": "/api/cron/sync-sheets",
-      "schedule": "0 8 * * *"
-    }
-  ]
 }

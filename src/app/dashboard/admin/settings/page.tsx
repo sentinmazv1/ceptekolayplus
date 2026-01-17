@@ -59,6 +59,7 @@ export default function SettingsPage() {
         { id: 'products', label: 'Ürünler & Fiyatlar' },
         { id: 'users', label: 'Kullanıcı Yönetimi' },
         { id: 'import', label: 'Toplu Veri Yükleme' },
+        { id: 'sync_sheets', label: 'Google Sheets Entegrasyonu' },
         { id: 'duplicates', label: 'Mükerrer Kayıt Kontrol' },
     ];
 
@@ -91,6 +92,7 @@ export default function SettingsPage() {
                     {activeTab === 'products' && <ProductManager products={products} refresh={fetchData} />}
                     {activeTab === 'users' && <UserManager users={users} refresh={fetchData} />}
                     {activeTab === 'import' && <ImportManager />}
+                    {activeTab === 'sync_sheets' && <SyncManager />}
                     {activeTab === 'duplicates' && <DuplicateManager groups={duplicateGroups} refresh={fetchData} />}
                     {activeTab === 'quick_notes' && <QuickNotesManager notes={quickNotes} refresh={fetchData} />}
                 </>
@@ -101,100 +103,157 @@ export default function SettingsPage() {
 
 // --- SUB COMPONENTS ---
 
-function StatusManager({ statuses, refresh }: { statuses: any[], refresh: () => void }) {
-    const [newStatus, setNewStatus] = useState('');
-    const [newColor, setNewColor] = useState('gray');
-    const [editingId, setEditingId] = useState<string | null>(null);
-    const [editLabel, setEditLabel] = useState('');
-    const [editColor, setEditColor] = useState('');
+function SyncManager() {
+    const [syncing, setSyncing] = useState(false);
+    const [lastResult, setLastResult] = useState<any>(null);
 
-    async function addStatus(e: React.FormEvent) {
-        e.preventDefault();
-        await fetch('/api/admin/statuses', {
-            method: 'POST',
-            body: JSON.stringify({ label: newStatus, color: newColor })
-        });
-        setNewStatus('');
-        refresh();
-    }
-
-    async function toggleActive(id: string, current: boolean) {
-        await fetch('/api/admin/statuses', {
-            method: 'PATCH',
-            body: JSON.stringify({ id, is_active: !current })
-        });
-        refresh();
-    }
-
-    async function deleteStatus(id: string) {
-        if (!confirm('Bu durumu silmek istediğinize emin misiniz?')) return;
-        const res = await fetch(`/api/admin/statuses?id=${id}`, { method: 'DELETE' });
-        if (res.ok) refresh();
-        else alert('Silinemedi.');
-    }
-
-    async function saveEdit(id: string) {
-        await fetch('/api/admin/statuses', {
-            method: 'PUT',
-            body: JSON.stringify({ id, label: editLabel, color: editColor })
-        });
-        setEditingId(null);
-        refresh();
-    }
+    const handleSync = async () => {
+        setSyncing(true);
+        setLastResult(null);
+        try {
+            const res = await fetch('/api/admin/sync-sheets', { method: 'POST' });
+            const json = await res.json();
+            setLastResult(json);
+        } catch (error) {
+            setLastResult({ success: false, error: 'Bağlantı hatası' });
+        } finally {
+            setSyncing(false);
+        }
+    };
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                <h3 className="font-semibold mb-3">Yeni Durum Ekle</h3>
-                <form onSubmit={addStatus} className="flex gap-2">
-                    <input className="border rounded px-3 py-2 flex-1" placeholder="Örn: Kargoya Verildi" value={newStatus} onChange={e => setNewStatus(e.target.value)} required />
-                    <select className="border rounded px-3 py-2" value={newColor} onChange={e => setNewColor(e.target.value)}>
-                        <option value="gray">Gri</option>
-                        <option value="blue">Mavi</option>
-                        <option value="green">Yeşil</option>
-                        <option value="red">Kırmızı</option>
-                        <option value="yellow">Sarı</option>
-                        <option value="orange">Turuncu</option>
-                    </select>
-                    <Button type="submit">Ekle</Button>
-                </form>
-            </div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 divide-y">
-                {statuses.map((s) => (
-                    <div key={s.id} className="p-4 flex items-center justify-between">
-                        {editingId === s.id ? (
-                            <div className="flex items-center gap-2 flex-1">
-                                <input value={editLabel} onChange={e => setEditLabel(e.target.value)} className="border rounded px-2 py-1 flex-1" />
-                                <select value={editColor} onChange={e => setEditColor(e.target.value)} className="border rounded px-2 py-1">
-                                    <option value="gray">Gri</option>
-                                    <option value="blue">Mavi</option>
-                                    <option value="green">Yeşil</option>
-                                    <option value="red">Kırmızı</option>
-                                    <option value="yellow">Sarı</option>
-                                    <option value="orange">Turuncu</option>
-                                </select>
-                                <Button size="sm" onClick={() => saveEdit(s.id)}><Check className="w-4 h-4" /></Button>
-                                <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}><X className="w-4 h-4" /></Button>
+            <div className="bg-white p-6 rounded-xl border border-gray-200">
+                <div className="flex items-start gap-4">
+                    <div className="p-3 bg-green-50 rounded-lg">
+                        <FileSpreadsheet className="w-8 h-8 text-green-600" />
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900">Google Sheets Veri Çekme</h3>
+                        <p className="text-gray-500 mt-1">
+                            Bağlı Google E-Tablolarındaki "Aranma Talepleri" ve "E-Devlet Verenler" sayfalarını kontrol eder ve yeni kayıtları sisteme ekler.
+                            <br />
+                            <span className="text-xs text-orange-600 font-medium">Not: Bu işlem arka planda otomatik yapılmaz, verileri çekmek için butona basmalısınız.</span>
+                        </p>
+
+                        <div className="mt-6">
+                            <Button onClick={handleSync} disabled={syncing} size="lg" className="bg-green-600 hover:bg-green-700">
+                                {syncing ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <RefreshCcw className="w-5 h-5 mr-2" />}
+                                {syncing ? 'Eşitleniyor...' : 'Şimdi Eşitle'}
+                            </Button>
+                        </div>
+
+                        {lastResult && (
+                            <div className={`mt-6 p-4 rounded-lg border ${lastResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                                {lastResult.success ? (
+                                    <>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <CheckCircle className="w-5 h-5 text-green-600" />
+                                            <span className="font-bold text-green-800">Senkronizasyon Başarılı</span>
+                                        </div>
+                                        <ul className="text-sm text-green-700 space-y-1 ml-7 list-disc">
+                                            <li>Aranma Talebi: <b>{lastResult.stats.aranma_talebi}</b> yeni kayıt</li>
+                                            <li>E-Devlet Veren: <b>{lastResult.stats.edevlet}</b> yeni kayıt</li>
+                                            <li>Toplam Eklenen: <b>{lastResult.stats.total}</b></li>
+                                        </ul>
+                                    </>
+                                ) : (
+                                    <div className="flex items-center gap-2">
+                                        <X className="w-5 h-5 text-red-600" />
+                                        <span className="font-bold text-red-800">Hata: {lastResult.error}</span>
+                                    </div>
+                                )}
                             </div>
-                        ) : (
-                            <>
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-3 h-3 rounded-full bg-${s.color}-500`} />
-                                    <span className={s.is_active ? 'text-gray-900' : 'text-gray-400 line-through'}>{s.label}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs text-gray-400 mr-2">Sıra: {s.sort_order}</span>
-                                    <button onClick={() => toggleActive(s.id, s.is_active)} className={`text-sm px-2 py-1 rounded ${s.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100'}`}>{s.is_active ? 'Aktif' : 'Pasif'}</button>
-                                    <button onClick={() => { setEditingId(s.id); setEditLabel(s.label); setEditColor(s.color); }} className="p-1 hover:bg-gray-100 rounded text-blue-600"><Edit2 className="w-4 h-4" /></button>
-                                    <button onClick={() => deleteStatus(s.id)} className="p-1 hover:bg-gray-100 rounded text-red-600"><Trash2 className="w-4 h-4" /></button>
-                                </div>
-                            </>
                         )}
                     </div>
-                ))}
+                </div>
             </div>
         </div>
     );
+}
+body: JSON.stringify({ label: newStatus, color: newColor })
+    });
+setNewStatus('');
+refresh();
+}
+
+async function toggleActive(id: string, current: boolean) {
+    await fetch('/api/admin/statuses', {
+        method: 'PATCH',
+        body: JSON.stringify({ id, is_active: !current })
+    });
+    refresh();
+}
+
+async function deleteStatus(id: string) {
+    if (!confirm('Bu durumu silmek istediğinize emin misiniz?')) return;
+    const res = await fetch(`/api/admin/statuses?id=${id}`, { method: 'DELETE' });
+    if (res.ok) refresh();
+    else alert('Silinemedi.');
+}
+
+async function saveEdit(id: string) {
+    await fetch('/api/admin/statuses', {
+        method: 'PUT',
+        body: JSON.stringify({ id, label: editLabel, color: editColor })
+    });
+    setEditingId(null);
+    refresh();
+}
+
+return (
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <h3 className="font-semibold mb-3">Yeni Durum Ekle</h3>
+            <form onSubmit={addStatus} className="flex gap-2">
+                <input className="border rounded px-3 py-2 flex-1" placeholder="Örn: Kargoya Verildi" value={newStatus} onChange={e => setNewStatus(e.target.value)} required />
+                <select className="border rounded px-3 py-2" value={newColor} onChange={e => setNewColor(e.target.value)}>
+                    <option value="gray">Gri</option>
+                    <option value="blue">Mavi</option>
+                    <option value="green">Yeşil</option>
+                    <option value="red">Kırmızı</option>
+                    <option value="yellow">Sarı</option>
+                    <option value="orange">Turuncu</option>
+                </select>
+                <Button type="submit">Ekle</Button>
+            </form>
+        </div>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 divide-y">
+            {statuses.map((s) => (
+                <div key={s.id} className="p-4 flex items-center justify-between">
+                    {editingId === s.id ? (
+                        <div className="flex items-center gap-2 flex-1">
+                            <input value={editLabel} onChange={e => setEditLabel(e.target.value)} className="border rounded px-2 py-1 flex-1" />
+                            <select value={editColor} onChange={e => setEditColor(e.target.value)} className="border rounded px-2 py-1">
+                                <option value="gray">Gri</option>
+                                <option value="blue">Mavi</option>
+                                <option value="green">Yeşil</option>
+                                <option value="red">Kırmızı</option>
+                                <option value="yellow">Sarı</option>
+                                <option value="orange">Turuncu</option>
+                            </select>
+                            <Button size="sm" onClick={() => saveEdit(s.id)}><Check className="w-4 h-4" /></Button>
+                            <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}><X className="w-4 h-4" /></Button>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="flex items-center gap-3">
+                                <div className={`w-3 h-3 rounded-full bg-${s.color}-500`} />
+                                <span className={s.is_active ? 'text-gray-900' : 'text-gray-400 line-through'}>{s.label}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-400 mr-2">Sıra: {s.sort_order}</span>
+                                <button onClick={() => toggleActive(s.id, s.is_active)} className={`text-sm px-2 py-1 rounded ${s.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100'}`}>{s.is_active ? 'Aktif' : 'Pasif'}</button>
+                                <button onClick={() => { setEditingId(s.id); setEditLabel(s.label); setEditColor(s.color); }} className="p-1 hover:bg-gray-100 rounded text-blue-600"><Edit2 className="w-4 h-4" /></button>
+                                <button onClick={() => deleteStatus(s.id)} className="p-1 hover:bg-gray-100 rounded text-red-600"><Trash2 className="w-4 h-4" /></button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            ))}
+        </div>
+    </div>
+);
 }
 
 
