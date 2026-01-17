@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { InventoryItem, InventoryStatus } from '@/lib/types';
-import { Package, Plus, Search, Smartphone, Printer, ClipboardCheck, ArrowRight, User, TrendingUp, Calculator, Tag } from 'lucide-react';
+import { Package, Plus, Search, Smartphone, Printer, ClipboardCheck, ArrowRight, User, TrendingUp, Calculator, Tag, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function InventoryPage() {
