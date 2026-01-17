@@ -65,9 +65,13 @@ export async function getCustomersByStatus(status: string, user: { email: string
 export async function searchCustomers(query: string): Promise<Customer[]> {
     if (!query || query.length < 2) return [];
 
-    const cleanQuery = query.replace(/\D/g, '');
-    let dbQuery = supabaseAdmin.from('leads').select('*');
-    dbQuery = dbQuery.or(`ad_soyad.ilike.%${query}%,tc_kimlik.ilike.%${query}%,telefon.ilike.%${query}%,id.eq.${query}`);
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(query);
+
+    if (isUUID) {
+        dbQuery = dbQuery.or(`id.eq.${query},ad_soyad.ilike.%${query}%,tc_kimlik.ilike.%${query}%,telefon.ilike.%${query}%`);
+    } else {
+        dbQuery = dbQuery.or(`ad_soyad.ilike.%${query}%,tc_kimlik.ilike.%${query}%,telefon.ilike.%${query}%`);
+    }
     const { data } = await dbQuery.limit(50);
     return (data || []).map(mapRowToCustomer);
 }
