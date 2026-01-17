@@ -96,8 +96,13 @@ export async function POST(req: NextRequest) {
         }
 
         return NextResponse.json({ success: true, item });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Assign error:', error);
-        return NextResponse.json({ message: 'Assignment failed: ' + (error instanceof Error ? error.message : String(error)) }, { status: 500 });
+        const errorMessage = error instanceof Error
+            ? error.message
+            : typeof error === 'object' && error !== null
+                ? (error.message || JSON.stringify(error))
+                : String(error);
+        return NextResponse.json({ message: 'Assignment failed: ' + errorMessage }, { status: 500 });
     }
 }
