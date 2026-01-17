@@ -13,6 +13,8 @@ import {
     ClipboardList, BadgeCheck, PhoneCall, Scale
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { StockReportModal } from '@/components/StockReportModal';
+import { InventoryItem } from '@/lib/types';
 
 interface ReportStats {
     city: Record<string, { total: number; delivered: number; approved: number; rejected: number; cancelled: number; kefil: number; noEdevlet: number; unreachable: number; other: number; }>;
@@ -73,6 +75,29 @@ export default function ReportsPage() {
     const [endDate, setEndDate] = useState<string>(() => {
         return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
     });
+
+    // Stock Report Modal State
+    const [showStockModal, setShowStockModal] = useState(false);
+    const [stockItems, setStockItems] = useState<InventoryItem[]>([]);
+    const [loadingStock, setLoadingStock] = useState(false);
+
+    const handleOpenStockReport = async () => {
+        setShowStockModal(true);
+        if (stockItems.length === 0) {
+            setLoadingStock(true);
+            try {
+                const res = await fetch('/api/inventory');
+                const data = await res.json();
+                if (data.success) {
+                    setStockItems(data.items);
+                }
+            } catch (error) {
+                console.error('Failed to fetch stock for report', error);
+            } finally {
+                setLoadingStock(false);
+            }
+        }
+    };
 
     useEffect(() => {
         setLoading(true);
@@ -168,6 +193,13 @@ export default function ReportsPage() {
                                 <span className="text-xs">Teslimat</span>
                             </div>
                         </Button>
+                        <button
+                            onClick={handleOpenStockReport}
+                            className="bg-purple-100 text-purple-700 border border-purple-200 hover:bg-purple-200 px-6 py-6 rounded-xl flex flex-col items-center gap-1 font-bold shadow-sm transition-all"
+                        >
+                            <FileText className="w-5 h-5" />
+                            <span className="text-xs">Stok Raporu</span>
+                        </button>
                         <button
                             onClick={() => window.print()}
                             className="flex-1 md:flex-none bg-indigo-600 text-white px-6 py-6 rounded-xl hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-200 transition-all flex flex-col items-center gap-1 font-bold shadow-md active:scale-95"
@@ -361,6 +393,12 @@ export default function ReportsPage() {
                     Sistem Raporu • {new Date().toLocaleString('tr-TR')}
                 </div>
             </div>
+
+            <StockReportModal
+                isOpen={showStockModal}
+                onClose={() => setShowStockModal(false)}
+                items={stockItems}
+            />
         </div>
     );
 }

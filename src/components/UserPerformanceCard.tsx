@@ -78,10 +78,8 @@ export function UserPerformanceCard({ user, stats }: { user: string, stats: any 
                             <span className="text-[10px] font-black uppercase tracking-wider">Back Office / İşlem</span>
                         </div>
                         <span className="text-lg font-black text-gray-800">
-                            {/* Back Office = Total Logs - (Calls + SMS + WP) roughly, 
-                                but simpler is just to show Total Logs as "Total Touchpoints" 
-                                OR subtract communication logs to show "Admin Work" */}
-                            {Math.max(0, (stats.totalLogs || 0) - (stats.calls + (stats.sms || 0) + (stats.whatsapp || 0)))}
+                            {/* Back Office = Now pre-calculated in API as unique non-call touchpoints */}
+                            {stats.totalLogs || 0}
                         </span>
                     </div>
                 </div>

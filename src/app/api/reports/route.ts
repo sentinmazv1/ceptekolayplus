@@ -102,6 +102,7 @@ export async function GET(req: NextRequest) {
         const approvedIds = new Set<string>();
         const deliveredIds = new Set<string>();
         const userAppIds: Record<string, Set<string>> = {}; // User -> Set<LeadID>
+        const userBackOfficeIds: Record<string, Set<string>> = {}; // User -> Set<LeadID> (Touched for BackOffice)
 
         // --- 1. PROCESS LOGS (Activity Flow) ---
         // Puts "Events" into buckets
@@ -117,16 +118,22 @@ export async function GET(req: NextRequest) {
                 // Init Perf
                 if (!stats.performance[user]) stats.performance[user] = { calls: 0, approvals: 0, approvedLimit: 0, applications: 0, paceMinutes: 0, sms: 0, whatsapp: 0, dailyGoal: 0, image: '', totalLogs: 0 };
                 if (!userAppIds[user]) userAppIds[user] = new Set();
+                if (!userBackOfficeIds[user]) userBackOfficeIds[user] = new Set();
 
-                // Increment Total Activity (Back Office)
+                // Increment Total Activity (Raw Count)
                 stats.performance[user].totalLogs++;
 
                 // Calls
                 if (action === 'PULL_LEAD') stats.performance[user].calls++;
-                if (action === 'SEND_SMS') stats.performance[user].sms++;
-                if (action === 'SEND_WHATSAPP') stats.performance[user].whatsapp++;
+                else if (action === 'SEND_SMS') stats.performance[user].sms++;
+                else if (action === 'SEND_WHATSAPP') stats.performance[user].whatsapp++;
+                else {
+                    // Back Office: Count UNIQUE LEADS touched by valid back-office actions
+                    // Actions: UPDATE_STATUS, UPDATE_FIELDS, ADD_NOTE
+                    userBackOfficeIds[user].add(l.customer_id);
+                }
 
-                // Applications (Log Source)
+                // Applications (Log Source - The most accurate "Flow" metric)
                 if (action === 'UPDATE_STATUS' && l.new_value === 'Başvuru alındı') {
                     applicationIds.add(l.customer_id);
                     userAppIds[user].add(l.customer_id);
@@ -163,10 +170,10 @@ export async function GET(req: NextRequest) {
         // --- 2. PROCESS CUSTOMERS (Snapshots & Fallbacks) ---
         customers.forEach((row: any) => {
             const approvalDate = row.onay_tarihi;
-            const callDate = row.son_arama_zamani;
             const status = row.durum;
             const approval = row.onay_durumu;
             const owner = row.sahip || row.sahip_email;
+            const createdAt = row.created_at;
 
             // SKIP ignored users
             const isTrackedUser = owner && !['sistem', 'system', 'admin', 'ibrahim', 'ibrahimsentinmaz@gmail.com'].some(x => owner.toLowerCase().includes(x));
@@ -178,13 +185,16 @@ export async function GET(req: NextRequest) {
             }
 
             // B. Funnel: Applications
-            const isAppStatus = ['Başvuru alındı', 'Kefil bekleniyor'].includes(status || '');
-            if ((isAppStatus && isInRange(row.updated_at)) ||
-                (approval === 'Onaylandı' && isInRange(approvalDate)) ||
-                (isInRange(row.created_at) && status !== 'Yeni' && status !== '')) {
+            // FIXED LOGIC: Only count if CREATED today and status is advanced (implying immediate app), OR if matched via LOGS above.
+            // Do NOT use updated_at for existing customers as it causes overcounting.
+            if (isInRange(createdAt) && status !== 'Yeni' && status !== '') {
+                // New customer today who immediately went to a process status
                 applicationIds.add(row.id);
                 if (isTrackedUser) userAppIds[owner]?.add(row.id);
             }
+            // Note: We already captured status *changes* in the Logs loop above.
+
+            // ... (Rest of logic remains mostly same, just checking ranges)
 
             // C. Funnel: Attorney Queries (PENDING SNAPSHOT ONLY)
             // Completed queries are now handled in Logs for accuracy.
@@ -289,7 +299,13 @@ export async function GET(req: NextRequest) {
         stats.funnel.totalCalled = Object.values(stats.performance).reduce((a, b) => a + b.calls, 0);
 
         Object.keys(userAppIds).forEach(u => {
-            if (stats.performance[u]) stats.performance[u].applications = userAppIds[u].size;
+            if (stats.performance[u]) {
+                stats.performance[u].applications = userAppIds[u].size;
+                // Override totalLogs with calculated Unique BackOffice keys
+                if (userBackOfficeIds[u]) {
+                    stats.performance[u].totalLogs = userBackOfficeIds[u].size;
+                }
+            }
         });
 
         // Goals: Last 3 Days EXCLUDING Today (Static Goal)
