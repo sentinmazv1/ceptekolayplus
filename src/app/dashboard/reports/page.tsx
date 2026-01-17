@@ -10,7 +10,7 @@ import {
 import {
     Loader2, ArrowLeft, Users, Printer,
     Package, TrendingUp, Calendar,
-    ClipboardList, BadgeCheck, PhoneCall, Scale
+    ClipboardList, BadgeCheck, PhoneCall, Scale, FileText
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { StockReportModal } from '@/components/StockReportModal';
