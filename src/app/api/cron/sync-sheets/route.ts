@@ -4,6 +4,7 @@ import { fetchSheetData } from '@/lib/google-sheets';
 import { addLead, getLeads } from '@/lib/leads';
 import { Customer } from '@/lib/types';
 
+// Forced update to ensure Vercel picks up the new environment configuration
 export const dynamic = 'force-dynamic';
 
 // Helper to normalize phone numbers for duplicate checking
