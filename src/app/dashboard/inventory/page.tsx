@@ -26,10 +26,7 @@ export default function InventoryPage() {
     const [priceSearchModel, setPriceSearchModel] = useState('');
     const [selectedPriceItem, setSelectedPriceItem] = useState<InventoryItem | null>(null);
 
-    const [showPriceModal, setShowPriceModal] = useState(false);
-    const [priceSearchBrand, setPriceSearchBrand] = useState('');
-    const [priceSearchModel, setPriceSearchModel] = useState('');
-    const [selectedPriceItem, setSelectedPriceItem] = useState<InventoryItem | null>(null);
+
 
     // Report Modal State
     const [showReportModal, setShowReportModal] = useState(false);
