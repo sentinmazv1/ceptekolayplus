@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Search, Loader2, Calendar, Phone, Clock, User, FileText, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
@@ -39,16 +40,27 @@ interface SearchResult {
 }
 
 export default function SearchPage() {
-    const [query, setQuery] = useState('');
+    const searchParams = useSearchParams();
+
+    // Initialize query from URL if present
+    const [query, setQuery] = useState(searchParams.get('q') || '');
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState<SearchResult[]>([]);
     const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [searched, setSearched] = useState(false);
 
-    const handleSearch = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!query || query.length < 2) {
+    // Auto-search on mount if query exists in URL
+    useEffect(() => {
+        const q = searchParams.get('q');
+        if (q && q.length >= 2) {
+            setQuery(q);
+            performSearch(q);
+        }
+    }, [searchParams]);
+
+    const performSearch = async (searchTerm: string) => {
+        if (!searchTerm || searchTerm.length < 2) {
             setError('En az 2 karakter giriniz.');
             return;
         }
@@ -60,7 +72,7 @@ export default function SearchPage() {
         setSearched(false);
 
         try {
-            const res = await fetch(`/api/customers/search?q=${encodeURIComponent(query)}`);
+            const res = await fetch(`/api/customers/search?q=${encodeURIComponent(searchTerm)}`);
             const json = await res.json();
 
             if (json.success) {
@@ -79,6 +91,11 @@ export default function SearchPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSearch = async (e: React.FormEvent) => {
+        e.preventDefault();
+        performSearch(query);
     };
 
     const formatDate = (d?: string) => {
