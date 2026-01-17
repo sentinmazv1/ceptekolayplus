@@ -185,43 +185,56 @@ export async function lockNextLead(userEmail: string): Promise<(Customer & { sou
     const nowISO = new Date().toISOString();
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
 
-    // Parallel Fetch from 4 Buckets
-    // 1. Automation (Empty/Null/Yeni)
-    const pBucketAuto = supabaseAdmin.from('leads').select('*').is('sahip_email', null)
-        .or('durum.eq.Yeni,durum.is.null,durum.eq.""')
-        .order('created_at', { ascending: false })
-        .limit(1);
+    // Parallel Fetch from Buckets
 
-    // 2. Scheduled (Ready)
+    // 1. Scheduled (Ready)
     const pBucketSched = supabaseAdmin.from('leads').select('*').is('sahip_email', null)
         .eq('durum', 'Daha sonra aranmak istiyor')
         .lte('sonraki_arama_zamani', nowISO)
         .limit(1);
 
-    // 3. Retry (Ready) - Check time limit
-    // Note: This query assumes 'son_arama_zamani' is set. If null, it's valid to retry.
-    // complex OR is hard. Let's fetch Top 1 Retry generally and check time in code
-    // Optimization: limit 10 to find a valid one.
+    // 2. PRIORITY HOT LEADS (E-Devlet, Aranma Talebi) - Source Based
+    // We explicitly look for these sources in the 'Yeni' pool (or null status)
+    const pBucketHot = supabaseAdmin.from('leads').select('*').is('sahip_email', null)
+        .or('durum.eq.Yeni,durum.is.null,durum.eq.""')
+        .or('basvuru_kanali.eq.E-Devlet,basvuru_kanali.eq.Aranma Talebi')
+        .order('created_at', { ascending: false }) // Newest first for hot leads
+        .limit(1);
+
+    // 3. Automation / General Pool (Everything else)
+    const pBucketAuto = supabaseAdmin.from('leads').select('*').is('sahip_email', null)
+        .or('durum.eq.Yeni,durum.is.null,durum.eq.""')
+        .not('basvuru_kanali', 'in', '("E-Devlet","Aranma Talebi")') // Exclude hot ones to avoid double dipping (though order handles it, explicit is better)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+    // 4. Retry (Ready)
     const pBucketRetry = supabaseAdmin.from('leads').select('*').is('sahip_email', null)
         .in('durum', retryStates)
-        .limit(10); // Fetch a few to check timestamps
+        .limit(10);
 
-    const [resAuto, resSched, resRetry] = await Promise.all([pBucketAuto, pBucketSched, pBucketRetry]);
+    const [resSched, resHot, resAuto, resRetry] = await Promise.all([pBucketSched, pBucketHot, pBucketAuto, pBucketRetry]);
 
     let target: any = null;
     let source = '';
 
-    // PRIORITY LOGIC REORDERED
-    // 1. Scheduled (Randevu) - Highest Priority (Must be called on time)
-    // 2. Retry (Tekrar Arama) - High Priority (Keep them warm, call back within 24h)
-    // 3. New/Automation (Yeni/Otomasyon) - Standard Priority (Fill gaps)
-
-    // Check Scheduled
+    // PRIORITY LOGIC
+    // 1. Scheduled (Must be called on time)
     if (resSched.data && resSched.data.length > 0) {
         target = resSched.data[0];
         source = '📅 Randevu';
     }
-    // Check Automation / New (Prioritize Fresh over Retry)
+
+    // 2. Hot Leads (E-Devlet / Aranma Talebi)
+    if (!target && resHot.data && resHot.data.length > 0) {
+        target = resHot.data[0];
+        const channel = target.basvuru_kanali;
+        if (channel === 'E-Devlet') source = '🔥 E-Devlet Veren';
+        else if (channel === 'Aranma Talebi') source = '📢 Aranma Talebi';
+        else source = '🔥 Öncelikli Kayıt';
+    }
+
+    // 3. General New / Automation
     if (!target) {
         const autoLeads = resAuto.data || [];
         const emptyLead = autoLeads.find((l: any) => !l.durum || l.durum === '');
@@ -236,16 +249,15 @@ export async function lockNextLead(userEmail: string): Promise<(Customer & { sou
         }
     }
 
-    // Check Retry (Warm leads) - Only if no New/Auto found
+    // 4. Retry (Warm leads)
     if (!target && resRetry.data && resRetry.data.length > 0) {
         const nowTime = Date.now();
         const oneDayMs = 24 * 60 * 60 * 1000;
-        const safetyBufferMs = 15 * 60 * 1000; // 15 Minutes waiting period
+        const safetyBufferMs = 15 * 60 * 1000;
 
         const validRetry = resRetry.data.find((c: any) => {
             if (!c.son_arama_zamani) return true;
             const diff = nowTime - new Date(c.son_arama_zamani).getTime();
-            // Must be within last 24h AND older than safety buffer
             return diff < oneDayMs && diff > safetyBufferMs;
         });
 
@@ -263,8 +275,7 @@ export async function lockNextLead(userEmail: string): Promise<(Customer & { sou
         .eq('id', target.id).is('sahip_email', null).select().single();
 
     if (error || !locked) {
-        // Retry recursion? Or just fail once. UI can click again.
-        return null;
+        return null; // Concurrency miss
     }
 
     await logAction({

@@ -9,5 +9,13 @@
       "memory": 1024
     }
   },
-  "regions": ["fra1"]
+  "regions": [
+    "fra1"
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/sync-sheets",
+      "schedule": "*/5 * * * *"
+    }
+  ]
 }
