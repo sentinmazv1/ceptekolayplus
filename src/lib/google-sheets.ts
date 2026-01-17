@@ -6,7 +6,9 @@ const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
 const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
 if (!GOOGLE_SHEET_ID || !GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) {
-    console.warn('Google Sheets credentials missing. Sync will fail.');
+    console.error('CRITICAL: Google Sheets credentials missing in environment variables. Sync will fail.');
+} else {
+    console.log('Google Sheets Service initialized with:', GOOGLE_SERVICE_ACCOUNT_EMAIL);
 }
 
 const auth = new google.auth.GoogleAuth({
