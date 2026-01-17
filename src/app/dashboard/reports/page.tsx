@@ -75,28 +75,7 @@ export default function ReportsPage() {
         return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
     });
 
-    // Stock Report Modal State
-    const [showStockModal, setShowStockModal] = useState(false);
-    const [stockItems, setStockItems] = useState<InventoryItem[]>([]);
-    const [loadingStock, setLoadingStock] = useState(false);
 
-    const handleOpenStockReport = async () => {
-        setShowStockModal(true);
-        if (stockItems.length === 0) {
-            setLoadingStock(true);
-            try {
-                const res = await fetch('/api/inventory');
-                const data = await res.json();
-                if (data.success) {
-                    setStockItems(data.items);
-                }
-            } catch (error) {
-                console.error('Failed to fetch stock for report', error);
-            } finally {
-                setLoadingStock(false);
-            }
-        }
-    };
 
     useEffect(() => {
         setLoading(true);
@@ -393,11 +372,7 @@ export default function ReportsPage() {
                 </div>
             </div>
 
-            <StockReportModal
-                isOpen={showStockModal}
-                onClose={() => setShowStockModal(false)}
-                items={stockItems}
-            />
+
         </div>
     );
 }
