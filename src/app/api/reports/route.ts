@@ -143,7 +143,19 @@ export async function GET(req: NextRequest) {
                     const isKefilLog = (l.note && l.note.includes('Kefil')) ||
                         (l.new_value && typeof l.new_value === 'string' && l.new_value.includes('Kefil'));
 
-                    attorneyQueryIds.add(isKefilLog ? l.customer_id + '_k' : l.customer_id);
+                    const uniqueId = isKefilLog ? l.customer_id + '_k' : l.customer_id;
+
+                    // Count each unique query in this period
+                    if (!attorneyQueryIds.has(uniqueId)) {
+                        attorneyQueryIds.add(uniqueId);
+
+                        // Breakdown Statistics based on LOGGED COMPLETED STATUS
+                        const val = l.new_value;
+                        if (val === 'Temiz') stats.funnel.attorneyClean++;
+                        else if (val === 'Riskli' || val === '⚠️ Riskli/Sorunlu') stats.funnel.attorneyRisky++;
+                        else if (val === 'Onaylandı') stats.funnel.attorneyApproved++;
+                        else if (val === 'Reddedildi') stats.funnel.attorneyRejected++;
+                    }
                 }
             }
         });
@@ -156,8 +168,7 @@ export async function GET(req: NextRequest) {
             const approval = row.onay_durumu;
             const owner = row.sahip || row.sahip_email;
 
-            // SKIP ignored users (for performance only, but keep for global funnel if relevant?)
-            // Let's attribute everything to owner if available
+            // SKIP ignored users
             const isTrackedUser = owner && !['sistem', 'system', 'admin', 'ibrahim', 'ibrahimsentinmaz@gmail.com'].some(x => owner.toLowerCase().includes(x));
 
             // A. Funnel: Unique Called
@@ -175,45 +186,18 @@ export async function GET(req: NextRequest) {
                 if (isTrackedUser) userAppIds[owner]?.add(row.id);
             }
 
-            // Attorney Queries (Log Source + Snapshot)
-            // Function to process attorney status
-            const processAttorney = (status: string | undefined, result: string | undefined, id: string, isKefil: boolean = false) => {
-                const uniqueId = id + (isKefil ? '_k' : '');
+            // C. Funnel: Attorney Queries (PENDING SNAPSHOT ONLY)
+            // Completed queries are now handled in Logs for accuracy.
+            // We only look at current snapshot for "Currently Pending".
 
-                // 1. Pending (Snapshot)
-                if (status === 'Sorgu Bekleniyor' || status === 'BEKLİYOR') {
-                    stats.funnel.attorneyPending++;
-                }
-
-                // 2. Completed (Activity in Range)
-                // If it has a result, check if updated_at is in range (or rely on Logs which is better, but fallback here)
-                // We use Log Priority for "Activity Count", but for Breakdown we can use current state if it changed recently
-                if (status && status !== 'Yapılmadı' && status !== 'Sorgu Bekleniyor' && isInRange(row.updated_at)) {
-                    // Logic: If we found a log, we counted it as a Query. 
-                    // To avoid double counting with logs, we use the Set.
-                    if (!attorneyQueryIds.has(uniqueId)) {
-                        attorneyQueryIds.add(uniqueId);
-                    }
-
-                    // Breakdown (Current State)
-                    if (status === 'Temiz') stats.funnel.attorneyClean++;
-                    else if (status === 'Riskli' || status === '⚠️ Riskli/Sorunlu') stats.funnel.attorneyRisky++;
-                    else if (status === 'Onaylandı') stats.funnel.attorneyApproved++;
-                    else if (status === 'Reddedildi') stats.funnel.attorneyRejected++;
-                }
-                // Fallback: If it's in the Log Set (via UPDATE_FIELDS), we assume it happened today. 
-                // We should increment the stats based on the CURRENT value if the log doesn't carry it (logs usually do, but let's use the final state for breakdown consistency)
-                else if (attorneyQueryIds.has(uniqueId)) {
-                    // Log found (Main or Kefil)
-                    if (status === 'Temiz') stats.funnel.attorneyClean++;
-                    else if (status === 'Riskli' || status === '⚠️ Riskli/Sorunlu') stats.funnel.attorneyRisky++;
-                    else if (status === 'Onaylandı') stats.funnel.attorneyApproved++;
-                    else if (status === 'Reddedildi') stats.funnel.attorneyRejected++;
-                }
-            };
-
-            processAttorney(row.avukat_sorgu_durumu, row.avukat_sorgu_sonuc, row.id);
-            processAttorney(row.kefil_avukat_sorgu_durumu, row.kefil_avukat_sorgu_sonuc, row.id, true);
+            // Main
+            if (row.avukat_sorgu_durumu === 'Sorgu Bekleniyor' || row.avukat_sorgu_durumu === 'BEKLİYOR') {
+                stats.funnel.attorneyPending++;
+            }
+            // Kefil
+            if (row.kefil_avukat_sorgu_durumu === 'Sorgu Bekleniyor' || row.kefil_avukat_sorgu_durumu === 'BEKLİYOR') {
+                stats.funnel.attorneyPending++;
+            }
 
 
             // D. Funnel: Approved
