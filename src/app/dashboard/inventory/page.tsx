@@ -124,6 +124,7 @@ export default function InventoryPage() {
                     <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                         <Package className="w-6 h-6 text-indigo-600" />
                         Stok Yönetimi
+                        <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-bold">v3.0 Updated</span>
                     </h1>
                     <p className="text-sm text-gray-500">Cihaz envanter takibi ve sayımı</p>
                 </div>
