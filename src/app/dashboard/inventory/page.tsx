@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { InventoryItem, InventoryStatus } from '@/lib/types';
-import { Package, Plus, Search, Smartphone, Printer, ClipboardCheck, ArrowRight, User } from 'lucide-react';
+import { Package, Plus, Search, Smartphone, Printer, ClipboardCheck, ArrowRight, User, TrendingUp } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function InventoryPage() {
@@ -162,42 +162,91 @@ export default function InventoryPage() {
                 <p className="text-sm text-gray-500">Tarih: {new Date().toLocaleDateString('tr-TR')}</p>
             </div>
 
-            {/* Filters & Search */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 print:hidden">
-                <div className="md:col-span-4 bg-white p-1 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
+            {/* Filters & Search & Summary */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 print:hidden">
+                {/* Main Filters */}
+                <div className="lg:col-span-3 space-y-4">
+                    <div className="bg-white p-1 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
+                        {/* Filter Tabs */}
+                        <div className="flex p-1 bg-gray-100 rounded-lg w-full md:w-auto">
+                            <button
+                                onClick={() => setFilterStatus('STOKTA')}
+                                className={`flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all ${filterStatus === 'STOKTA' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                Eldekiler
+                            </button>
+                            <button
+                                onClick={() => setFilterStatus('SATILDI')}
+                                className={`flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all ${filterStatus === 'SATILDI' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                Teslim Edilenler
+                            </button>
+                            <button
+                                onClick={() => setFilterStatus('ALL')}
+                                className={`flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all ${filterStatus === 'ALL' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                Tümü
+                            </button>
+                        </div>
 
-                    {/* Filter Tabs */}
-                    <div className="flex p-1 bg-gray-100 rounded-lg w-full md:w-auto">
-                        <button
-                            onClick={() => setFilterStatus('STOKTA')}
-                            className={`flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all ${filterStatus === 'STOKTA' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                        >
-                            Eldekiler
-                        </button>
-                        <button
-                            onClick={() => setFilterStatus('SATILDI')}
-                            className={`flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all ${filterStatus === 'SATILDI' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                        >
-                            Teslim Edilenler
-                        </button>
-                        <button
-                            onClick={() => setFilterStatus('ALL')}
-                            className={`flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all ${filterStatus === 'ALL' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                        >
-                            Tümü
-                        </button>
+                        {/* Search */}
+                        <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 w-full md:w-96">
+                            <Search className="text-gray-400 w-5 h-5 flex-shrink-0" />
+                            <input
+                                type="text"
+                                placeholder="IMEI, Seri No veya Model ara..."
+                                className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-400 text-sm"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
+                        </div>
                     </div>
+                </div>
 
-                    {/* Search */}
-                    <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 w-full md:w-96">
-                        <Search className="text-gray-400 w-5 h-5 flex-shrink-0" />
-                        <input
-                            type="text"
-                            placeholder="IMEI, Seri No veya Model ara..."
-                            className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-400 text-sm"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                        />
+                {/* Stock Summary Card */}
+                <div className="lg:col-span-1">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="bg-indigo-50 px-4 py-3 border-b border-indigo-100">
+                            <h3 className="text-xs font-bold text-indigo-800 uppercase tracking-wider flex items-center gap-2">
+                                <TrendingUp className="w-4 h-4" />
+                                Stok Özeti
+                            </h3>
+                        </div>
+                        <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200">
+                            <table className="w-full text-xs">
+                                <thead className="bg-gray-50 text-gray-500 sticky top-0">
+                                    <tr>
+                                        <th className="px-3 py-2 text-left">Model</th>
+                                        <th className="px-3 py-2 text-right">Adet</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {Object.entries(
+                                        items.filter(i => i.durum === 'STOKTA').reduce((acc, curr) => {
+                                            const key = curr.model;
+                                            acc[key] = (acc[key] || 0) + 1;
+                                            return acc;
+                                        }, {} as Record<string, number>)
+                                    )
+                                        .sort((a, b) => b[1] - a[1])
+                                        .map(([model, count]) => (
+                                            <tr key={model} className="hover:bg-gray-50">
+                                                <td className="px-3 py-2 font-medium text-gray-700 truncate max-w-[150px]" title={model}>{model}</td>
+                                                <td className="px-3 py-2 text-right font-bold text-gray-900 bg-gray-50/50">{count}</td>
+                                            </tr>
+                                        ))}
+                                    {items.filter(i => i.durum === 'STOKTA').length === 0 && (
+                                        <tr><td colSpan={2} className="px-3 py-4 text-center text-gray-400">Stok yok</td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="bg-gray-50 px-4 py-2 border-t border-gray-100 flex justify-between items-center text-xs">
+                            <span className="text-gray-500 font-medium">Toplam</span>
+                            <span className="font-black text-gray-900 bg-white px-2 py-0.5 rounded border border-gray-200">
+                                {items.filter(i => i.durum === 'STOKTA').length}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>

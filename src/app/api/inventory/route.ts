@@ -112,7 +112,8 @@ export async function POST(req: NextRequest) {
         });
 
         return NextResponse.json({ item: newItem });
-    } catch (error) {
-        return NextResponse.json({ message: 'Failed to add item' }, { status: 500 });
+    } catch (error: any) {
+        console.error('Inventory Add Error:', error);
+        return NextResponse.json({ message: 'Failed to add item', details: error.message || error }, { status: 500 });
     }
 }

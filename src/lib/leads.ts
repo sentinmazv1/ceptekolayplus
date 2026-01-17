@@ -523,7 +523,8 @@ export async function getRecentLogs(limit: number = 50): Promise<LogEntry[]> {
 export async function getInventoryStats() {
     const { data, error } = await supabaseAdmin
         .from('inventory')
-        .select('alis_fiyati, satis_fiyati, stok_durumu');
+        .select('alis_fiyati, fiyat_15_taksit')
+        .eq('durum', 'STOKTA');
 
     if (error) {
         console.error('Inventory Stats Error:', error);
@@ -532,12 +533,12 @@ export async function getInventoryStats() {
 
     let totalItems = 0;
     let totalCost = 0;
-    let totalRevenue = 0; // Uses 15-month price (satis_fiyati)
+    let totalRevenue = 0;
 
     data.forEach((item: any) => {
         totalItems++;
         totalCost += Number(item.alis_fiyati || 0);
-        totalRevenue += Number(item.satis_fiyati || 0);
+        totalRevenue += Number(item.fiyat_15_taksit || 0);
     });
 
     return { totalItems, totalCost, totalRevenue };
