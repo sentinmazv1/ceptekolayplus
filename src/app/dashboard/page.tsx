@@ -8,7 +8,7 @@ import ActivityFeed from '@/components/ActivityFeed';
 import { CustomerCard } from '@/components/CustomerCard';
 import { DashboardStats } from '@/components/DashboardStats';
 import { Customer } from '@/lib/types';
-import { Loader2, LogOut, RefreshCcw, Phone, Users, Activity, Sparkles } from 'lucide-react';
+import { Loader2, LogOut, RefreshCcw, Phone, Users, Activity, Sparkles, Search } from 'lucide-react';
 import { UserPerformanceCard } from '@/components/UserPerformanceCard';
 
 export default function Dashboard() {
