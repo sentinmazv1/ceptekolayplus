@@ -66,6 +66,7 @@ export async function searchCustomers(query: string): Promise<Customer[]> {
     if (!query || query.length < 2) return [];
 
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(query);
+    let dbQuery = supabaseAdmin.from('leads').select('*');
 
     if (isUUID) {
         dbQuery = dbQuery.or(`id.eq.${query},ad_soyad.ilike.%${query}%,tc_kimlik.ilike.%${query}%,telefon.ilike.%${query}%`);
