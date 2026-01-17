@@ -171,13 +171,7 @@ export default function ReportsPage() {
                                 <span className="text-xs">Teslimat</span>
                             </div>
                         </Button>
-                        <button
-                            onClick={handleOpenStockReport}
-                            className="bg-purple-100 text-purple-700 border border-purple-200 hover:bg-purple-200 px-6 py-6 rounded-xl flex flex-col items-center gap-1 font-bold shadow-sm transition-all"
-                        >
-                            <FileText className="w-5 h-5" />
-                            <span className="text-xs">Stok Raporu</span>
-                        </button>
+
                         <button
                             onClick={() => window.print()}
                             className="flex-1 md:flex-none bg-indigo-600 text-white px-6 py-6 rounded-xl hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-200 transition-all flex flex-col items-center gap-1 font-bold shadow-md active:scale-95"
