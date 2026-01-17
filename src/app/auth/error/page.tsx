@@ -33,7 +33,7 @@ function ErrorContent() {
             <p className="text-red-600 font-medium mb-4">{message}</p>
 
             <p className="text-sm text-gray-500 mb-8">
-                Google Sheet dosyasındaki <strong>Users</strong> sekmesinde mail adresinizin (Role: ADMIN veya SALES_REP) ekli olduğundan emin olun.
+                Erişim yetkiniz olmadığını düşünüyorsanız veya sorun devam ederse lütfen <strong>Sistem Yöneticisi</strong> ile iletişime geçin.
             </p>
 
             <Link href="/">
