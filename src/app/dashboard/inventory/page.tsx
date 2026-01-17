@@ -34,7 +34,8 @@ export default function InventoryPage() {
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
-        fetchInventory();
+        console.log('Inventory Page Loaded v2');
+        fetchItems();
     }, []);
 
     const fetchInventory = async () => {
