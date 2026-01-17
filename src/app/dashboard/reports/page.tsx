@@ -13,7 +13,6 @@ import {
     ClipboardList, BadgeCheck, PhoneCall, Scale, FileText
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { StockReportModal } from '@/components/StockReportModal';
 import { InventoryItem } from '@/lib/types';
 
 interface ReportStats {
@@ -432,12 +431,12 @@ function SalesFunnel({ stats }: { stats: any }) {
 
                     <FunnelStep
                         title="YAPILAN ARAMA"
-                        value={f.uniqueCalled}
-                        subValue={`TOPLAM: ${f.totalCalled}`}
+                        value={f.totalCalled}
+                        subValue={`TEKİL: ${f.uniqueCalled}`}
                         icon={PhoneCall}
                         color="text-indigo-600"
                         bg="bg-indigo-50"
-                        desc="Tekil Müşteri"
+                        desc="Toplam Çağrı"
                         step={1}
                     />
 
