@@ -1594,7 +1594,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                         Başvuru Alındı
                                     </button>
                                     <button
-                                        onClick={() => setSmsMessage(`Müjde! ${data.ad_soyad}, başvurunuz ${data.kredi_limiti || 'belirlenen'} TL limit ile ONAYLANMISTIR! Urununuzu teslim almak icin sizi en kisa surede magazamiza bekliyoruz. Simdiden iyi gunlerde kullanin. CEPTE KOLAY`)}
+                                        onClick={() => setSmsMessage(`Müjde! ${data.ad_soyad}, ${data.talep_edilen_urun || 'cihaz'} talebiniz ONAYLANMISTIR! Urununuzu teslim almak icin sizi en kisa surede magazamiza bekliyoruz. Simdiden iyi gunlerde kullanin. CEPTE KOLAY`)}
                                         className="text-xs bg-green-50 border border-green-200 hover:bg-green-100 px-2 py-1 rounded text-green-700 transition"
                                     >
                                         Onaylandı
