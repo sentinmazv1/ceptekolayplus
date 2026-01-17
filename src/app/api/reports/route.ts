@@ -185,10 +185,12 @@ export async function GET(req: NextRequest) {
             }
 
             // B. Funnel: Applications
-            // FIXED LOGIC: Only count if CREATED today and status is advanced (implying immediate app), OR if matched via LOGS above.
-            // Do NOT use updated_at for existing customers as it causes overcounting.
-            if (isInRange(createdAt) && status !== 'Yeni' && status !== '') {
-                // New customer today who immediately went to a process status
+            // FIXED LOGIC: Only count if CREATED today AND status implies a real application.
+            // Exclude 'Yeni', 'Aranacak', or Call Outcomes (Ulaşılamadı, vb.) which might happen on day 1 without an app.
+            const isApplication = ['Başvuru alındı', 'Kefil bekleniyor', 'Onaylandı', 'Teslim edildi', 'Satış yapıldı/Tamamlandı', 'Kefil İstendi', 'Reddedildi'].includes(status || '') || approval === 'Onaylandı';
+
+            if (isInRange(createdAt) && isApplication) {
+                // New customer today who immediately went to a process status (Manual Entry or Super Fast Flow)
                 applicationIds.add(row.id);
                 if (isTrackedUser) userAppIds[owner]?.add(row.id);
             }
