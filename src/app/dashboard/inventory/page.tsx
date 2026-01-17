@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { InventoryItem, InventoryStatus } from '@/lib/types';
-import { Package, Plus, Search, Smartphone, Printer, ClipboardCheck, ArrowRight, User, TrendingUp } from 'lucide-react';
+import { Package, Plus, Search, Smartphone, Printer, ClipboardCheck, ArrowRight, User, TrendingUp, Calculator, Tag } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function InventoryPage() {
@@ -19,6 +19,12 @@ export default function InventoryPage() {
     const [stockCountMode, setStockCountMode] = useState(false);
 
     const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+
+    // Price View Modal State
+    const [showPriceModal, setShowPriceModal] = useState(false);
+    const [priceSearchBrand, setPriceSearchBrand] = useState('');
+    const [priceSearchModel, setPriceSearchModel] = useState('');
+    const [selectedPriceItem, setSelectedPriceItem] = useState<InventoryItem | null>(null);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -139,6 +145,14 @@ export default function InventoryPage() {
                     </button>
 
                     <button
+                        onClick={() => setShowPriceModal(true)}
+                        className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg border border-indigo-200 hover:bg-indigo-100 transition-colors flex items-center gap-2 font-medium"
+                    >
+                        <Tag className="w-4 h-4" />
+                        Fiyat Gör
+                    </button>
+
+                    <button
                         onClick={handlePrint}
                         className="bg-white text-gray-700 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors flex items-center gap-2 font-medium"
                     >
@@ -205,54 +219,63 @@ export default function InventoryPage() {
                     </div>
                 </div>
 
-                {/* Stock Summary Card */}
+                {/* Stock Summary Card - PREMIUM DESIGN */}
                 <div className="lg:col-span-1 print:block print:w-full print:mb-8">
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden print:border-none print:shadow-none">
-                        <div className="bg-indigo-50 px-4 py-3 border-b border-indigo-100 flex justify-between items-center print:bg-white print:border-b-2 print:border-gray-800 print:px-0">
-                            <h3 className="text-xs font-bold text-indigo-800 uppercase tracking-wider flex items-center gap-2 print:text-black print:text-lg">
-                                <TrendingUp className="w-4 h-4 print:hidden" />
-                                Stok Özeti (Marka & Model)
+                    <div className="bg-white rounded-xl shadow-lg border border-indigo-100 overflow-hidden print:border-none print:shadow-none hover:shadow-xl transition-shadow duration-300">
+                        {/* Header Gradient */}
+                        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-5 py-4 flex justify-between items-center print:bg-white print:border-b-2 print:border-gray-800 print:px-0">
+                            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 print:text-black print:text-lg">
+                                <TrendingUp className="w-4 h-4 print:hidden text-indigo-100" />
+                                Stok Özeti
                             </h3>
-                            <button onClick={() => window.print()} className="text-indigo-600 hover:text-indigo-800 print:hidden" title="Sadece Özeti Yazdır">
+                            <button onClick={() => window.print()} className="text-indigo-100 hover:text-white print:hidden bg-white/10 p-1.5 rounded-lg backdrop-blur-sm transition-colors" title="Sadece Özeti Yazdır">
                                 <Printer className="w-4 h-4" />
                             </button>
                         </div>
-                        <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 print:max-h-none print:overflow-visible">
-                            <table className="w-full text-xs print:text-sm">
-                                <thead className="bg-gray-50 text-gray-500 sticky top-0 print:static print:bg-transparent print:text-black print:border-b">
-                                    <tr>
-                                        <th className="px-3 py-2 text-left">Cihaz (Marka + Model)</th>
-                                        <th className="px-3 py-2 text-right">Adet</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50 print:divide-gray-200">
-                                    {Object.entries(
-                                        items.filter(i => i.durum === 'STOKTA').reduce((acc, curr) => {
-                                            const key = `${curr.marka || ''} ${curr.model || ''}`.trim();
-                                            acc[key] = (acc[key] || 0) + 1;
-                                            return acc;
-                                        }, {} as Record<string, number>)
-                                    )
-                                        .sort((a, b) => b[1] - a[1]) // Sort by count desc
-                                        .map(([name, count]) => (
-                                            <tr key={name} className="hover:bg-gray-50 print:hover:bg-transparent">
-                                                <td className="px-3 py-2 font-medium text-gray-700 truncate max-w-[150px] print:max-w-none print:text-black print:overflow-visible print:whitespace-normal">
-                                                    {name}
-                                                </td>
-                                                <td className="px-3 py-2 text-right font-bold text-gray-900 bg-gray-50/50 print:bg-transparent print:text-black">{count}</td>
-                                            </tr>
-                                        ))}
-                                    {items.filter(i => i.durum === 'STOKTA').length === 0 && (
-                                        <tr><td colSpan={2} className="px-3 py-4 text-center text-gray-400">Stok yok</td></tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                        <div className="bg-gray-50 px-4 py-2 border-t border-gray-100 flex justify-between items-center text-xs print:bg-white print:border-t-2 print:border-gray-800 print:px-0 print:mt-2 print:text-sm">
-                            <span className="text-gray-500 font-medium print:text-black">Genel Toplam</span>
-                            <span className="font-black text-gray-900 bg-white px-2 py-0.5 rounded border border-gray-200 print:border-none print:px-0">
-                                {items.filter(i => i.durum === 'STOKTA').length} Cihaz
+
+                        {/* Inventory Stats Bar */}
+                        <div className="bg-indigo-50 px-5 py-3 border-b border-indigo-100 flex justify-between items-center text-xs print:bg-white print:border-none">
+                            <span className="text-indigo-700 font-bold uppercase tracking-wide">Toplam Cihaz</span>
+                            <span className="font-black text-white bg-indigo-600 px-3 py-1 rounded-full text-sm shadow-sm print:text-black print:bg-transparent print:border print:border-black">
+                                {items.filter(i => i.durum === 'STOKTA').length}
                             </span>
+                        </div>
+
+                        {/* Scrollable List */}
+                        <div className="max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-indigo-200 scrollbar-track-transparent print:max-h-none print:overflow-visible p-2">
+                            <div className="space-y-1">
+                                {Object.entries(
+                                    items.filter(i => i.durum === 'STOKTA').reduce((acc, curr) => {
+                                        const key = `${curr.marka || ''} ${curr.model || ''}`.trim();
+                                        acc[key] = (acc[key] || 0) + 1;
+                                        return acc;
+                                    }, {} as Record<string, number>)
+                                )
+                                    .sort((a, b) => b[1] - a[1]) // Sort by count desc
+                                    .map(([name, count], index) => (
+                                        <div key={name} className="flex justify-between items-center p-3 rounded-lg hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100 group">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${index < 3 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
+                                                    {index + 1}
+                                                </div>
+                                                <span className="font-medium text-slate-700 text-xs md:text-sm truncate max-w-[140px] print:max-w-none print:overflow-visible print:whitespace-normal group-hover:text-indigo-700 transition-colors">
+                                                    {name}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="h-1.5 w-12 bg-slate-100 rounded-full overflow-hidden print:hidden">
+                                                    <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.min(count * 10, 100)}%` }} />
+                                                </div>
+                                                <span className="font-bold text-slate-900 text-sm bg-white border border-slate-200 px-2 py-0.5 rounded shadow-sm min-w-[30px] text-center">
+                                                    {count}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                {items.filter(i => i.durum === 'STOKTA').length === 0 && (
+                                    <div className="text-center py-6 text-gray-400 text-sm">Stokta cihaz bulunmuyor</div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -638,7 +661,134 @@ export default function InventoryPage() {
                     </div>
                 </div>
             )}
+
+            {/* Price View Modal */}
+            {showPriceModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 print:hidden animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-0 overflow-hidden ring-1 ring-white/10">
+                        {/* Modal Header */}
+                        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-5 flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                                    <Tag className="w-5 h-5 text-white" />
+                                </div>
+                                <h2 className="text-xl font-bold text-white">Fiyat Sorgula</h2>
+                            </div>
+                            <button onClick={() => setShowPriceModal(false)} className="text-white/70 hover:text-white transition-colors bg-white/10 hover:bg-white/20 p-2 rounded-full">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Marka Seçiniz</label>
+                                    <select
+                                        className="w-full border-gray-300 rounded-xl shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 text-base bg-gray-50 hover:bg-white transition-colors"
+                                        value={priceSearchBrand}
+                                        onChange={(e) => {
+                                            setPriceSearchBrand(e.target.value);
+                                            setPriceSearchModel('');
+                                            setSelectedPriceItem(null);
+                                        }}
+                                    >
+                                        <option value="">-- Marka --</option>
+                                        {Array.from(new Set(items.filter(i => i.durum === 'STOKTA').map(i => i.marka))).sort().map(m => (
+                                            <option key={m} value={m}>{m}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {priceSearchBrand && (
+                                    <div className="animate-in slide-in-from-top-2 fade-in duration-300">
+                                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Model Seçiniz</label>
+                                        <select
+                                            className="w-full border-gray-300 rounded-xl shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 text-base bg-gray-50 hover:bg-white transition-colors"
+                                            value={priceSearchModel}
+                                            onChange={(e) => {
+                                                setPriceSearchModel(e.target.value);
+                                                // Find the most recent item of this model to show pricing
+                                                const item = items.find(i => i.marka === priceSearchBrand && i.model === e.target.value && i.durum === 'STOKTA');
+                                                setSelectedPriceItem(item || null);
+                                            }}
+                                        >
+                                            <option value="">-- Model --</option>
+                                            {Array.from(new Set(items.filter(i => i.durum === 'STOKTA' && i.marka === priceSearchBrand).map(i => i.model))).sort().map(m => (
+                                                <option key={m} value={m}>{m}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+
+                            {selectedPriceItem ? (
+                                <div className="animate-in zoom-in-95 duration-300">
+                                    <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 mb-4 text-center">
+                                        <div className="text-sm text-indigo-800 mb-1">Seçilen Cihaz</div>
+                                        <div className="text-lg font-black text-indigo-900">{selectedPriceItem.marka} {selectedPriceItem.model}</div>
+                                        <div className="mt-2 inline-flex items-center gap-2 bg-white px-3 py-1 rounded-full border border-indigo-100 shadow-sm text-xs font-medium text-indigo-700">
+                                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                            Stokta: {items.filter(i => i.marka === selectedPriceItem.marka && i.model === selectedPriceItem.model && i.durum === 'STOKTA').length} Adet
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                                            <div className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">3 Taksit</div>
+                                            <div className="text-xl font-bold text-gray-900">{selectedPriceItem.fiyat_3_taksit ? `${Number(selectedPriceItem.fiyat_3_taksit).toLocaleString()} ₺` : '-'}</div>
+                                            {selectedPriceItem.fiyat_3_taksit && (
+                                                <div className="text-xs text-indigo-600 font-medium mt-1">
+                                                    {(Number(selectedPriceItem.fiyat_3_taksit) / 3).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺ x 3
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                                            <div className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">6 Taksit</div>
+                                            <div className="text-xl font-bold text-gray-900">{selectedPriceItem.fiyat_6_taksit ? `${Number(selectedPriceItem.fiyat_6_taksit).toLocaleString()} ₺` : '-'}</div>
+                                            {selectedPriceItem.fiyat_6_taksit && (
+                                                <div className="text-xs text-indigo-600 font-medium mt-1">
+                                                    {(Number(selectedPriceItem.fiyat_6_taksit) / 6).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺ x 6
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                                            <div className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">12 Taksit</div>
+                                            <div className="text-xl font-bold text-gray-900">{selectedPriceItem.fiyat_12_taksit ? `${Number(selectedPriceItem.fiyat_12_taksit).toLocaleString()} ₺` : '-'}</div>
+                                            {selectedPriceItem.fiyat_12_taksit && (
+                                                <div className="text-xs text-indigo-600 font-medium mt-1">
+                                                    {(Number(selectedPriceItem.fiyat_12_taksit) / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺ x 12
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                                            <div className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">15 Taksit</div>
+                                            <div className="text-xl font-bold text-gray-900">{selectedPriceItem.fiyat_15_taksit ? `${Number(selectedPriceItem.fiyat_15_taksit).toLocaleString()} ₺` : '-'}</div>
+                                            {selectedPriceItem.fiyat_15_taksit && (
+                                                <div className="text-xs text-indigo-600 font-medium mt-1">
+                                                    {(Number(selectedPriceItem.fiyat_15_taksit) / 15).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺ x 15
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-gray-400 border-2 border-dashed border-gray-100 rounded-xl bg-gray-50/50">
+                                    <Smartphone className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                                    <p>Fiyatlarını görmek için marka ve model seçiniz.</p>
+                                </div>
+                            )}
+
+                            {/* Footer Info */}
+                            <div className="bg-amber-50 rounded-lg p-3 flex gap-3 text-xs text-amber-800 border border-amber-100">
+                                <TrendingUp className="w-4 h-4 flex-shrink-0" />
+                                <p>Fiyatlar anlık stok verilerine göre gösterilmektedir. Stoktaki en güncel giriş baz alınmıştır.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
-    );
+    )
 }
 
