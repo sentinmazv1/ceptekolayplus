@@ -160,16 +160,7 @@ export default function DashboardLayout({
                                 ) // End Admin Check
                                 }
 
-                                <Link href="/dashboard/search">
-                                    <Button
-                                        variant={isActive('/dashboard/search') ? 'primary' : 'ghost'}
-                                        size="sm"
-                                        className={isActive('/dashboard/search') ? '' : 'text-gray-600 hover:text-gray-900'}
-                                    >
-                                        <Search className="w-4 h-4 mr-2" />
-                                        Sorgula
-                                    </Button>
-                                </Link>
+
 
                                 <Link href="/dashboard/add">
                                     <Button
@@ -305,15 +296,7 @@ export default function DashboardLayout({
                                     </>
                                 )}
 
-                                <Link href="/dashboard/search">
-                                    <Button
-                                        variant={isActive('/dashboard/search') ? 'primary' : 'ghost'}
-                                        className="w-full justify-start text-sm"
-                                    >
-                                        <Search className="w-4 h-4 mr-3" />
-                                        Sorgula
-                                    </Button>
-                                </Link>
+
 
                                 <Link href="/dashboard/add">
                                     <Button

@@ -67,11 +67,7 @@ export async function searchCustomers(query: string): Promise<Customer[]> {
 
     const cleanQuery = query.replace(/\D/g, '');
     let dbQuery = supabaseAdmin.from('leads').select('*');
-    if (cleanQuery.length > 5) {
-        dbQuery = dbQuery.or(`tc_kimlik.ilike.%${cleanQuery}%,telefon.ilike.%${cleanQuery}%`);
-    } else {
-        dbQuery = dbQuery.ilike('ad_soyad', `%${query}%`);
-    }
+    dbQuery = dbQuery.or(`ad_soyad.ilike.%${query}%,tc_kimlik.ilike.%${query}%,telefon.ilike.%${query}%,id.eq.${query}`);
     const { data } = await dbQuery.limit(50);
     return (data || []).map(mapRowToCustomer);
 }

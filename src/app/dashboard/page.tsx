@@ -139,6 +139,37 @@ export default function Dashboard() {
                                     Akıllı algoritma sizin için en uygun müşteriyi seçer ve aramayı başlatır.
                                 </p>
 
+                                {/* PREMIUM SEARCH BAR */}
+                                <div className="w-full max-w-md mx-auto mb-10 relative group">
+                                    <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+                                    <div className="relative flex items-center bg-white rounded-xl shadow-xl ring-1 ring-gray-900/5 p-2">
+                                        <div className="pl-3 pr-2 text-gray-400">
+                                            <Search className="w-6 h-6" />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            className="w-full bg-transparent border-0 ring-0 focus:ring-0 text-gray-900 placeholder-gray-400 text-lg font-medium py-2"
+                                            placeholder="TC, İsim veya Telefon ile hızlı sorgula..."
+                                            onKeyDown={(e: any) => {
+                                                if (e.key === 'Enter' && e.target.value.length > 1) {
+                                                    router.push(`/dashboard/search?q=${e.target.value}`);
+                                                }
+                                            }}
+                                        />
+                                        <button className="bg-indigo-600 hover:bg-indigo-700 text-white p-2.5 rounded-lg transition-colors shadow-md"
+                                            onClick={(e: any) => {
+                                                const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                                                if (input.value.length > 1) {
+                                                    router.push(`/dashboard/search?q=${input.value}`);
+                                                }
+                                            }}
+                                        >
+                                            <Search className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-center mt-2 text-gray-400 font-medium">Hızlı Erişim: TC Kimlik, Ad Soyad veya Telefon</p>
+                                </div>
+
                                 {stats && (
                                     <div className="grid grid-cols-3 gap-4 mb-10 w-full max-w-xl">
                                         <div className="p-4 bg-blue-50/80 backdrop-blur-sm rounded-2xl border border-blue-100 flex flex-col items-center hover:bg-blue-100/80 transition-colors">
