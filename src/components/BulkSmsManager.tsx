@@ -36,11 +36,24 @@ export function BulkSmsManager() {
     const [selectedTemplateId, setSelectedTemplateId] = useState('');
     const [messageContent, setMessageContent] = useState('');
 
+    const [dynamicStatuses, setDynamicStatuses] = useState<any[]>([]);
+
     // Load Data
     useEffect(() => {
         fetchTemplates();
         fetchUsers();
+        fetchStatuses();
     }, []);
+
+    async function fetchStatuses() {
+        try {
+            const res = await fetch('/api/admin/statuses');
+            const data = await res.json();
+            if (data.statuses) setDynamicStatuses(data.statuses);
+        } catch (e) {
+            console.error('Status fetch error', e);
+        }
+    }
 
     useEffect(() => {
         // District logic
@@ -198,18 +211,27 @@ export function BulkSmsManager() {
                                 onChange={e => setFilters({ ...filters, statusValue: e.target.value })}
                             >
                                 <option value="all">Tümü</option>
-                                <option value="Yeni">Yeni Başvuru</option>
-                                <option value="Aranacak">Aranacak</option>
-                                <option value="Ulaşılamadı">Ulaşılamadı</option>
-                                <option value="Meşgul/Hattı kapalı">Meşgul/Kapalı</option>
-                                <option value="Yanlış numara">Yanlış No</option>
-                                <option value="Daha sonra aranmak istiyor">Erteleyenler</option>
-                                <option value="WhatsApp'tan bilgi istiyor">WhatsApp</option>
-                                <option value="E-Devlet paylaşmak istemedi">Bilgi Vermeyen</option>
-                                <option value="Başvuru alındı">Başvuru Alındı</option>
-                                <option value="Onaylandı">Onaylandı</option>
-                                <option value="Kefil bekleniyor">Kefil Bekleyen</option>
-                                <option value="Reddetti">Reddedildi</option>
+                                {/* Static defaults if API fails or for standard ones */}
+                                {dynamicStatuses.length > 0 ? (
+                                    dynamicStatuses.filter(s => s.is_active).map(s => (
+                                        <option key={s.id} value={s.label}>{s.label}</option>
+                                    ))
+                                ) : (
+                                    <>
+                                        <option value="Yeni">Yeni Başvuru</option>
+                                        <option value="Aranacak">Aranacak</option>
+                                        <option value="Ulaşılamadı">Ulaşılamadı</option>
+                                        <option value="Meşgul/Hattı kapalı">Meşgul/Kapalı</option>
+                                        <option value="Yanlış numara">Yanlış No</option>
+                                        <option value="Daha sonra aranmak istiyor">Erteleyenler</option>
+                                        <option value="WhatsApp'tan bilgi istiyor">WhatsApp</option>
+                                        <option value="E-Devlet paylaşmak istemedi">Bilgi Vermeyen</option>
+                                        <option value="Başvuru alındı">Başvuru Alındı</option>
+                                        <option value="Onaylandı">Onaylandı</option>
+                                        <option value="Kefil bekleniyor">Kefil Bekleyen</option>
+                                        <option value="Reddetti">Reddedildi</option>
+                                    </>
+                                )}
                             </select>
                         </div>
 
