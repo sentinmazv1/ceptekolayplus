@@ -53,15 +53,36 @@ export default function SettingsPage() {
         }
     }
 
-    const tabs = [
-        { id: 'statuses', label: 'Durumlar (Aşamalar)' },
-        { id: 'quick_notes', label: 'Hızlı Notlar' },
-        { id: 'products', label: 'Ürünler & Fiyatlar' },
-        { id: 'users', label: 'Kullanıcı Yönetimi' },
-        { id: 'import', label: 'Toplu Veri Yükleme' },
-        { id: 'sync_sheets', label: 'Google Sheets Entegrasyonu' },
-        { id: 'migrate_deliveries', label: 'Teslim Verileri Düzeltme' },
-        { id: 'duplicates', label: 'Mükerrer Kayıt Kontrol' },
+    const menuGroups = [
+        {
+            title: 'Sistem Tanımları',
+            items: [
+                { id: 'statuses', label: 'Durumlar & Aşamalar', icon: Loader2 },
+                { id: 'products', label: 'Ürün Kataloğu & Fiyatlar', icon: Phone },
+                { id: 'quick_notes', label: 'Hızlı Not Şablonları', icon: FileSpreadsheet },
+            ]
+        },
+        {
+            title: 'Kullanıcı Yönetimi',
+            items: [
+                { id: 'users', label: 'Kullanıcılar & Yetkiler', icon: User },
+            ]
+        },
+        {
+            title: 'Veri Yönetimi',
+            items: [
+                { id: 'import', label: 'Excel İçe Aktar', icon: Upload },
+                { id: 'sync_sheets', label: 'Google Sheets Entegrasyonu', icon: RefreshCcw },
+                { id: 'backup', label: 'Veritabanı Yedekleme', icon: Database },
+            ]
+        },
+        {
+            title: 'Bakım & Onarım',
+            items: [
+                { id: 'migrate_deliveries', label: 'Teslim Verileri Düzeltme', icon: RefreshCw },
+                { id: 'duplicates', label: 'Mükerrer Kayıt Kontrolü', icon: CheckCircle },
+            ]
+        }
     ];
 
     return (
@@ -71,35 +92,60 @@ export default function SettingsPage() {
                 <p className="text-gray-500">Tüm sistem tanımlarını buradan yönetebilirsiniz.</p>
             </div>
 
-            {/* Tabs */}
-            <div className="flex space-x-1 border-b border-gray-200 overflow-x-auto pb-1">
-                {tabs.map(t => (
-                    <button
-                        key={t.id}
-                        onClick={() => setActiveTab(t.id as any)}
-                        className={`py-2 px-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${activeTab === t.id ? 'border-indigo-500 text-indigo-600 bg-indigo-50/50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                            }`}
-                    >
-                        {t.label}
-                    </button>
-                ))}
-            </div>
+            <div className="flex flex-col md:flex-row gap-6 items-start">
+                {/* Sidebar Navigation */}
+                <div className="w-full md:w-64 shrink-0 space-y-6">
+                    {menuGroups.map((group, idx) => (
+                        <div key={idx}>
+                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 px-2">
+                                {group.title}
+                            </h3>
+                            <div className="flex flex-col space-y-1">
+                                {group.items.map((item) => {
+                                    const Icon = item.icon;
+                                    const isActive = activeTab === item.id;
+                                    return (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => setActiveTab(item.id as any)}
+                                            className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors w-full text-left ${isActive
+                                                    ? 'bg-indigo-50 text-indigo-700'
+                                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                                }`}
+                                        >
+                                            <Icon className={`w-4 h-4 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
+                                            {item.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
+                </div>
 
-            {loading && activeTab !== 'import' ? (
-                <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-indigo-600" /></div>
-            ) : (
-                <>
-                    {activeTab === 'statuses' && <StatusManager statuses={statuses} refresh={fetchData} />}
-                    {activeTab === 'products' && <ProductManager products={products} refresh={fetchData} />}
-                    {activeTab === 'users' && <UserManager users={users} refresh={fetchData} />}
-                    {activeTab === 'import' && <ImportManager />}
-                    {activeTab === 'sync_sheets' && <SyncManager />}
-                    {activeTab === 'migrate_deliveries' && <MigrationManager />}
-                    {activeTab === 'duplicates' && <DuplicateManager groups={duplicateGroups} refresh={fetchData} />}
-                    {activeTab === 'quick_notes' && <QuickNotesManager notes={quickNotes} refresh={fetchData} />}
-                    {activeTab === 'backup' && <BackupManager />}
-                </>
-            )}
+                {/* Content Area */}
+                <div className="flex-1 bg-white min-h-[500px] rounded-xl border border-gray-200 shadow-sm p-6 w-full">
+                    {loading && activeTab !== 'import' ? (
+                        <div className="h-full flex items-center justify-center text-gray-400">
+                            <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mb-2" />
+                        </div>
+                    ) : (
+                        <div className="animate-in fade-in duration-300">
+                            {activeTab === 'statuses' && <StatusManager statuses={statuses} refresh={fetchData} />}
+                            {activeTab === 'products' && <ProductManager products={products} refresh={fetchData} />}
+                            {activeTab === 'users' && <UserManager users={users} refresh={fetchData} />}
+                            {activeTab === 'quick_notes' && <QuickNotesManager notes={quickNotes} refresh={fetchData} />}
+
+                            {activeTab === 'import' && <ImportManager />}
+                            {activeTab === 'sync_sheets' && <SyncManager />}
+                            {activeTab === 'backup' && <BackupManager />}
+
+                            {activeTab === 'migrate_deliveries' && <MigrationManager />}
+                            {activeTab === 'duplicates' && <DuplicateManager groups={duplicateGroups} refresh={fetchData} />}
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }
