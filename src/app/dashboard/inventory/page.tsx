@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { InventoryItem, InventoryStatus } from '@/lib/types';
 import { Package, Plus, Search, Smartphone, Printer, ClipboardCheck, ArrowRight, User, TrendingUp, Calculator, Tag, X, FileText } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { StockReportModal } from '@/components/StockReportModal';
 
 export default function InventoryPage() {
     const { data: session } = useSession();
@@ -711,128 +712,219 @@ export default function InventoryPage() {
             {/* Price View Modal */}
             {
                 showPriceModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 print:hidden animate-in fade-in duration-200">
-                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-0 overflow-hidden ring-1 ring-white/10">
-                            {/* Modal Header */}
-                            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-5 flex justify-between items-center">
-                                <div className="flex items-center gap-3">
-                                    <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
-                                        <Tag className="w-5 h-5 text-white" />
+                    <>
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 print:hidden animate-in fade-in duration-200">
+                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-0 overflow-hidden ring-1 ring-white/10">
+                                {/* Modal Header */}
+                                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-5 flex justify-between items-center">
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                                            <Tag className="w-5 h-5 text-white" />
+                                        </div>
+                                        <h2 className="text-xl font-bold text-white">Fiyat Sorgula</h2>
                                     </div>
-                                    <h2 className="text-xl font-bold text-white">Fiyat Sorgula</h2>
-                                </div>
-                                <button onClick={() => setShowPriceModal(false)} className="text-white/70 hover:text-white transition-colors bg-white/10 hover:bg-white/20 p-2 rounded-full">
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
-
-                            <div className="p-6 space-y-6">
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Marka Seçiniz</label>
-                                        <select
-                                            className="w-full border-gray-300 rounded-xl shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 text-base bg-gray-50 hover:bg-white transition-colors"
-                                            value={priceSearchBrand}
-                                            onChange={(e) => {
-                                                setPriceSearchBrand(e.target.value);
-                                                setPriceSearchModel('');
-                                                setSelectedPriceItem(null);
-                                            }}
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => window.print()}
+                                            className="text-white/70 hover:text-white transition-colors bg-white/10 hover:bg-white/20 p-2 rounded-full"
+                                            title="Listeyi Yazdır"
                                         >
-                                            <option value="">-- Marka --</option>
-                                            {Array.from(new Set(items.filter(i => i.durum === 'STOKTA').map(i => i.marka))).sort().map(m => (
-                                                <option key={m} value={m}>{m}</option>
-                                            ))}
-                                        </select>
+                                            <Printer className="w-5 h-5" />
+                                        </button>
+                                        <button onClick={() => setShowPriceModal(false)} className="text-white/70 hover:text-white transition-colors bg-white/10 hover:bg-white/20 p-2 rounded-full">
+                                            <X className="w-5 h-5" />
+                                        </button>
                                     </div>
+                                </div>
 
-                                    {priceSearchBrand && (
-                                        <div className="animate-in slide-in-from-top-2 fade-in duration-300">
-                                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Model Seçiniz</label>
+                                <div className="p-6 space-y-6">
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Marka Seçiniz</label>
                                             <select
                                                 className="w-full border-gray-300 rounded-xl shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 text-base bg-gray-50 hover:bg-white transition-colors"
-                                                value={priceSearchModel}
+                                                value={priceSearchBrand}
                                                 onChange={(e) => {
-                                                    setPriceSearchModel(e.target.value);
-                                                    // Find the most recent item of this model to show pricing
-                                                    const item = items.find(i => i.marka === priceSearchBrand && i.model === e.target.value && i.durum === 'STOKTA');
-                                                    setSelectedPriceItem(item || null);
+                                                    setPriceSearchBrand(e.target.value);
+                                                    setPriceSearchModel('');
+                                                    setSelectedPriceItem(null);
                                                 }}
                                             >
-                                                <option value="">-- Model --</option>
-                                                {Array.from(new Set(items.filter(i => i.durum === 'STOKTA' && i.marka === priceSearchBrand).map(i => i.model))).sort().map(m => (
+                                                <option value="">-- Marka --</option>
+                                                {Array.from(new Set(items.filter(i => i.durum === 'STOKTA').map(i => i.marka))).sort().map(m => (
                                                     <option key={m} value={m}>{m}</option>
                                                 ))}
                                             </select>
                                         </div>
+
+                                        {priceSearchBrand && (
+                                            <div className="animate-in slide-in-from-top-2 fade-in duration-300">
+                                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Model Seçiniz</label>
+                                                <select
+                                                    className="w-full border-gray-300 rounded-xl shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 text-base bg-gray-50 hover:bg-white transition-colors"
+                                                    value={priceSearchModel}
+                                                    onChange={(e) => {
+                                                        setPriceSearchModel(e.target.value);
+                                                        // Find the most recent item of this model to show pricing
+                                                        const item = items.find(i => i.marka === priceSearchBrand && i.model === e.target.value && i.durum === 'STOKTA');
+                                                        setSelectedPriceItem(item || null);
+                                                    }}
+                                                >
+                                                    <option value="">-- Model --</option>
+                                                    {Array.from(new Set(items.filter(i => i.durum === 'STOKTA' && i.marka === priceSearchBrand).map(i => i.model))).sort().map(m => (
+                                                        <option key={m} value={m}>{m}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {selectedPriceItem ? (
+                                        <div className="animate-in zoom-in-95 duration-300">
+                                            <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 mb-4 text-center">
+                                                <div className="text-sm text-indigo-800 mb-1">Seçilen Cihaz</div>
+                                                <div className="text-lg font-black text-indigo-900">{selectedPriceItem.marka} {selectedPriceItem.model}</div>
+                                                <div className="mt-2 inline-flex items-center gap-2 bg-white px-3 py-1 rounded-full border border-indigo-100 shadow-sm text-xs font-medium text-indigo-700">
+                                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                                    Stokta: {items.filter(i => i.marka === selectedPriceItem.marka && i.model === selectedPriceItem.model && i.durum === 'STOKTA').length} Adet
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                                                    <div className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">3 Taksit</div>
+                                                    <div className="text-xl font-bold text-gray-900">{selectedPriceItem.fiyat_3_taksit ? `${Number(selectedPriceItem.fiyat_3_taksit).toLocaleString()} ₺` : '-'}</div>
+                                                    {selectedPriceItem.fiyat_3_taksit && (
+                                                        <div className="text-xs text-indigo-600 font-medium mt-1">
+                                                            {(Number(selectedPriceItem.fiyat_3_taksit) / 3).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺ x 3
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                                                    <div className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">6 Taksit</div>
+                                                    <div className="text-xl font-bold text-gray-900">{selectedPriceItem.fiyat_6_taksit ? `${Number(selectedPriceItem.fiyat_6_taksit).toLocaleString()} ₺` : '-'}</div>
+                                                    {selectedPriceItem.fiyat_6_taksit && (
+                                                        <div className="text-xs text-indigo-600 font-medium mt-1">
+                                                            {(Number(selectedPriceItem.fiyat_6_taksit) / 6).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺ x 6
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                                                    <div className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">12 Taksit</div>
+                                                    <div className="text-xl font-bold text-gray-900">{selectedPriceItem.fiyat_12_taksit ? `${Number(selectedPriceItem.fiyat_12_taksit).toLocaleString()} ₺` : '-'}</div>
+                                                    {selectedPriceItem.fiyat_12_taksit && (
+                                                        <div className="text-xs text-indigo-600 font-medium mt-1">
+                                                            {(Number(selectedPriceItem.fiyat_12_taksit) / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺ x 12
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                                                    <div className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">15 Taksit</div>
+                                                    <div className="text-xl font-bold text-gray-900">{selectedPriceItem.fiyat_15_taksit ? `${Number(selectedPriceItem.fiyat_15_taksit).toLocaleString()} ₺` : '-'}</div>
+                                                    {selectedPriceItem.fiyat_15_taksit && (
+                                                        <div className="text-xs text-indigo-600 font-medium mt-1">
+                                                            {(Number(selectedPriceItem.fiyat_15_taksit) / 15).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺ x 15
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-8 text-gray-400 border-2 border-dashed border-gray-100 rounded-xl bg-gray-50/50">
+                                            <Smartphone className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                                            <p>Fiyatlarını görmek için marka ve model seçiniz.</p>
+                                        </div>
                                     )}
-                                </div>
 
-                                {selectedPriceItem ? (
-                                    <div className="animate-in zoom-in-95 duration-300">
-                                        <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 mb-4 text-center">
-                                            <div className="text-sm text-indigo-800 mb-1">Seçilen Cihaz</div>
-                                            <div className="text-lg font-black text-indigo-900">{selectedPriceItem.marka} {selectedPriceItem.model}</div>
-                                            <div className="mt-2 inline-flex items-center gap-2 bg-white px-3 py-1 rounded-full border border-indigo-100 shadow-sm text-xs font-medium text-indigo-700">
-                                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                                                Stokta: {items.filter(i => i.marka === selectedPriceItem.marka && i.model === selectedPriceItem.model && i.durum === 'STOKTA').length} Adet
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                                                <div className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">3 Taksit</div>
-                                                <div className="text-xl font-bold text-gray-900">{selectedPriceItem.fiyat_3_taksit ? `${Number(selectedPriceItem.fiyat_3_taksit).toLocaleString()} ₺` : '-'}</div>
-                                                {selectedPriceItem.fiyat_3_taksit && (
-                                                    <div className="text-xs text-indigo-600 font-medium mt-1">
-                                                        {(Number(selectedPriceItem.fiyat_3_taksit) / 3).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺ x 3
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                                                <div className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">6 Taksit</div>
-                                                <div className="text-xl font-bold text-gray-900">{selectedPriceItem.fiyat_6_taksit ? `${Number(selectedPriceItem.fiyat_6_taksit).toLocaleString()} ₺` : '-'}</div>
-                                                {selectedPriceItem.fiyat_6_taksit && (
-                                                    <div className="text-xs text-indigo-600 font-medium mt-1">
-                                                        {(Number(selectedPriceItem.fiyat_6_taksit) / 6).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺ x 6
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                                                <div className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">12 Taksit</div>
-                                                <div className="text-xl font-bold text-gray-900">{selectedPriceItem.fiyat_12_taksit ? `${Number(selectedPriceItem.fiyat_12_taksit).toLocaleString()} ₺` : '-'}</div>
-                                                {selectedPriceItem.fiyat_12_taksit && (
-                                                    <div className="text-xs text-indigo-600 font-medium mt-1">
-                                                        {(Number(selectedPriceItem.fiyat_12_taksit) / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺ x 12
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                                                <div className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">15 Taksit</div>
-                                                <div className="text-xl font-bold text-gray-900">{selectedPriceItem.fiyat_15_taksit ? `${Number(selectedPriceItem.fiyat_15_taksit).toLocaleString()} ₺` : '-'}</div>
-                                                {selectedPriceItem.fiyat_15_taksit && (
-                                                    <div className="text-xs text-indigo-600 font-medium mt-1">
-                                                        {(Number(selectedPriceItem.fiyat_15_taksit) / 15).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺ x 15
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
+                                    {/* Footer Info */}
+                                    <div className="bg-amber-50 rounded-lg p-3 flex gap-3 text-xs text-amber-800 border border-amber-100">
+                                        <TrendingUp className="w-4 h-4 flex-shrink-0" />
+                                        <p>Fiyatlar anlık stok verilerine göre gösterilmektedir. Stoktaki en güncel giriş baz alınmıştır.</p>
                                     </div>
-                                ) : (
-                                    <div className="text-center py-8 text-gray-400 border-2 border-dashed border-gray-100 rounded-xl bg-gray-50/50">
-                                        <Smartphone className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                                        <p>Fiyatlarını görmek için marka ve model seçiniz.</p>
-                                    </div>
-                                )}
-
-                                {/* Footer Info */}
-                                <div className="bg-amber-50 rounded-lg p-3 flex gap-3 text-xs text-amber-800 border border-amber-100">
-                                    <TrendingUp className="w-4 h-4 flex-shrink-0" />
-                                    <p>Fiyatlar anlık stok verilerine göre gösterilmektedir. Stoktaki en güncel giriş baz alınmıştır.</p>
                                 </div>
                             </div>
                         </div>
-                    </div>
+
+                        {/* PREMIUM FULL LIST PRINT LAYOUT (Hidden on screen, visible on print) */}
+                        <div className="hidden print:block p-8 bg-white fixed inset-0 z-[9999] w-screen h-auto overflow-visible text-black">
+                            {/* Header */}
+                            <div className="flex justify-between items-end border-b-4 border-black pb-6 mb-8">
+                                <div>
+                                    <div className="text-5xl font-black tracking-tighter mb-2">FİYAT LİSTESİ</div>
+                                    <div className="text-xl font-medium text-gray-600 uppercase tracking-widest">CEPTEKOLAY Plus Premium Devices</div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-3xl font-bold">{new Date().toLocaleDateString('tr-TR', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                                    <div className="text-sm font-medium text-gray-500 uppercase">Güncel Liste</div>
+                                </div>
+                            </div>
+
+                            {/* Content Columns */}
+                            <div className="columns-2 gap-8 space-y-8">
+                                {Object.entries(
+                                    items
+                                        .filter(i => i.durum === 'STOKTA' && i.fiyat_15_taksit) // Only show items with prices
+                                        .reduce((acc, curr) => {
+                                            const brand = curr.marka || 'Diğer';
+                                            if (!acc[brand]) acc[brand] = [];
+
+                                            // Unique by model
+                                            if (!acc[brand].some(m => m.model === curr.model)) {
+                                                acc[brand].push(curr);
+                                            }
+                                            return acc;
+                                        }, {} as Record<string, InventoryItem[]>)
+                                )
+                                    .sort((a, b) => a[0].localeCompare(b[0])) // Sort Brands A-Z
+                                    .map(([brand, models]) => (
+                                        <div key={brand} className="break-inside-avoid mb-8">
+                                            <div className="flex items-center gap-4 mb-4">
+                                                <h3 className="text-3xl font-black uppercase tracking-tight">{brand}</h3>
+                                                <div className="h-1 flex-1 bg-black/10"></div>
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                {models.sort((a, b) => a.model.localeCompare(b.model)).map(model => (
+                                                    <div key={model.id} className="border-l-4 border-black pl-5 py-2 relative group">
+                                                        <div className="flex justify-between items-baseline mb-2">
+                                                            <h4 className="text-xl font-bold max-w-[60%] leading-tight">{model.model}</h4>
+                                                            {model.fiyat_15_taksit && (
+                                                                <div className="text-right">
+                                                                    <div className="text-2xl font-black">
+                                                                        {(Number(model.fiyat_15_taksit) / 15).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺
+                                                                    </div>
+                                                                    <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">x 15 Ay Taksit</div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Secondary Options (Small) */}
+                                                        <div className="flex gap-4 text-xs font-medium text-gray-600 border-t border-dotted border-gray-300 pt-2 mt-1">
+                                                            {model.fiyat_12_taksit && (
+                                                                <div>
+                                                                    12 Ay: <span className="font-bold text-black border-b border-gray-300">{(Number(model.fiyat_12_taksit) / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺</span>
+                                                                </div>
+                                                            )}
+                                                            {model.fiyat_6_taksit && (
+                                                                <div>
+                                                                    6 Ay: <span className="font-bold text-black border-b border-gray-300">{(Number(model.fiyat_6_taksit) / 6).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                            </div>
+
+                            {/* Footer */}
+                            <div className="mt-12 border-t-2 border-black pt-6 flex justify-between items-center text-xs font-bold uppercase tracking-wider text-gray-500 break-inside-avoid">
+                                <div>Fiyatlar stoklarla sınırlıdır.</div>
+                                <div>www.ceptekolay.com</div>
+                            </div>
+                        </div>
+                    </>
                 )
             }
 
