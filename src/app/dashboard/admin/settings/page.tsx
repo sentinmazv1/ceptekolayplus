@@ -45,7 +45,7 @@ export default function SettingsPage() {
                 const data = await res.json();
                 if (data.notes) setQuickNotes(data.notes);
             }
-            // Import tab needs no fetch
+            // Import and Bulk SMS tabs needs no fetch
         } catch (e) {
             console.error(e);
         } finally {
@@ -59,6 +59,7 @@ export default function SettingsPage() {
             items: [
                 { id: 'statuses', label: 'Durumlar & Aşamalar', icon: Loader2 },
                 { id: 'sms_templates', label: 'SMS Şablonları', icon: Phone },
+                { id: 'bulk_sms', label: 'Toplu Mesaj Merkezi', icon: MessageSquare },
                 { id: 'quick_notes', label: 'Hızlı Not Şablonları', icon: FileSpreadsheet },
             ]
         },

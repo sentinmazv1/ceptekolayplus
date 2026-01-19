@@ -14,28 +14,48 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
 
     // Filters
-    const status = searchParams.get('status');
+    const status = searchParams.get('status'); // Can be comma separated
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const city = searchParams.get('city');
+    const district = searchParams.get('district');
     const attorneyStatus = searchParams.get('attorneyStatus');
+    const job = searchParams.get('job');
+    const source = searchParams.get('source'); // created_by
 
     let query = supabaseAdmin
         .from('leads')
-        .select('id, ad_soyad, telefon, durum, sehir, avukat_sorgu_durumu, created_at')
+        .select('id, ad_soyad, telefon, durum, sehir, ilce, avukat_sorgu_durumu, created_at, meslek_is, created_by')
         .order('created_at', { ascending: false });
 
     // Apply Filters
     if (status && status !== 'all') {
-        query = query.eq('durum', status);
+        if (status.includes(',')) {
+            const statuses = status.split(',');
+            query = query.in('durum', statuses);
+        } else {
+            query = query.eq('durum', status);
+        }
     }
 
     if (city && city !== 'all') {
         query = query.eq('sehir', city);
     }
 
+    if (district && district !== 'all') {
+        query = query.eq('ilce', district);
+    }
+
     if (attorneyStatus && attorneyStatus !== 'all') {
         query = query.eq('avukat_sorgu_durumu', attorneyStatus);
+    }
+
+    if (job && job !== 'all') {
+        query = query.ilike('meslek_is', `%${job}%`);
+    }
+
+    if (source && source !== 'all') {
+        query = query.eq('created_by', source);
     }
 
     if (startDate) {
