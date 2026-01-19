@@ -122,7 +122,7 @@ function SyncManager() {
             if (json.success) {
                 setPreviewData(json.data);
                 // Auto-select NEW Items only
-                const newIds = new Set(json.data.filter((d: any) => !d.exists).map((d: any) => d.temp_id));
+                const newIds = new Set<string>(json.data.filter((d: any) => !d.exists).map((d: any) => d.temp_id as string));
                 setSelectedIds(newIds);
                 setStep('review');
             } else {
