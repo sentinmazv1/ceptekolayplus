@@ -66,10 +66,14 @@ export async function GET(req: NextRequest) {
     }
 
     if (endDate) {
-        // Adjust end date to include the whole day
+        // Postgre uses ISO strings. 
+        // If user sends '2024-01-20', we want to include everything until '2024-01-20 23:59:59.999'
+        // But simply setting hours on a Date object might have timezone offsets.
+        // Let's create a date, add 1 day, and use lt (less than) the next day 00:00
         const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        query = query.lte(dateField, end.toISOString());
+        end.setDate(end.getDate() + 1); // Move to next day
+        end.setHours(0, 0, 0, 0);       // Reset to midnight
+        query = query.lt(dateField, end.toISOString());
     }
 
     const { data, error } = await query;
