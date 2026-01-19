@@ -15,12 +15,18 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ message: 'Forbidden - Admin only' }, { status: 403 });
     }
 
-    try {
-        // Fetch only leads with "Başvuru alındı" status
-        // User requested strict "Başvuru alındı" for the Admin List ("Havuz")
-        const pendingLeads = await getLeads({ durum: 'Başvuru alındı' });
+    const { searchParams } = new URL(req.url);
+    const attorneyStatus = searchParams.get('attorneyStatus');
 
-        // We no longer filter by onay_durumu here to ensure re-submitted apps appear.
+    try {
+        // Fetch leads. Base filter: "Başvuru alındı"
+        const filters: any = { durum: 'Başvuru alındı' };
+
+        if (attorneyStatus && attorneyStatus !== 'all') {
+            filters.avukat_sorgu_durumu = attorneyStatus;
+        }
+
+        const pendingLeads = await getLeads(filters);
 
 
         // Sort by creation date (oldest first for FIFO)

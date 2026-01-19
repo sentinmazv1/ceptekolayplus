@@ -419,7 +419,60 @@ export function AdminApprovalPanel() {
                 </div>
             )}
 
+    // Filter State
+            const [attorneyFilter, setAttorneyFilter] = useState('all');
+            const [dateRange, setDateRange] = useState({
+                start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0], // First day of current month
+            end: new Date().toISOString().split('T')[0]
+    });
+
+    // ...
+
+    useEffect(() => {
+        if (activeTab === 'pending') {
+                fetchPendingApprovals();
+        } else {
+                fetchApprovedLeads();
+        }
+    }, [activeTab, attorneyFilter]); // Re-fetch when filter changes
+
+    const fetchPendingApprovals = async () => {
+                setLoading(true);
+            try {
+            const params = new URLSearchParams();
+            if (attorneyFilter !== 'all') params.append('attorneyStatus', attorneyFilter);
+
+            const res = await fetch(`/api/admin/pending-approvals?${params.toString()}`);
+            const json = await res.json();
+            if (res.ok) {
+                setLeads(json.leads || []);
+            }
+        } catch (error) {
+                console.error('Failed to fetch pending approvals', error);
+        } finally {
+                setLoading(false);
+        }
+    };
+
+            // ...
+
             <div className="p-6">
+                {/* Pending Filters */}
+                {activeTab === 'pending' && (
+                    <div className="mb-4 flex items-center justify-end">
+                        <select
+                            value={attorneyFilter}
+                            onChange={(e) => setAttorneyFilter(e.target.value)}
+                            className="text-sm border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                        >
+                            <option value="all">Tüm Başvurular</option>
+                            <option value="BEKLİYOR">Avukat Sorgu: Bekleyen</option>
+                            <option value="OLUMLU">Avukat Sorgu: Temiz (Olumlu)</option>
+                            <option value="OLUMSUZ">Avukat Sorgu: Sorunlu (Olumsuz)</option>
+                        </select>
+                    </div>
+                )}
+
                 {loading ? (
                     <div className="flex justify-center py-8">
                         <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
@@ -427,7 +480,7 @@ export function AdminApprovalPanel() {
                 ) : activeTab === 'pending' ? (
                     // PENDING LIST
                     leads.length === 0 ? (
-                        <p className="text-gray-500 text-center py-8">Onay bekleyen başvuru yok.</p>
+                        <p className="text-gray-500 text-center py-8">Kriterlere uygun başvuru bulunamadı.</p>
                     ) : (
                         <div className="space-y-4">
                             {leads.map((lead) => (
