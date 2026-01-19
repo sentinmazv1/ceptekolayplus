@@ -7,7 +7,7 @@ import { Customer } from '@/lib/types';
 import * as XLSX from 'xlsx';
 
 export default function SettingsPage() {
-    const [activeTab, setActiveTab] = useState<'statuses' | 'products' | 'users' | 'import' | 'duplicates' | 'quick_notes' | 'sync_sheets'>('statuses');
+    const [activeTab, setActiveTab] = useState<'statuses' | 'products' | 'users' | 'import' | 'sync_sheets' | 'migrate_deliveries' | 'duplicates' | 'quick_notes'>('statuses');
     const [loading, setLoading] = useState(false);
 
     // Data Holders
