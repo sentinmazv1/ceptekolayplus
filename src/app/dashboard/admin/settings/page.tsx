@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Loader2, Trash2, Edit2, Plus, GripVertical, Check, X, UserPlus, Shield, Info, Upload, FileSpreadsheet, Download, Search, Phone, RefreshCcw, User, Calendar, CheckCircle, Package, RefreshCw, Database, Smartphone, MessageSquare } from 'lucide-react';
 import { Customer } from '@/lib/types';
 import * as XLSX from 'xlsx';
+import { BulkSmsManager } from '@/components/BulkSmsManager';
 
 export default function SettingsPage() {
     const [activeTab, setActiveTab] = useState<'statuses' | 'sms_templates' | 'users' | 'import' | 'sync_sheets' | 'migrate_deliveries' | 'duplicates' | 'quick_notes' | 'backup'>('statuses');
@@ -134,6 +135,7 @@ export default function SettingsPage() {
                         <div className="animate-in fade-in duration-300">
                             {activeTab === 'statuses' && <StatusManager statuses={statuses} refresh={fetchData} />}
                             {activeTab === 'sms_templates' && <SmsTemplateManager templates={templates} refresh={fetchData} />}
+                            {activeTab === 'bulk_sms' && <BulkSmsManager />}
                             {activeTab === 'users' && <UserManager users={users} refresh={fetchData} />}
                             {activeTab === 'quick_notes' && <QuickNotesManager notes={quickNotes} refresh={fetchData} />}
 
