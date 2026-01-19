@@ -828,24 +828,53 @@ function SmsTemplateManager({ templates, refresh }: { templates: any[], refresh:
 
 function UserManager({ users, refresh }: { users: any[], refresh: () => void }) {
     const [isAddOpen, setIsAddOpen] = useState(false);
+    const [editingUser, setEditingUser] = useState<any>(null);
     const [formData, setFormData] = useState({ email: '', name: '', password: '', role: 'SALES_REP' });
     const [loading, setLoading] = useState(false);
 
-    async function handleAdd(e: React.FormEvent) {
+    // Open Add Mode
+    const openAdd = () => {
+        setEditingUser(null);
+        setFormData({ email: '', name: '', password: '', role: 'SALES_REP' });
+        setIsAddOpen(true);
+    };
+
+    // Open Edit Mode
+    const openEdit = (user: any) => {
+        setEditingUser(user);
+        setFormData({
+            email: user.email,
+            name: user.name,
+            password: '', // Don't show existing password
+            role: user.role
+        });
+        setIsAddOpen(true);
+    };
+
+    async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         setLoading(true);
         try {
-            const res = await fetch('/api/admin/users', {
-                method: 'POST',
+            const url = '/api/admin/users';
+            const method = editingUser ? 'PUT' : 'POST';
+            const body = editingUser
+                ? { ...formData, id: editingUser.id }
+                : formData;
+
+            const res = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(body)
             });
+
             const data = await res.json();
+
             if (data.success) {
                 setIsAddOpen(false);
+                setEditingUser(null);
                 setFormData({ email: '', name: '', password: '', role: 'SALES_REP' });
                 refresh();
-                alert('Kullanıcı eklendi!');
+                alert(editingUser ? 'Kullanıcı güncellendi!' : 'Kullanıcı eklendi!');
             } else {
                 alert('Hata: ' + data.error);
             }
@@ -866,25 +895,53 @@ function UserManager({ users, refresh }: { users: any[], refresh: () => void }) 
                     <h3 className="font-semibold text-gray-900">Personel Listesi</h3>
                     <p className="text-sm text-gray-500">Sisteme giriş yetkisi olan kullanıcılar.</p>
                 </div>
-                <Button onClick={() => setIsAddOpen(!isAddOpen)}>
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Yeni Personel
-                </Button>
+                {!isAddOpen && (
+                    <Button onClick={openAdd}>
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Yeni Personel
+                    </Button>
+                )}
             </div>
 
             {isAddOpen && (
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <h4 className="font-medium mb-4">Kullanıcı Bilgileri</h4>
-                    <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <input className="border rounded px-3 py-2" placeholder="Ad Soyad" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
-                        <input className="border rounded px-3 py-2" placeholder="E-Posta" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} required />
-                        <input className="border rounded px-3 py-2" placeholder="Şifre" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} required />
-                        <select className="border rounded px-3 py-2" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
-                            <option value="SALES_REP">Personel (Satış)</option>
-                            <option value="ADMIN">Yönetici (Admin)</option>
-                        </select>
-                        <div className="md:col-span-2 pt-2">
-                            <Button type="submit" disabled={loading} className="w-full">{loading ? 'Kaydediliyor...' : 'Kaydet'}</Button>
+                    <div className="flex justify-between items-center mb-4">
+                        <h4 className="font-medium">{editingUser ? 'Kullanıcı Düzenle' : 'Yeni Personel Ekle'}</h4>
+                        <button onClick={() => setIsAddOpen(false)} className="text-gray-400 hover:text-gray-600">
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+                    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="md:col-span-1">
+                            <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Ad Soyad</label>
+                            <input className="w-full border rounded px-3 py-2" placeholder="Ad Soyad" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
+                        </div>
+                        <div className="md:col-span-1">
+                            <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">E-Posta</label>
+                            <input className="w-full border rounded px-3 py-2" placeholder="E-Posta" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} required />
+                        </div>
+                        <div className="md:col-span-1">
+                            <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">
+                                Şifre {editingUser && <span className="text-gray-400 font-normal lowercase">(değiştirmek istemiyorsanız boş bırakın)</span>}
+                            </label>
+                            <input
+                                className="w-full border rounded px-3 py-2"
+                                placeholder={editingUser ? "Yeni Şifre (Boş bırakılabilir)" : "Şifre"}
+                                value={formData.password}
+                                onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                required={!editingUser}
+                            />
+                        </div>
+                        <div className="md:col-span-1">
+                            <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Yetki Rolü</label>
+                            <select className="w-full border rounded px-3 py-2" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
+                                <option value="SALES_REP">Personel (Satış)</option>
+                                <option value="ADMIN">Yönetici (Admin)</option>
+                            </select>
+                        </div>
+                        <div className="md:col-span-2 pt-2 flex gap-2 justify-end">
+                            <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)}>İptal</Button>
+                            <Button type="submit" disabled={loading} className="w-32">{loading ? 'Kaydediliyor...' : 'Kaydet'}</Button>
                         </div>
                     </form>
                 </div>
@@ -897,11 +954,16 @@ function UserManager({ users, refresh }: { users: any[], refresh: () => void }) 
                             <div className="font-medium text-gray-900">{u.name}</div>
                             <div className="text-sm text-gray-500">{u.email}</div>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${u.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
+                        <div className="flex items-center gap-2">
+                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium mr-2 ${u.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
                                 {u.role === 'ADMIN' ? 'Yönetici' : 'Personel'}
                             </span>
-                            <button onClick={() => handleDelete(u.id)} className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
+                            <button onClick={() => openEdit(u)} className="p-2 hover:bg-indigo-50 text-indigo-600 rounded-lg transition" title="Düzenle">
+                                <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => handleDelete(u.id)} className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition" title="Sil">
+                                <Trash2 className="w-4 h-4" />
+                            </button>
                         </div>
                     </div>
                 ))}

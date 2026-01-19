@@ -53,7 +53,37 @@ export async function POST(req: NextRequest) {
         }
 
         return NextResponse.json({ success: true, user: data });
+    } catch (e: any) {
+        return NextResponse.json({ error: e.message }, { status: 500 });
+    }
+}
 
+export async function PUT(req: NextRequest) {
+    const session = await getServerSession(authOptions);
+    if (!session || session.user?.role !== 'ADMIN') {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    try {
+        const body = await req.json();
+        const { id, email, password, name, role } = body;
+
+        if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
+
+        const updates: any = { email, name, role };
+        // Only update password if provided and not empty
+        if (password && password.trim() !== '') {
+            updates.password = password;
+        }
+
+        const { error } = await supabaseAdmin
+            .from('users')
+            .update(updates)
+            .eq('id', id);
+
+        if (error) return NextResponse.json({ success: false, error: error.message });
+
+        return NextResponse.json({ success: true });
     } catch (e: any) {
         return NextResponse.json({ error: e.message }, { status: 500 });
     }
