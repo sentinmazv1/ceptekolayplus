@@ -27,6 +27,7 @@ export function AdminApprovalPanel() {
     const [formData, setFormData] = useState({ kredi_limiti: '', admin_notu: '' });
 
     // Filter State
+    const [attorneyFilter, setAttorneyFilter] = useState('all');
     const [dateRange, setDateRange] = useState({
         start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0], // First day of current month
         end: new Date().toISOString().split('T')[0]
@@ -47,12 +48,15 @@ export function AdminApprovalPanel() {
         } else {
             fetchApprovedLeads();
         }
-    }, [activeTab]);
+    }, [activeTab, attorneyFilter]); // Re-fetch when filter changes
 
     const fetchPendingApprovals = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/admin/pending-approvals');
+            const params = new URLSearchParams();
+            if (attorneyFilter !== 'all') params.append('attorneyStatus', attorneyFilter);
+
+            const res = await fetch(`/api/admin/pending-approvals?${params.toString()}`);
             const json = await res.json();
             if (res.ok) {
                 setLeads(json.leads || []);
@@ -419,42 +423,7 @@ export function AdminApprovalPanel() {
                 </div>
             )}
 
-    // Filter State
-            const [attorneyFilter, setAttorneyFilter] = useState('all');
-            const [dateRange, setDateRange] = useState({
-                start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0], // First day of current month
-            end: new Date().toISOString().split('T')[0]
-    });
 
-    // ...
-
-    useEffect(() => {
-        if (activeTab === 'pending') {
-                fetchPendingApprovals();
-        } else {
-                fetchApprovedLeads();
-        }
-    }, [activeTab, attorneyFilter]); // Re-fetch when filter changes
-
-    const fetchPendingApprovals = async () => {
-                setLoading(true);
-            try {
-            const params = new URLSearchParams();
-            if (attorneyFilter !== 'all') params.append('attorneyStatus', attorneyFilter);
-
-            const res = await fetch(`/api/admin/pending-approvals?${params.toString()}`);
-            const json = await res.json();
-            if (res.ok) {
-                setLeads(json.leads || []);
-            }
-        } catch (error) {
-                console.error('Failed to fetch pending approvals', error);
-        } finally {
-                setLoading(false);
-        }
-    };
-
-            // ...
 
             <div className="p-6">
                 {/* Pending Filters */}
