@@ -848,13 +848,13 @@ export default function InventoryPage() {
                         {/* PREMIUM FULL LIST PRINT LAYOUT (Hidden on screen, visible on print) */}
                         <div className="hidden print:block p-8 bg-white fixed inset-0 z-[9999] w-screen h-auto overflow-visible text-black">
                             {/* Header */}
-                            <div className="flex justify-between items-end border-b-4 border-black pb-6 mb-8">
+                            <div className="flex justify-between items-end border-b-4 border-black pb-4 mb-6">
                                 <div>
-                                    <div className="text-5xl font-black tracking-tighter mb-2">FİYAT LİSTESİ</div>
-                                    <div className="text-xl font-medium text-gray-600 uppercase tracking-widest">CEPTEKOLAY Plus Premium Devices</div>
+                                    <div className="text-4xl font-black tracking-tighter mb-1">FİYAT LİSTESİ</div>
+                                    <div className="text-lg font-medium text-gray-600 uppercase tracking-widest">CEPTEKOLAY Plus Premium Devices</div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-3xl font-bold">{new Date().toLocaleDateString('tr-TR', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                                    <div className="text-2xl font-bold">{new Date().toLocaleDateString('tr-TR', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
                                     <div className="text-sm font-medium text-gray-500 uppercase">Güncel Liste</div>
                                 </div>
                             </div>
@@ -863,64 +863,65 @@ export default function InventoryPage() {
                             <div className="columns-2 gap-8 space-y-8">
                                 {Object.entries(
                                     items
-                                        .filter(i => i.durum === 'STOKTA' && i.fiyat_15_taksit) // Only show items with prices
+                                        .filter(i => i.durum === 'STOKTA' && i.fiyat_15_taksit)
                                         .reduce((acc, curr) => {
                                             const brand = curr.marka || 'Diğer';
                                             if (!acc[brand]) acc[brand] = [];
 
-                                            // Unique by model
-                                            if (!acc[brand].some(m => m.model === curr.model)) {
+                                            // Unique by NORMALIZED model (trim + case insensitive check if needed, but strict string check is safer for now, just trim)
+                                            const modelName = (curr.model || '').trim();
+                                            if (!acc[brand].some(m => (m.model || '').trim() === modelName)) {
                                                 acc[brand].push(curr);
                                             }
                                             return acc;
                                         }, {} as Record<string, InventoryItem[]>)
                                 )
-                                    .sort((a, b) => a[0].localeCompare(b[0])) // Sort Brands A-Z
+                                    .sort((a, b) => a[0].localeCompare(b[0]))
                                     .map(([brand, models]) => (
-                                        <div key={brand} className="break-inside-avoid mb-8">
-                                            <div className="flex items-center gap-4 mb-4">
-                                                <h3 className="text-3xl font-black uppercase tracking-tight">{brand}</h3>
-                                                <div className="h-1 flex-1 bg-black/10"></div>
+                                        <div key={brand} className="break-inside-avoid mb-6 border border-gray-200 rounded-lg overflow-hidden">
+                                            <div className="bg-gray-100 px-4 py-2 border-b border-gray-300 flex items-center justify-between">
+                                                <h3 className="font-black text-xl uppercase tracking-tight">{brand}</h3>
                                             </div>
 
-                                            <div className="space-y-4">
-                                                {models.sort((a, b) => a.model.localeCompare(b.model)).map(model => (
-                                                    <div key={model.id} className="border-l-4 border-black pl-5 py-2 relative group">
-                                                        <div className="flex justify-between items-baseline mb-2">
-                                                            <h4 className="text-xl font-bold max-w-[60%] leading-tight">{model.model}</h4>
-                                                            {model.fiyat_15_taksit && (
-                                                                <div className="text-right">
-                                                                    <div className="text-2xl font-black">
+                                            <table className="w-full text-sm">
+                                                <thead className="bg-gray-50 border-b border-gray-200 text-xs text-gray-500 font-bold uppercase">
+                                                    <tr>
+                                                        <th className="px-3 py-2 text-left w-1/3">Model</th>
+                                                        <th className="px-3 py-2 text-right">15 Taksit</th>
+                                                        <th className="px-3 py-2 text-right text-gray-400">12 Taksit</th>
+                                                        <th className="px-3 py-2 text-right text-gray-400">6 Taksit</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-100">
+                                                    {models.sort((a, b) => a.model.localeCompare(b.model)).map(model => (
+                                                        <tr key={model.id} className="hover:bg-gray-50">
+                                                            <td className="px-3 py-2 font-bold text-gray-900 border-r border-gray-100">
+                                                                {model.model}
+                                                            </td>
+                                                            <td className="px-3 py-2 text-right font-black bg-gray-50/50">
+                                                                {model.fiyat_15_taksit && (
+                                                                    <div className="text-lg leading-none">
                                                                         {(Number(model.fiyat_15_taksit) / 15).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺
                                                                     </div>
-                                                                    <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">x 15 Ay Taksit</div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-
-                                                        {/* Secondary Options (Small) */}
-                                                        <div className="flex gap-4 text-xs font-medium text-gray-600 border-t border-dotted border-gray-300 pt-2 mt-1">
-                                                            {model.fiyat_12_taksit && (
-                                                                <div>
-                                                                    12 Ay: <span className="font-bold text-black border-b border-gray-300">{(Number(model.fiyat_12_taksit) / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺</span>
-                                                                </div>
-                                                            )}
-                                                            {model.fiyat_6_taksit && (
-                                                                <div>
-                                                                    6 Ay: <span className="font-bold text-black border-b border-gray-300">{(Number(model.fiyat_6_taksit) / 6).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺</span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-3 py-2 text-right text-gray-600">
+                                                                {model.fiyat_12_taksit && (Number(model.fiyat_12_taksit) / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺
+                                                            </td>
+                                                            <td className="px-3 py-2 text-right text-gray-600">
+                                                                {model.fiyat_6_taksit && (Number(model.fiyat_6_taksit) / 6).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
                                         </div>
                                     ))}
                             </div>
 
                             {/* Footer */}
-                            <div className="mt-12 border-t-2 border-black pt-6 flex justify-between items-center text-xs font-bold uppercase tracking-wider text-gray-500 break-inside-avoid">
-                                <div>Fiyatlar stoklarla sınırlıdır.</div>
+                            <div className="mt-8 border-t border-gray-300 pt-4 flex justify-between items-center text-[10px] font-medium text-gray-400 uppercase tracking-wider break-inside-avoid">
+                                <div>Fiyatlar stoklarla sınırlıdır. Hata ve değişiklik hakkı saklıdır.</div>
                                 <div>www.ceptekolay.com</div>
                             </div>
                         </div>
