@@ -113,6 +113,33 @@ export default function InventoryPage() {
         }
     };
 
+    const handleDelete = async () => {
+        if (!editingItem) return;
+        if (!confirm(`⚠️ ${editingItem.marka} ${editingItem.model} (${editingItem.imei}) ürününü silmek istediğinize emin misiniz?\n\nBu işlem geri alınamaz!`)) return;
+
+        setSubmitting(true);
+        try {
+            const res = await fetch('/api/inventory', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: editingItem.id })
+            });
+
+            if (res.ok) {
+                setShowModal(false);
+                fetchInventory();
+                alert('✅ Ürün silindi.');
+            } else {
+                const err = await res.json();
+                alert('❌ Silme başarısız: ' + (err.message || 'Bilinmeyen hata'));
+            }
+        } catch (error) {
+            alert('❌ Bir hata oluştu.');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     // Filter items
     const filteredItems = items.filter(item => {
         const matchesSearch = (item.imei || '').includes(search) ||
@@ -580,36 +607,50 @@ export default function InventoryPage() {
                                     </div>
                                 )}
 
-                                <div className="flex justify-end gap-3 pt-6">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowModal(false)}
-                                        className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
-                                        disabled={submitting}
-                                    >
-                                        İptal
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={submitting}
-                                        className={`px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold shadow-md hover:bg-indigo-700 transition-all flex items-center gap-2 ${submitting ? 'opacity-70 cursor-not-allowed' : 'hover:shadow-lg hover:-translate-y-0.5'}`}
-                                    >
-                                        {submitting ? (
-                                            <>
-                                                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                                Kaydediliyor...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <ClipboardCheck className="w-5 h-5" />
-                                                Kaydet
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
+                                <div className="flex justify-between gap-3 pt-6">
+                                    {/* Delete Button - Admin Only, Edit Mode Only */}
+                                    {editingItem && session?.user.role === 'ADMIN' && (
+                                        <button
+                                            type="button"
+                                            onClick={handleDelete}
+                                            className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-md"
+                                            disabled={submitting}
+                                        >
+                                            <X className="w-4 h-4" />
+                                            Sil
+                                        </button>
+                                    )}
+
+                                    <div className="flex gap-3 ml-auto">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowModal(false)}
+                                            className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+                                            disabled={submitting}
+                                        >
+                                            İptal
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={submitting}
+                                            className={`px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold shadow-md hover:bg-indigo-700 transition-all flex items-center gap-2 ${submitting ? 'opacity-70 cursor-not-allowed' : 'hover:shadow-lg hover:-translate-y-0.5'}`}
+                                        >
+                                            {submitting ? (
+                                                <>
+                                                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                    Kaydediliyor...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <ClipboardCheck className="w-5 h-5" />
+                                                    Kaydet
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
                             </form>
                         </div>
                     </div>

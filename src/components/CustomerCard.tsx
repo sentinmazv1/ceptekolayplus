@@ -1208,6 +1208,17 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                                 )}
                                             </div>
                                         </div>
+
+                                        <div className="pt-4 border-t border-gray-200">
+                                            <label className="block text-xs font-bold text-gray-700 mb-2 uppercase">Kefil Notları</label>
+                                            <textarea
+                                                className="w-full border border-gray-300 p-3 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                                                rows={3}
+                                                placeholder="Kefil ile ilgili özel notlar, önemli detaylar..."
+                                                value={data.kefil_notlar || ''}
+                                                onChange={(e) => handleChange('kefil_notlar', e.target.value)}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2107,11 +2118,12 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                                         <div class="field"><span class="label">Ad Soyad</span> <span class="value">${customer.kefil_ad_soyad}</span></div>
                                         <div class="field"><span class="label">TC Kimlik</span> <span class="value">${customer.kefil_tc_kimlik || '-'}</span></div>
                                         <div class="field"><span class="label">Telefon</span> <span class="value">${customer.kefil_telefon || '-'}</span></div>
+                                        <div class="field"><span class="label">Meslek / İş</span> <span class="value">${customer.kefil_meslek_is || '-'}</span></div>
                                     </div>
                                     <div style="flex:1">
-                                        <div class="field"><span class="label">Meslek</span> <span class="value">${customer.kefil_meslek_is || '-'}</span></div>
                                         <div class="field"><span class="label">Maaş</span> <span class="value">${customer.kefil_son_yatan_maas || '-'}</span></div>
                                         <div class="field"><span class="label">İkametgah</span> <span class="value">${customer.kefil_ikametgah_varmi || '-'}</span></div>
+                                        ${customer.kefil_notlar ? `<div class="field" style="background:#fef9c3; border-left:3px solid #eab308;"><span class="label" style="color:#713f12;">Kefil Notları</span> <span class="value" style="font-size:10px; color:#713f12;">${customer.kefil_notlar}</span></div>` : ''}
                                     </div>
                                 </div>
                             </div>
