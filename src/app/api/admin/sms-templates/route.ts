@@ -9,10 +9,19 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ message: 'Unauthorized' }, { status: 403 });
     }
 
-    const { data, error } = await supabaseAdmin
+    const { searchParams } = new URL(req.url);
+    const type = searchParams.get('type');
+
+    let query = supabaseAdmin
         .from('sms_templates')
         .select('*')
         .order('created_at', { ascending: false });
+
+    if (type) {
+        query = query.eq('type', type);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
         return NextResponse.json({ message: error.message }, { status: 500 });
@@ -29,7 +38,7 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { action, id, title, content, tags } = body;
+        const { action, id, title, content, tags, type } = body;
 
         if (action === 'delete') {
             if (!id) return NextResponse.json({ message: 'ID required' }, { status: 400 });
@@ -43,7 +52,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'Missing fields' }, { status: 400 });
         }
 
-        const payload = { title, content, tags };
+        const payload = { title, content, tags, type: type || 'SMS' };
 
         let result;
         if (id) {

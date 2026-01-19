@@ -645,12 +645,16 @@ function QuickNotesManager({ notes, refresh }: { notes: any[], refresh: () => vo
 }
 
 function SmsTemplateManager({ templates, refresh }: { templates: any[], refresh: () => void }) {
+    const [activeTab, setActiveTab] = useState<'SMS' | 'WHATSAPP'>('SMS');
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [formData, setFormData] = useState({ title: '', content: '', tags: [] as string[] });
     const [loading, setLoading] = useState(false);
 
     // Editing state
     const [editingId, setEditingId] = useState<string | null>(null);
+
+    // Filtered list
+    const filteredTemplates = templates.filter(t => (t.type || 'SMS') === activeTab);
 
     // Initial load handling
     useEffect(() => {
@@ -665,8 +669,8 @@ function SmsTemplateManager({ templates, refresh }: { templates: any[], refresh:
         setLoading(true);
         try {
             const body = editingId
-                ? { ...formData, id: editingId }
-                : formData;
+                ? { ...formData, id: editingId, type: activeTab }
+                : { ...formData, type: activeTab };
 
             const res = await fetch('/api/admin/sms-templates', {
                 method: 'POST',
@@ -700,22 +704,41 @@ function SmsTemplateManager({ templates, refresh }: { templates: any[], refresh:
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex justify-between items-center bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-gray-50 p-4 rounded-lg border border-gray-200 gap-4">
                 <div>
-                    <h3 className="font-semibold text-gray-900">SMS Şablonları</h3>
-                    <p className="text-sm text-gray-500">Toplu SMS ve bildirimler için hazır mesajlar.</p>
+                    <h3 className="font-semibold text-gray-900">Mesaj Şablonları</h3>
+                    <p className="text-sm text-gray-500">SMS ve WhatsApp için hazır mesaj taslakları.</p>
                 </div>
                 {!isAddOpen && !editingId && (
                     <Button onClick={() => setIsAddOpen(true)}>
                         <Plus className="w-4 h-4 mr-2" />
-                        Yeni Şablon
+                        Yeni Şablon Ekle
                     </Button>
                 )}
             </div>
 
+            {/* Sub Tabs */}
+            <div className="flex space-x-1 border-b border-gray-200">
+                <button
+                    onClick={() => { setActiveTab('SMS'); setIsAddOpen(false); setEditingId(null); }}
+                    className={`pb-2 px-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'SMS' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                >
+                    <Smartphone className="w-4 h-4" /> SMS Şablonları
+                </button>
+                <button
+                    onClick={() => { setActiveTab('WHATSAPP'); setIsAddOpen(false); setEditingId(null); }}
+                    className={`pb-2 px-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'WHATSAPP' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                >
+                    <MessageSquare className="w-4 h-4" /> WhatsApp Şablonları
+                </button>
+            </div>
+
             {(isAddOpen || editingId) && (
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <h4 className="font-medium mb-4">{editingId ? 'Şablonu Düzenle' : 'Yeni Şablon Oluştur'}</h4>
+                    <h4 className="font-medium mb-4 flex items-center gap-2">
+                        {activeTab === 'WHATSAPP' ? <MessageSquare className="w-4 h-4 text-green-600" /> : <Smartphone className="w-4 h-4 text-indigo-600" />}
+                        {editingId ? 'Şablonu Düzenle' : `Yeni ${activeTab === 'WHATSAPP' ? 'WhatsApp' : 'SMS'} Şablonu`}
+                    </h4>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Başlık</label>
@@ -731,7 +754,7 @@ function SmsTemplateManager({ templates, refresh }: { templates: any[], refresh:
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Mesaj İçeriği
                                 <span className="text-xs text-gray-400 font-normal ml-2">
-                                    Değişkenler: {'{ad_soyad}'}, {'{urun}'}
+                                    Değişkenler: {'{ad_soyad}'}, {'{urun}'}, {'{limit}'}
                                 </span>
                             </label>
                             <textarea
@@ -742,23 +765,28 @@ function SmsTemplateManager({ templates, refresh }: { templates: any[], refresh:
                                 required
                             />
                             <div className="text-right text-xs text-gray-400 mt-1">
-                                {formData.content.length} karakter - {Math.ceil(formData.content.length / 160)} SMS
+                                {formData.content.length} karakter
+                                {activeTab === 'SMS' && ` - ${Math.ceil(formData.content.length / 160)} SMS`}
                             </div>
                         </div>
                         <div className="flex gap-3 pt-2">
                             <Button type="button" variant="outline" onClick={() => { setIsAddOpen(false); setEditingId(null); }}>İptal</Button>
-                            <Button type="submit" disabled={loading}>{loading ? 'Kaydediliyor...' : 'Kaydet'}</Button>
+                            <Button type="submit" disabled={loading} className={activeTab === 'WHATSAPP' ? 'bg-green-600 hover:bg-green-700' : ''}>
+                                {loading ? 'Kaydediliyor...' : 'Kaydet'}</Button>
                         </div>
                     </form>
                 </div>
             )}
 
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 divide-y">
-                {templates.map((t) => (
+                {filteredTemplates.map((t) => (
                     <div key={t.id} className="p-4 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
                         <div>
-                            <h4 className="font-bold text-gray-900">{t.title}</h4>
-                            <p className="text-sm text-gray-600 line-clamp-1 mt-1">{t.content}</p>
+                            <div className="flex items-center gap-2">
+                                <h4 className="font-bold text-gray-900">{t.title}</h4>
+                                {t.type === 'WHATSAPP' && <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded border border-green-200">WP</span>}
+                            </div>
+                            <p className="text-sm text-gray-600 line-clamp-2 mt-1 whitespace-pre-line">{t.content}</p>
                             {t.tags && t.tags.length > 0 && (
                                 <div className="flex gap-1 mt-2">
                                     {t.tags.map((tag: string) => (
@@ -785,9 +813,9 @@ function SmsTemplateManager({ templates, refresh }: { templates: any[], refresh:
                         </div>
                     </div>
                 ))}
-                {templates.length === 0 && (
+                {filteredTemplates.length === 0 && (
                     <div className="p-8 text-center text-gray-500">
-                        Henüz şablon bulunmuyor.
+                        Bu kategoride henüz şablon bulunmuyor.
                     </div>
                 )}
             </div>
