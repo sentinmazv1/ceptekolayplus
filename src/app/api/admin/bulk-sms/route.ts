@@ -25,6 +25,8 @@ export async function GET(req: NextRequest) {
     const job = searchParams.get('job');
     const source = searchParams.get('source'); // created_by
 
+    console.log('[BulkSMS API] Params:', { status, city, district, attorneyStatus, startDate, endDate, job, source, dateType });
+
     let query = supabaseAdmin
         .from('leads')
         // Ensure updated_at is selected
@@ -33,6 +35,7 @@ export async function GET(req: NextRequest) {
 
     // Apply Filters
     if (status && status !== 'all') {
+        console.log('[BulkSMS API] Filtering status:', status);
         if (status.includes(',')) {
             const statuses = status.split(',');
             query = query.in('durum', statuses);
