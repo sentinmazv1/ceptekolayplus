@@ -651,6 +651,7 @@ export default function InventoryPage() {
                                             )}
                                         </button>
                                     </div>
+                                </div>
                             </form>
                         </div>
                     </div>
