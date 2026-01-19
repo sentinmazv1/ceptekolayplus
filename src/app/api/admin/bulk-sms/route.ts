@@ -14,6 +14,8 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
 
     // Filters
+    const dateType = searchParams.get('dateType') || 'created_at';
+    const dateField = dateType === 'updated_at' ? 'updated_at' : 'created_at'; // Fallback to created_at
     const status = searchParams.get('status'); // Can be comma separated
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
@@ -25,8 +27,9 @@ export async function GET(req: NextRequest) {
 
     let query = supabaseAdmin
         .from('leads')
-        .select('id, ad_soyad, telefon, durum, sehir, ilce, avukat_sorgu_durumu, created_at, meslek_is, created_by')
-        .order('created_at', { ascending: false });
+        // Ensure updated_at is selected
+        .select('id, ad_soyad, telefon, durum, sehir, ilce, avukat_sorgu_durumu, created_at, updated_at, meslek_is, created_by')
+        .order(dateField, { ascending: false });
 
     // Apply Filters
     if (status && status !== 'all') {
@@ -59,14 +62,14 @@ export async function GET(req: NextRequest) {
     }
 
     if (startDate) {
-        query = query.gte('created_at', startDate);
+        query = query.gte(dateField, startDate);
     }
 
     if (endDate) {
         // Adjust end date to include the whole day
         const end = new Date(endDate);
         end.setHours(23, 59, 59, 999);
-        query = query.lte('created_at', end.toISOString());
+        query = query.lte(dateField, end.toISOString());
     }
 
     const { data, error } = await query;

@@ -26,7 +26,8 @@ export function BulkSmsManager() {
         startDate: '',
         endDate: '',
         job: '',
-        source: 'all'
+        source: 'all',
+        dateType: 'created_at' // Default to Created Date
     });
 
     const [districts, setDistricts] = useState<string[]>([]);
@@ -90,6 +91,7 @@ export function BulkSmsManager() {
             if (filters.attorneyStatus !== 'all') params.append('attorneyStatus', filters.attorneyStatus);
             if (filters.startDate) params.append('startDate', filters.startDate);
             if (filters.endDate) params.append('endDate', filters.endDate);
+            if (filters.dateType) params.append('dateType', filters.dateType); // Pass dateType
             if (filters.job) params.append('job', filters.job);
             if (filters.source !== 'all') params.append('source', filters.source);
 
@@ -247,6 +249,18 @@ export function BulkSmsManager() {
                             >
                                 <option value="all">Tümü</option>
                                 {districts.map(d => <option key={d} value={d}>{d}</option>)}
+                            </select>
+                        </div>
+
+                        <div className="col-span-1">
+                            <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Tarih Tipi</label>
+                            <select
+                                className="w-full text-xs border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                value={filters.dateType}
+                                onChange={e => setFilters({ ...filters, dateType: e.target.value })}
+                            >
+                                <option value="created_at">Oluşturulma Tarihi</option>
+                                <option value="updated_at">Son İşlem / Güncelleme</option>
                             </select>
                         </div>
 
