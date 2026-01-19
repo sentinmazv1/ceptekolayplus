@@ -104,70 +104,223 @@ export default function SettingsPage() {
 // --- SUB COMPONENTS ---
 
 function SyncManager() {
-    const [syncing, setSyncing] = useState(false);
-    const [lastResult, setLastResult] = useState<any>(null);
+    const [step, setStep] = useState<'idle' | 'fetching' | 'review' | 'importing' | 'done'>('idle');
+    const [previewData, setPreviewData] = useState<any[]>([]);
+    const [stats, setStats] = useState<any>(null);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-    const handleSync = async () => {
-        setSyncing(true);
-        setLastResult(null);
+    const handleCheck = async () => {
+        setStep('fetching');
+        setStats(null);
         try {
-            const res = await fetch('/api/admin/sync-sheets', { method: 'POST' });
+            const res = await fetch('/api/admin/sync-sheets', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: 'preview' })
+            });
             const json = await res.json();
-            setLastResult(json);
+            if (json.success) {
+                setPreviewData(json.data);
+                // Auto-select NEW Items only
+                const newIds = new Set(json.data.filter((d: any) => !d.exists).map((d: any) => d.temp_id));
+                setSelectedIds(newIds);
+                setStep('review');
+            } else {
+                setStats({ success: false, error: json.error });
+                setStep('idle');
+            }
         } catch (error) {
-            setLastResult({ success: false, error: 'Bağlantı hatası' });
-        } finally {
-            setSyncing(false);
+            setStats({ success: false, error: 'Bağlantı hatası' });
+            setStep('idle');
+        }
+    };
+
+    const handleConfirm = async () => {
+        setStep('importing');
+        const toImport = previewData.filter(d => selectedIds.has(d.temp_id));
+        try {
+            const res = await fetch('/api/admin/sync-sheets', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: 'confirm', leads: toImport })
+            });
+            const json = await res.json();
+            if (json.success) {
+                setStats({ success: true, ...json });
+                setStep('done');
+            } else {
+                setStats({ success: false, error: json.error });
+                setStep('review'); // Allow retrying or modifying
+            }
+        } catch (e) {
+            setStats({ success: false, error: 'Import hatası' });
+            setStep('review');
+        }
+    };
+
+    const toggleSelect = (id: string) => {
+        const newSet = new Set(selectedIds);
+        if (newSet.has(id)) newSet.delete(id);
+        else newSet.add(id);
+        setSelectedIds(newSet);
+    };
+
+    const toggleAll = (checked: boolean) => {
+        if (checked) {
+            setSelectedIds(new Set(previewData.map(d => d.temp_id)));
+        } else {
+            setSelectedIds(new Set());
         }
     };
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-white p-6 rounded-xl border border-gray-200">
+            <div className={`bg-white p-6 rounded-xl border border-gray-200 transition-all ${step === 'review' ? 'ring-2 ring-indigo-500 ring-offset-2' : ''}`}>
                 <div className="flex items-start gap-4">
                     <div className="p-3 bg-green-50 rounded-lg">
                         <FileSpreadsheet className="w-8 h-8 text-green-600" />
                     </div>
                     <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900">Google Sheets Veri Çekme</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">Google Sheets Veri Çekme Sihirbazı</h3>
                         <p className="text-gray-500 mt-1">
-                            Bağlı Google E-Tablolarındaki "Aranma Talepleri" ve "E-Devlet Verenler" sayfalarını kontrol eder ve yeni kayıtları sisteme ekler.
-                            <br />
-                            <span className="text-xs text-orange-600 font-medium">Not: Bu işlem arka planda otomatik yapılmaz, verileri çekmek için butona basmalısınız.</span>
+                            Bu araç, bağlı Google E-Tablolarından verileri önce <b>kontrol eder</b>, sistemde kayıtlı olup olmadıklarını denetler ve onayınıza sunar.
                         </p>
 
-                        <div className="mt-6">
-                            <Button onClick={handleSync} disabled={syncing} size="lg" className="bg-green-600 hover:bg-green-700">
-                                {syncing ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <RefreshCcw className="w-5 h-5 mr-2" />}
-                                {syncing ? 'Eşitleniyor...' : 'Şimdi Eşitle'}
-                            </Button>
+                        <div className="mt-6 flex items-center gap-4">
+                            {step === 'idle' || step === 'done' ? (
+                                <Button onClick={handleCheck} size="lg" className="bg-green-600 hover:bg-green-700">
+                                    <Search className="w-5 h-5 mr-2" />
+                                    Verileri Tara ve Listele
+                                </Button>
+                            ) : step === 'fetching' ? (
+                                <Button disabled size="lg" className="bg-green-600/80">
+                                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                                    Google Sheets Taranıyor...
+                                </Button>
+                            ) : null}
+
+                            {step === 'review' && (
+                                <div className="flex gap-3">
+                                    <Button variant="outline" onClick={() => setStep('idle')}>İptal</Button>
+                                    <Button onClick={handleConfirm} disabled={selectedIds.size === 0} size="lg" className="bg-indigo-600 hover:bg-indigo-700">
+                                        <Download className="w-5 h-5 mr-2" />
+                                        Seçili {selectedIds.size} Kaydı İçe Aktar
+                                    </Button>
+                                </div>
+                            )}
+
+                            {step === 'importing' && (
+                                <Button disabled size="lg" className="bg-indigo-600/80">
+                                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                                    İçe Aktarılıyor...
+                                </Button>
+                            )}
                         </div>
 
-                        {lastResult && (
-                            <div className={`mt-6 p-4 rounded-lg border ${lastResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                                {lastResult.success ? (
-                                    <>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <CheckCircle className="w-5 h-5 text-green-600" />
-                                            <span className="font-bold text-green-800">Senkronizasyon Başarılı</span>
-                                        </div>
-                                        <ul className="text-sm text-green-700 space-y-1 ml-7 list-disc">
-                                            <li>Aranma Talebi: <b>{lastResult.stats.aranma_talebi}</b> yeni kayıt</li>
-                                            <li>E-Devlet Veren: <b>{lastResult.stats.edevlet}</b> yeni kayıt</li>
-                                            <li>Toplam Eklenen: <b>{lastResult.stats.total}</b></li>
-                                        </ul>
-                                    </>
-                                ) : (
-                                    <div className="flex items-center gap-2">
-                                        <X className="w-5 h-5 text-red-600" />
-                                        <span className="font-bold text-red-800">Hata: {lastResult.error}</span>
-                                    </div>
-                                )}
+                        {/* RESULT STATS */}
+                        {step === 'done' && stats && stats.success && (
+                            <div className="mt-6 p-4 rounded-lg bg-green-50 border border-green-200 animate-in zoom-in">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <CheckCircle className="w-6 h-6 text-green-600" />
+                                    <span className="font-bold text-green-800 text-lg">İşlem Başarılı!</span>
+                                </div>
+                                <p className="text-green-700 ml-8">Toplam <b>{stats.added}</b> yeni müşteri kaydı sisteme eklendi. ({stats.skipped} atlandı/hata)</p>
+                            </div>
+                        )}
+
+                        {/* ERROR MSG */}
+                        {stats && !stats.success && (
+                            <div className="mt-6 p-4 rounded-lg bg-red-50 border border-red-200 text-red-800 flex items-center gap-2">
+                                <X className="w-5 h-5" />
+                                <b>Hata:</b> {stats.error}
                             </div>
                         )}
                     </div>
                 </div>
             </div>
+
+            {/* PREVIEW TABLE */}
+            {step === 'review' && previewData.length > 0 && (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-in slide-in-from-bottom-8">
+                    <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                        <div className="flex gap-4 items-center">
+                            <h3 className="font-bold text-gray-700">Bulunan Kayıtlar ({previewData.length})</h3>
+                            <div className="flex gap-2 text-xs">
+                                <span className="bg-green-100 text-green-700 px-2 py-1 rounded-md border border-green-200 font-bold">
+                                    {previewData.filter((x: any) => !x.exists).length} Yeni
+                                </span>
+                                <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-md border border-orange-200 font-bold">
+                                    {previewData.filter((x: any) => x.exists).length} Mevcut/Mükerrer
+                                </span>
+                            </div>
+                        </div>
+                        <div className="text-sm">
+                            <label className="flex items-center gap-2 cursor-pointer font-medium text-indigo-600 hover:text-indigo-800">
+                                <input
+                                    type="checkbox"
+                                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                                    checked={selectedIds.size === previewData.length}
+                                    onChange={(e) => toggleAll(e.target.checked)}
+                                />
+                                Tümünü Seç
+                            </label>
+                        </div>
+                    </div>
+
+                    <div className="max-h-[500px] overflow-y-auto">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-gray-50 text-gray-500 sticky top-0 z-10 shadow-sm">
+                                <tr>
+                                    <th className="px-4 py-3 w-10">
+                                        Seç
+                                    </th>
+                                    <th className="px-4 py-3">Durum</th>
+                                    <th className="px-4 py-3">Adı Soyadı</th>
+                                    <th className="px-4 py-3">Telefon</th>
+                                    <th className="px-4 py-3">Kaynak</th>
+                                    <th className="px-4 py-3">Not</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {previewData.map((row: any) => {
+                                    const isSelected = selectedIds.has(row.temp_id);
+                                    return (
+                                        <tr key={row.temp_id} className={`hover:bg-gray-50 transition-colors ${row.exists ? 'bg-orange-50/30' : ''} ${isSelected ? 'bg-indigo-50/30' : ''}`}>
+                                            <td className="px-4 py-3">
+                                                <input
+                                                    type="checkbox"
+                                                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                                                    checked={isSelected}
+                                                    onChange={() => toggleSelect(row.temp_id)}
+                                                // Optional: disable if exists? User wanted control, maybe allow overwrite? 
+                                                // Let's NOT disable, but visually warn. User said "valuable ones".
+                                                />
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                {row.exists ? (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
+                                                        <Shield className="w-3 h-3 mr-1" /> Mevcut
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                                        <Plus className="w-3 h-3 mr-1" /> Yeni
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3 font-medium text-gray-900">{row.ad_soyad}</td>
+                                            <td className="px-4 py-3 font-mono text-gray-600">{row.telefon}</td>
+                                            <td className="px-4 py-3 text-gray-500">{row.basvuru_kanali}</td>
+                                            <td className="px-4 py-3 text-gray-500 max-w-xs truncate" title={row.raw_data?.[3]}>
+                                                {row.raw_data?.[3] || '-'}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
