@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Loader2, Trash2, Edit2, Plus, GripVertical, Check, X, UserPlus, Shield, Info, Upload, FileSpreadsheet, Download, Search, Phone, RefreshCcw, User, Calendar, CheckCircle, Package, RefreshCw } from 'lucide-react';
+import { Loader2, Trash2, Edit2, Plus, GripVertical, Check, X, UserPlus, Shield, Info, Upload, FileSpreadsheet, Download, Search, Phone, RefreshCcw, User, Calendar, CheckCircle, Package, RefreshCw, Database } from 'lucide-react';
 import { Customer } from '@/lib/types';
 import * as XLSX from 'xlsx';
 
 export default function SettingsPage() {
-    const [activeTab, setActiveTab] = useState<'statuses' | 'products' | 'users' | 'import' | 'sync_sheets' | 'migrate_deliveries' | 'duplicates' | 'quick_notes'>('statuses');
+    const [activeTab, setActiveTab] = useState<'statuses' | 'products' | 'users' | 'import' | 'sync_sheets' | 'migrate_deliveries' | 'duplicates' | 'quick_notes' | 'backup'>('statuses');
     const [loading, setLoading] = useState(false);
 
     // Data Holders
@@ -97,6 +97,7 @@ export default function SettingsPage() {
                     {activeTab === 'migrate_deliveries' && <MigrationManager />}
                     {activeTab === 'duplicates' && <DuplicateManager groups={duplicateGroups} refresh={fetchData} />}
                     {activeTab === 'quick_notes' && <QuickNotesManager notes={quickNotes} refresh={fetchData} />}
+                    {activeTab === 'backup' && <BackupManager />}
                 </>
             )}
         </div>
@@ -933,3 +934,79 @@ function DuplicateManager({ groups, refresh }: { groups: any[], refresh: () => v
     );
 }
 
+function BackupManager() {
+    const [downloading, setDownloading] = useState(false);
+
+    const handleDownloadBackup = async () => {
+        setDownloading(true);
+        try {
+            const res = await fetch('/api/admin/backup');
+            if (res.ok) {
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ceptekolay-backup-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                alert('✅ Yedek başarıyla indirildi!');
+            } else {
+                const err = await res.json();
+                alert('❌ Yedek oluşturulamadı: ' + (err.error || 'Bilinmeyen hata'));
+            }
+        } catch (error) {
+            alert('❌ Hata: ' + error);
+        } finally {
+            setDownloading(false);
+        }
+    };
+
+    return (
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex-1">
+                    <h4 className="font-bold text-gray-900 mb-2">Tam Sistem Yedeği</h4>
+                    <p className="text-sm text-gray-600 mb-4">
+                        Aşağıdaki veriler yedeklenecektir:
+                    </p>
+                    <ul className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                        <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Müşteri Listesi (Leads)</li>
+                        <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Stok Envanteri</li>
+                        <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> İşlem Logları (Son 10.000)</li>
+                        <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Kullanıcı Hesapları</li>
+                        <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Ürün Kataloğu</li>
+                        <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Durum Tanımları</li>
+                    </ul>
+                </div>
+
+                <div className="flex flex-col items-end gap-2">
+                    <button
+                        onClick={handleDownloadBackup}
+                        disabled={downloading}
+                        className={`px-6 py-3 rounded-lg font-bold text-white shadow-md flex items-center gap-2 transition-all ${downloading
+                            ? 'bg-gray-400 cursor-not-allowed'
+                            : 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-lg hover:-translate-y-0.5'
+                            }`}
+                    >
+                        {downloading ? (
+                            <>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                Yedek Hazırlanıyor...
+                            </>
+                        ) : (
+                            <>
+                                <Download className="w-5 h-5" />
+                                Yedeği İndir
+                            </>
+                        )}
+                    </button>
+                    <span className="text-xs text-gray-400 font-mono">JSON formatında indirilir</span>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// End of file
