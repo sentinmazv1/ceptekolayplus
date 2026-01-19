@@ -117,3 +117,76 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ message: 'Failed to add item', details: error.message || error }, { status: 500 });
     }
 }
+
+export async function DELETE(req: NextRequest) {
+    const session = await getServerSession(authOptions);
+
+    // Only ADMIN can delete inventory
+    if (!session || session.user.role !== 'ADMIN') {
+        return NextResponse.json({ message: 'Unauthorized - Admin only' }, { status: 403 });
+    }
+
+    try {
+        const body = await req.json();
+        const { id } = body;
+
+        if (!id) {
+            return NextResponse.json({ message: 'Missing item ID' }, { status: 400 });
+        }
+
+        const { supabaseAdmin } = await import('@/lib/supabase');
+
+        // 1. Get the item to check if it's linked to a customer
+        const { data: item, error: fetchError } = await supabaseAdmin
+            .from('inventory')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (fetchError || !item) {
+            return NextResponse.json({ message: 'Item not found' }, { status: 404 });
+        }
+
+        // 2. If item is sold and linked to a customer, unlink it from customer record
+        if (item.durum === 'SATILDI' && item.customer_id) {
+            // Clear the customer's product fields
+            const { error: updateCustomerError } = await supabaseAdmin
+                .from('leads')
+                .update({
+                    urun_imei: null,
+                    urun_seri_no: null,
+                    marka: null,
+                    model: null
+                })
+                .eq('id', item.customer_id);
+
+            if (updateCustomerError) {
+                console.error('Error unlinking customer:', updateCustomerError);
+                // Continue anyway - we still want to delete the inventory
+            }
+        }
+
+        // 3. Delete the inventory item
+        const { error: deleteError } = await supabaseAdmin
+            .from('inventory')
+            .delete()
+            .eq('id', id);
+
+        if (deleteError) {
+            throw deleteError;
+        }
+
+        return NextResponse.json({
+            success: true,
+            message: 'Inventory item deleted successfully',
+            unlinked_customer: item.customer_id || null
+        });
+
+    } catch (error: any) {
+        console.error('Inventory Delete Error:', error);
+        return NextResponse.json({
+            message: 'Failed to delete item',
+            details: error.message || error
+        }, { status: 500 });
+    }
+}
