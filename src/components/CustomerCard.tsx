@@ -357,9 +357,9 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
             return;
         }
 
-        // Validate delivery fields when marking as delivered
+        // Validate delivery fields when marking as delivered - STOCK SELECTION MANDATORY
         if ((data.durum === 'Teslim edildi' || data.durum === 'Satış yapıldı/Tamamlandı') && (!data.urun_seri_no || !data.urun_imei)) {
-            setError('Teslimat tamamlamak için Ürün Seri No ve IMEI zorunludur.');
+            setError('⚠️ Teslimat tamamlamak için STOKTAN ürün seçmelisiniz.\n\nÜrün & Teslimat sekmesinden "Stoktan Ürün Seç" butonunu kullanın.');
             setLoading(false);
             return;
         }
@@ -1252,34 +1252,69 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                 </h3>
 
                                 <div className="space-y-4 relative z-10">
-                                    <div className="grid grid-cols-2 gap-4 mb-4">
-                                        <Input
-                                            label="Marka"
-                                            value={data.marka || ''}
-                                            onChange={(e) => handleChange('marka', e.target.value)}
-                                            placeholder="Örn: Apple"
-                                        />
-                                        <Input
-                                            label="Model"
-                                            value={data.model || ''}
-                                            onChange={(e) => handleChange('model', e.target.value)}
-                                            placeholder="Örn: iPhone 15"
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4 mb-4">
-                                        <Input
-                                            label="IMEI Numarası"
-                                            value={data.urun_imei || ''}
-                                            onChange={(e) => handleChange('urun_imei', e.target.value)}
-                                            placeholder="15 haneli IMEI"
-                                        />
-                                        <Input
-                                            label="Seri Numarası"
-                                            value={data.urun_seri_no || ''}
-                                            onChange={(e) => handleChange('urun_seri_no', e.target.value)}
-                                            placeholder="Cihaz seri no"
-                                        />
-                                    </div>
+                                    {/* Product Info Display (Read-only if assigned from stock) */}
+                                    {data.urun_imei ? (
+                                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border border-green-200 mb-4">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                                    <span className="text-xs font-bold text-green-800 uppercase tracking-wide">Ürün Atandı</span>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        if (confirm('Ürün atamasını kaldırmak istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
+                                                            handleChange('urun_imei', '');
+                                                            handleChange('urun_seri_no', '');
+                                                            handleChange('marka', '');
+                                                            handleChange('model', '');
+                                                        }
+                                                    }}
+                                                    className="text-xs text-red-600 hover:text-red-800 font-medium"
+                                                >
+                                                    ❌ Kaldır
+                                                </button>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3 text-sm">
+                                                <div className="bg-white/60 p-2 rounded-lg">
+                                                    <div className="text-xs text-gray-600 font-medium mb-1">Marka</div>
+                                                    <div className="font-bold text-gray-900">{data.marka || '-'}</div>
+                                                </div>
+                                                <div className="bg-white/60 p-2 rounded-lg">
+                                                    <div className="text-xs text-gray-600 font-medium mb-1">Model</div>
+                                                    <div className="font-bold text-gray-900">{data.model || '-'}</div>
+                                                </div>
+                                                <div className="bg-white/60 p-2 rounded-lg">
+                                                    <div className="text-xs text-gray-600 font-medium mb-1">IMEI</div>
+                                                    <div className="font-mono text-xs font-bold text-gray-900">{data.urun_imei}</div>
+                                                </div>
+                                                <div className="bg-white/60 p-2 rounded-lg">
+                                                    <div className="text-xs text-gray-600 font-medium mb-1">Seri No</div>
+                                                    <div className="font-mono text-xs font-bold text-gray-900">{data.urun_seri_no || '-'}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-8 border-2 border-dashed border-orange-300 rounded-xl bg-orange-50/30 mb-4 animate-in fade-in zoom-in">
+                                            <div className="w-16 h-16 mx-auto mb-3 bg-orange-100 rounded-full flex items-center justify-center">
+                                                <Package className="w-8 h-8 text-orange-600" />
+                                            </div>
+                                            <p className="text-sm font-bold text-orange-900 mb-1">Ürün Seçilmedi</p>
+                                            <p className="text-xs text-orange-700 mb-4">Müşteriye teslim edilecek cihazı stoktan seçiniz</p>
+                                            <button
+                                                onClick={() => {
+                                                    fetchStock();
+                                                    setIsStockModalOpen(true);
+                                                }}
+                                                className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white hover:from-indigo-700 hover:to-indigo-800 text-sm font-bold rounded-lg shadow-lg hover:shadow-xl transition-all active:scale-95"
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <Search className="w-4 h-4" />
+                                                    Stoktan Ürün Seç (Zorunlu)
+                                                </div>
+                                            </button>
+                                        </div>
+                                    )}
+
                                     <div className="mb-4">
                                         <Input
                                             label="Satış Tarihi"
@@ -1288,18 +1323,6 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                             onChange={(e) => handleChange('satis_tarihi', e.target.value ? new Date(e.target.value).toISOString() : null)}
                                         />
                                     </div>
-
-                                    {!data.urun_imei && (
-                                        <div className="text-center py-4 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50/50 mb-4">
-                                            <p className="text-xs text-gray-500 mb-2">veya stoktan seçin</p>
-                                            <button
-                                                onClick={() => setIsStockModalOpen(true)}
-                                                className="px-4 py-2 bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-sm font-medium rounded-lg shadow-sm transition"
-                                            >
-                                                📦 Stoktan Cihaz Ata
-                                            </button>
-                                        </div>
-                                    )}
 
                                     <div className="pt-4 border-t border-dashed">
                                         <Input
@@ -2018,6 +2041,7 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                                     <div class="field"><span class="label">Kıdem (Ay)</span> <span class="value">${customer.ayni_isyerinde_sure_ay || '-'}</span></div>
                                     <div class="field"><span class="label">Ek Gelir</span> <span class="value">${customer.ek_gelir || '-'}</span></div>
                                     <div class="field"><span class="label">Kredi Notu</span> <span class="value">${customer.findeks_risk_durumu || '-'}</span></div>
+                                    ${customer.finansal_notlar ? `<div class="field" style="background:#fefce8; border-left:3px solid #fbbf24;"><span class="label" style="color:#78350f;">Finansal Notlar</span> <span class="value" style="font-size:10px; color:#78350f;">${customer.finansal_notlar}</span></div>` : ''}
                                 </div>
                             </div>
                         </div>
@@ -2034,6 +2058,7 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                                     <div class="field"><span class="label">Araç Durumu</span> <span class="value">${customer.arac_varmi === 'Evet' ? 'VAR' : 'Yok'}</span></div>
                                     ${customer.arac_varmi === 'Evet' ? `<div class="field" style="border-top:none; padding-top:0;"><span class="label" style="font-weight:normal; font-size:10px;">Detay:</span> <span class="value" style="font-size:10px;">${customer.arac_detay || '-'}</span></div>` : ''}
                                     <div class="field"><span class="label">Avukat Sorgusu</span> <span class="value">${customer.avukat_sorgu_durumu || '-'}</span></div>
+                                    ${customer.avukat_sorgu_sonuc ? `<div class="field" style="background:#fef2f2; border-left:3px solid #dc2626; border-top:none; padding-top:2px;"><span class="label" style="color:#7f1d1d; font-weight:normal; font-size:10px;">Sorgu Sonucu:</span> <span class="value" style="font-size:10px; color:#7f1d1d; font-weight:600;">${customer.avukat_sorgu_sonuc}</span></div>` : ''}
                                 </div>
                             </div>
                             <div class="col-6">

@@ -60,6 +60,7 @@ export default function SettingsPage() {
         { id: 'users', label: 'Kullanıcı Yönetimi' },
         { id: 'import', label: 'Toplu Veri Yükleme' },
         { id: 'sync_sheets', label: 'Google Sheets Entegrasyonu' },
+        { id: 'migrate_deliveries', label: 'Teslim Verileri Düzeltme' },
         { id: 'duplicates', label: 'Mükerrer Kayıt Kontrol' },
     ];
 
@@ -93,6 +94,7 @@ export default function SettingsPage() {
                     {activeTab === 'users' && <UserManager users={users} refresh={fetchData} />}
                     {activeTab === 'import' && <ImportManager />}
                     {activeTab === 'sync_sheets' && <SyncManager />}
+                    {activeTab === 'migrate_deliveries' && <MigrationManager />}
                     {activeTab === 'duplicates' && <DuplicateManager groups={duplicateGroups} refresh={fetchData} />}
                     {activeTab === 'quick_notes' && <QuickNotesManager notes={quickNotes} refresh={fetchData} />}
                 </>
@@ -102,6 +104,101 @@ export default function SettingsPage() {
 }
 
 // --- SUB COMPONENTS ---
+
+// Migration Manager Component
+function MigrationManager() {
+    const [loading, setLoading] = useState(false);
+    const [stats, setStats] = useState<any>(null);
+
+    const runMigration = async () => {
+        if (!confirm('Manuel olarak teslim edilmiş ürünleri stoktan düşmek için migration başlatılacak. Devam edilsin mi?')) return;
+
+        setLoading(true);
+        setStats(null);
+        try {
+            const res = await fetch('/api/admin/migrate-deliveries', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const json = await res.json();
+            setStats(json);
+        } catch (error: any) {
+            setStats({ success: false, error: error.message });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-white p-6 rounded-xl border border-gray-200">
+                <div className="flex items-start gap-4">
+                    <div className="p-3 bg-amber-50 rounded-lg">
+                        <Package className="w-6 h-6 text-amber-600" />
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="font-bold text-lg mb-1">Teslim Verileri Düzeltme (Migration)</h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                            Daha önce manuel olarak girilmiş (stoktan atanmamış) ürün teslimatlarını inventory tablosuna ekler ve stoktan düşer.
+                            Bu işlem sadece <strong>bir kez</strong> çalıştırılmalıdır.
+                        </p>
+                        <button
+                            onClick={runMigration}
+                            disabled={loading}
+                            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                        >
+                            {loading ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Migration Çalışıyor...
+                                </>
+                            ) : (
+                                <>
+                                    <RefreshCw className="w-4 h-4" />
+                                    Migration Başlat
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {stats && (
+                <div className={`p-4 rounded-xl border ${stats.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                    {stats.success ? (
+                        <>
+                            <div className="flex items-center gap-2 text-green-800 font-bold mb-2">
+                                <CheckCircle className="w-5 h-5" />
+                                Migration Tamamlandı
+                            </div>
+                            <div className="text-sm text-green-700">
+                                <p>✅ Toplam: {stats.total || 0} kayıt</p>
+                                <p>✅ Migrate Edildi: {stats.migrated || 0}</p>
+                                <p>⚠️ Atlandı: {stats.skipped || 0}</p>
+                                {stats.errors && stats.errors.length > 0 && (
+                                    <div className="mt-2 p-2 bg-red-50 rounded">
+                                        <p className="font-bold text-red-800">Hatalar:</p>
+                                        {stats.errors.map((err: string, i: number) => (
+                                            <p key={i} className="text-xs">{err}</p>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div className="flex items-center gap-2 text-red-800 font-bold mb-2">
+                                <X className="w-5 h-5" />
+                                Hata
+                            </div>
+                            <p className="text-sm text-red-700">{stats.error}</p>
+                        </>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
 
 function SyncManager() {
     const [step, setStep] = useState<'idle' | 'fetching' | 'review' | 'importing' | 'done'>('idle');
