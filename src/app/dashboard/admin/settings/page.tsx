@@ -8,7 +8,7 @@ import * as XLSX from 'xlsx';
 import { BulkSmsManager } from '@/components/BulkSmsManager';
 
 export default function SettingsPage() {
-    const [activeTab, setActiveTab] = useState<'statuses' | 'sms_templates' | 'users' | 'import' | 'sync_sheets' | 'migrate_deliveries' | 'duplicates' | 'quick_notes' | 'backup'>('statuses');
+    const [activeTab, setActiveTab] = useState<'statuses' | 'sms_templates' | 'bulk_sms' | 'users' | 'import' | 'sync_sheets' | 'migrate_deliveries' | 'duplicates' | 'quick_notes' | 'backup'>('statuses');
     const [loading, setLoading] = useState(false);
 
     // Data Holders
