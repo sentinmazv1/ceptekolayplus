@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Loader2, Trash2, Edit2, Plus, GripVertical, Check, X, UserPlus, Shield, Info, Upload, FileSpreadsheet, Download, Search, Phone, RefreshCcw, User, Calendar, CheckCircle } from 'lucide-react';
+import { Loader2, Trash2, Edit2, Plus, GripVertical, Check, X, UserPlus, Shield, Info, Upload, FileSpreadsheet, Download, Search, Phone, RefreshCcw, User, Calendar, CheckCircle, Package, RefreshCw } from 'lucide-react';
 import { Customer } from '@/lib/types';
 import * as XLSX from 'xlsx';
 
