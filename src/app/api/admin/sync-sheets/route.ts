@@ -1,3 +1,6 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { fetchSheetData } from '@/lib/google-sheets';
+import { addLead } from '@/lib/leads';
 import { supabaseAdmin } from '@/lib/supabase';
 import { Customer } from '@/lib/types';
 import { getServerSession } from 'next-auth';
