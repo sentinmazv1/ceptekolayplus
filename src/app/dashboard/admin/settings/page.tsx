@@ -7,13 +7,13 @@ import { Customer } from '@/lib/types';
 import * as XLSX from 'xlsx';
 
 export default function SettingsPage() {
-    const [activeTab, setActiveTab] = useState<'statuses' | 'products' | 'users' | 'import' | 'sync_sheets' | 'migrate_deliveries' | 'duplicates' | 'quick_notes' | 'backup'>('statuses');
+    const [activeTab, setActiveTab] = useState<'statuses' | 'sms_templates' | 'users' | 'import' | 'sync_sheets' | 'migrate_deliveries' | 'duplicates' | 'quick_notes' | 'backup'>('statuses');
     const [loading, setLoading] = useState(false);
 
     // Data Holders
     const [statuses, setStatuses] = useState<any[]>([]);
     const [quickNotes, setQuickNotes] = useState<any[]>([]);
-    const [products, setProducts] = useState<any[]>([]);
+    const [templates, setTemplates] = useState<any[]>([]);
     const [users, setUsers] = useState<any[]>([]);
     const [duplicateGroups, setDuplicateGroups] = useState<any[]>([]);
 
@@ -28,10 +28,10 @@ export default function SettingsPage() {
                 const res = await fetch('/api/admin/statuses');
                 const data = await res.json();
                 if (data.statuses) setStatuses(data.statuses);
-            } else if (activeTab === 'products') {
-                const res = await fetch('/api/admin/products');
+            } else if (activeTab === 'sms_templates') {
+                const res = await fetch('/api/admin/sms-templates');
                 const data = await res.json();
-                if (data.products) setProducts(data.products);
+                if (data.templates) setTemplates(data.templates);
             } else if (activeTab === 'users') {
                 const res = await fetch('/api/admin/users');
                 const data = await res.json();
@@ -58,7 +58,7 @@ export default function SettingsPage() {
             title: 'Sistem Tanımları',
             items: [
                 { id: 'statuses', label: 'Durumlar & Aşamalar', icon: Loader2 },
-                { id: 'products', label: 'Ürün Kataloğu & Fiyatlar', icon: Phone },
+                { id: 'sms_templates', label: 'SMS Şablonları', icon: Phone },
                 { id: 'quick_notes', label: 'Hızlı Not Şablonları', icon: FileSpreadsheet },
             ]
         },
@@ -109,8 +109,8 @@ export default function SettingsPage() {
                                             key={item.id}
                                             onClick={() => setActiveTab(item.id as any)}
                                             className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors w-full text-left ${isActive
-                                                    ? 'bg-indigo-50 text-indigo-700'
-                                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                                ? 'bg-indigo-50 text-indigo-700'
+                                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                                                 }`}
                                         >
                                             <Icon className={`w-4 h-4 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
@@ -132,7 +132,7 @@ export default function SettingsPage() {
                     ) : (
                         <div className="animate-in fade-in duration-300">
                             {activeTab === 'statuses' && <StatusManager statuses={statuses} refresh={fetchData} />}
-                            {activeTab === 'products' && <ProductManager products={products} refresh={fetchData} />}
+                            {activeTab === 'sms_templates' && <SmsTemplateManager templates={templates} refresh={fetchData} />}
                             {activeTab === 'users' && <UserManager users={users} refresh={fetchData} />}
                             {activeTab === 'quick_notes' && <QuickNotesManager notes={quickNotes} refresh={fetchData} />}
 
@@ -644,47 +644,152 @@ function QuickNotesManager({ notes, refresh }: { notes: any[], refresh: () => vo
     );
 }
 
-function ProductManager({ products, refresh }: { products: any[], refresh: () => void }) {
-    const [name, setName] = useState('');
-    const [price, setPrice] = useState('');
+function SmsTemplateManager({ templates, refresh }: { templates: any[], refresh: () => void }) {
+    const [isAddOpen, setIsAddOpen] = useState(false);
+    const [formData, setFormData] = useState({ title: '', content: '', tags: [] as string[] });
+    const [loading, setLoading] = useState(false);
 
-    async function addProduct(e: React.FormEvent) {
+    // Editing state
+    const [editingId, setEditingId] = useState<string | null>(null);
+
+    // Initial load handling
+    useEffect(() => {
+        if (editingId) {
+            const t = templates.find(x => x.id === editingId);
+            if (t) setFormData({ title: t.title, content: t.content, tags: t.tags || [] });
+        }
+    }, [editingId, templates]);
+
+    async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
-        await fetch('/api/admin/products', {
-            method: 'POST',
-            body: JSON.stringify({ name, price: parseFloat(price) })
-        });
-        setName('');
-        setPrice('');
-        refresh();
+        setLoading(true);
+        try {
+            const body = editingId
+                ? { ...formData, id: editingId }
+                : formData;
+
+            const res = await fetch('/api/admin/sms-templates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            if (res.ok) {
+                setFormData({ title: '', content: '', tags: [] });
+                setIsAddOpen(false);
+                setEditingId(null);
+                refresh();
+            } else {
+                alert('Kaydedilemedi');
+            }
+        } catch (e) {
+            alert('Hata');
+        } finally {
+            setLoading(false);
+        }
     }
 
-    async function deleteProduct(id: string) {
-        if (!confirm('Silinsin mi?')) return;
-        await fetch(`/api/admin/products?id=${id}`, { method: 'DELETE' });
+    async function handleDelete(id: string) {
+        if (!confirm('Şablon silinsin mi?')) return;
+        await fetch('/api/admin/sms-templates', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'delete', id })
+        });
         refresh();
     }
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                <h3 className="font-semibold mb-3">Yeni Ürün Ekle</h3>
-                <form onSubmit={addProduct} className="flex gap-2">
-                    <input className="border rounded px-3 py-2 flex-1" placeholder="Ürün Adı" value={name} onChange={e => setName(e.target.value)} required />
-                    <input type="number" className="border rounded px-3 py-2 w-32" placeholder="Fiyat" value={price} onChange={e => setPrice(e.target.value)} required />
-                    <Button type="submit">Ekle</Button>
-                </form>
+            <div className="flex justify-between items-center bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div>
+                    <h3 className="font-semibold text-gray-900">SMS Şablonları</h3>
+                    <p className="text-sm text-gray-500">Toplu SMS ve bildirimler için hazır mesajlar.</p>
+                </div>
+                {!isAddOpen && !editingId && (
+                    <Button onClick={() => setIsAddOpen(true)}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Yeni Şablon
+                    </Button>
+                )}
             </div>
+
+            {(isAddOpen || editingId) && (
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                    <h4 className="font-medium mb-4">{editingId ? 'Şablonu Düzenle' : 'Yeni Şablon Oluştur'}</h4>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Başlık</label>
+                            <input
+                                className="w-full border rounded-lg px-3 py-2"
+                                placeholder="Örn: Bayram Kutlaması"
+                                value={formData.title}
+                                onChange={e => setFormData({ ...formData, title: e.target.value })}
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Mesaj İçeriği
+                                <span className="text-xs text-gray-400 font-normal ml-2">
+                                    Değişkenler: {'{ad_soyad}'}, {'{urun}'}
+                                </span>
+                            </label>
+                            <textarea
+                                className="w-full border rounded-lg px-3 py-2 h-32"
+                                placeholder="Mesajınızı buraya yazın..."
+                                value={formData.content}
+                                onChange={e => setFormData({ ...formData, content: e.target.value })}
+                                required
+                            />
+                            <div className="text-right text-xs text-gray-400 mt-1">
+                                {formData.content.length} karakter - {Math.ceil(formData.content.length / 160)} SMS
+                            </div>
+                        </div>
+                        <div className="flex gap-3 pt-2">
+                            <Button type="button" variant="outline" onClick={() => { setIsAddOpen(false); setEditingId(null); }}>İptal</Button>
+                            <Button type="submit" disabled={loading}>{loading ? 'Kaydediliyor...' : 'Kaydet'}</Button>
+                        </div>
+                    </form>
+                </div>
+            )}
+
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 divide-y">
-                {products.map((p) => (
-                    <div key={p.id} className="p-4 flex items-center justify-between">
-                        <span className="font-medium text-gray-900">{p.name}</span>
-                        <div className="flex items-center gap-4">
-                            <span className="text-gray-600 font-mono">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(p.price || 0)}</span>
-                            <button onClick={() => deleteProduct(p.id)} className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
+                {templates.map((t) => (
+                    <div key={t.id} className="p-4 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                        <div>
+                            <h4 className="font-bold text-gray-900">{t.title}</h4>
+                            <p className="text-sm text-gray-600 line-clamp-1 mt-1">{t.content}</p>
+                            {t.tags && t.tags.length > 0 && (
+                                <div className="flex gap-1 mt-2">
+                                    {t.tags.map((tag: string) => (
+                                        <span key={tag} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] rounded-full uppercase">
+                                            {tag}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex gap-2 self-end sm:self-center">
+                            <button
+                                onClick={() => { setEditingId(t.id); setIsAddOpen(false); }}
+                                className="p-2 hover:bg-indigo-50 text-indigo-600 rounded-lg transition"
+                            >
+                                <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => handleDelete(t.id)}
+                                className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
                         </div>
                     </div>
                 ))}
+                {templates.length === 0 && (
+                    <div className="p-8 text-center text-gray-500">
+                        Henüz şablon bulunmuyor.
+                    </div>
+                )}
             </div>
         </div>
     );
