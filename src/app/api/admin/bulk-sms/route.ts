@@ -38,12 +38,15 @@ export async function GET(req: NextRequest) {
     if (status && status !== 'all' && status.trim() !== '') {
         console.log('[BulkSMS API] Applying status filter:', status);
         if (status.includes(',')) {
-            const statuses = status.split(',').map(s => s.trim());
-            // Use case-insensitive matching for Turkish characters
-            query = query.ilike('durum', statuses.join('|'));
+            // Multiple statuses - use IN clause
+            const statuses = status.split(',').map(s => s.trim()).filter(s => s !== '');
+            console.log('[BulkSMS API] Multiple statuses detected:', statuses);
+            query = query.in('durum', statuses);
         } else {
-            // Use ilike for case-insensitive + handle Turkish characters
-            query = query.ilike('durum', status.trim());
+            // Single status - use ilike with wildcards to handle spacing issues
+            const trimmedStatus = status.trim();
+            console.log('[BulkSMS API] Single status, using pattern match:', trimmedStatus);
+            query = query.ilike('durum', `%${trimmedStatus}%`);
         }
     } else {
         console.log('[BulkSMS API] No status filter applied');
