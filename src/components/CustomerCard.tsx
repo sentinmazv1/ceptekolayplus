@@ -149,6 +149,43 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
     const [whatsAppMessage, setWhatsAppMessage] = useState('');
     const [whatsAppLoading, setWhatsAppLoading] = useState(false);
 
+    // Multi-Product State
+    const [multiProducts, setMultiProducts] = useState<any[]>([]);
+    const [showManualAdd, setShowManualAdd] = useState(false);
+    const [manualProduct, setManualProduct] = useState({
+        marka: '',
+        model: '',
+        imei: '',
+        fiyat: '',
+        tarih: new Date().toISOString().split('T')[0]
+    });
+
+    useEffect(() => {
+        if (data.satilan_urunler) {
+            try {
+                const parsed = typeof data.satilan_urunler === 'string' ? JSON.parse(data.satilan_urunler) : data.satilan_urunler;
+                if (Array.isArray(parsed)) {
+                    setMultiProducts(parsed);
+                }
+            } catch (e) {
+                console.error("Parse error", e);
+            }
+        } else if (data.urun_imei) {
+            // Legacy Migration logic inside effect
+            const legacyItem = {
+                imei: data.urun_imei,
+                seri_no: data.urun_seri_no,
+                marka: data.marka,
+                model: data.model,
+                satis_tarihi: data.satis_tarihi || data.teslim_tarihi || new Date().toISOString(),
+                fiyat: data.kredi_limiti || 0
+            };
+            setMultiProducts([legacyItem]);
+        } else {
+            setMultiProducts([]);
+        }
+    }, [data.satilan_urunler, data.urun_imei]);
+
 
 
     const fetchLogs = async () => {
@@ -1290,103 +1327,164 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                 </div>
                             </div>
 
-                            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden">
+                            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden md:col-span-2">
                                 <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-indigo-100 to-transparent rounded-bl-full -mr-4 -mt-4 opacity-50"></div>
-                                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-2 relative z-10">
-                                    <Smartphone className="w-4 h-4 text-indigo-600" /> Satılan Cihaz & Teslimat
-                                </h3>
+                                <div className="flex items-center justify-between mb-4 border-b pb-2 relative z-10">
+                                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                                        <Smartphone className="w-4 h-4 text-indigo-600" /> Satış Geçmişi & Çoklu Cihaz
+                                    </h3>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setShowManualAdd(!showManualAdd)}
+                                            className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition-all flex items-center gap-1"
+                                        >
+                                            <Package className="w-3 h-3" />
+                                            {showManualAdd ? 'Vazgeç' : 'Manuel Cihaz Ekle'}
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                fetchStock();
+                                                setIsStockModalOpen(true);
+                                            }}
+                                            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition-all flex items-center gap-1"
+                                        >
+                                            <Search className="w-3 h-3" />
+                                            Stoktan Seç
+                                        </button>
+                                    </div>
+                                </div>
 
-                                <div className="space-y-4 relative z-10">
-                                    {/* Product Info Display (Read-only if assigned from stock) */}
-                                    {data.urun_imei ? (
-                                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border border-green-200 mb-4">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                                    <span className="text-xs font-bold text-green-800 uppercase tracking-wide">Ürün Atandı</span>
-                                                </div>
+                                {/* Manual Addition Form */}
+                                {showManualAdd && (
+                                    <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200 animate-in slide-in-from-top-2 duration-200">
+                                        <h4 className="text-xs font-bold text-gray-700 mb-3 uppercase">Manuel Satış Girişi</h4>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                                            <Input
+                                                placeholder="Marka"
+                                                value={manualProduct.marka}
+                                                onChange={(e) => setManualProduct({ ...manualProduct, marka: e.target.value })}
+                                            />
+                                            <Input
+                                                placeholder="Model"
+                                                value={manualProduct.model}
+                                                onChange={(e) => setManualProduct({ ...manualProduct, model: e.target.value })}
+                                            />
+                                            <Input
+                                                placeholder="IMEI"
+                                                value={manualProduct.imei}
+                                                onChange={(e) => setManualProduct({ ...manualProduct, imei: e.target.value })}
+                                            />
+                                            <Input
+                                                placeholder="Fiyat"
+                                                type="number"
+                                                value={manualProduct.fiyat}
+                                                onChange={(e) => setManualProduct({ ...manualProduct, fiyat: e.target.value })}
+                                            />
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    type="date"
+                                                    value={manualProduct.tarih}
+                                                    onChange={(e) => setManualProduct({ ...manualProduct, tarih: e.target.value })}
+                                                />
                                                 <button
                                                     onClick={() => {
-                                                        if (confirm('Ürün atamasını kaldırmak istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
-                                                            handleChange('urun_imei', '');
-                                                            handleChange('urun_seri_no', '');
-                                                            handleChange('marka', '');
-                                                            handleChange('model', '');
+                                                        if (!manualProduct.marka || !manualProduct.model || !manualProduct.imei) {
+                                                            alert('Marka, Model ve IMEI zorunludur.');
+                                                            return;
                                                         }
+                                                        const newItem = {
+                                                            ...manualProduct,
+                                                            satis_tarihi: new Date(manualProduct.tarih).toISOString(),
+                                                        };
+                                                        const newList = [...multiProducts, newItem];
+                                                        setMultiProducts(newList);
+                                                        handleChange('satilan_urunler', JSON.stringify(newList));
+                                                        setManualProduct({ marka: '', model: '', imei: '', fiyat: '', tarih: new Date().toISOString().split('T')[0] });
+                                                        setShowManualAdd(false);
                                                     }}
-                                                    className="text-xs text-red-600 hover:text-red-800 font-medium"
+                                                    className="bg-green-600 text-white px-3 rounded-lg hover:bg-green-700 shrink-0"
                                                 >
-                                                    ❌ Kaldır
+                                                    Ekle
                                                 </button>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-3 text-sm">
-                                                <div className="bg-white/60 p-2 rounded-lg">
-                                                    <div className="text-xs text-gray-600 font-medium mb-1">Marka</div>
-                                                    <div className="font-bold text-gray-900">{data.marka || '-'}</div>
-                                                </div>
-                                                <div className="bg-white/60 p-2 rounded-lg">
-                                                    <div className="text-xs text-gray-600 font-medium mb-1">Model</div>
-                                                    <div className="font-bold text-gray-900">{data.model || '-'}</div>
-                                                </div>
-                                                <div className="bg-white/60 p-2 rounded-lg">
-                                                    <div className="text-xs text-gray-600 font-medium mb-1">IMEI</div>
-                                                    <div className="font-mono text-xs font-bold text-gray-900">{data.urun_imei}</div>
-                                                </div>
-                                                <div className="bg-white/60 p-2 rounded-lg">
-                                                    <div className="text-xs text-gray-600 font-medium mb-1">Seri No</div>
-                                                    <div className="font-mono text-xs font-bold text-gray-900">{data.urun_seri_no || '-'}</div>
-                                                </div>
-                                            </div>
                                         </div>
-                                    ) : (
-                                        <div className="text-center py-8 border-2 border-dashed border-orange-300 rounded-xl bg-orange-50/30 mb-4 animate-in fade-in zoom-in">
-                                            <div className="w-16 h-16 mx-auto mb-3 bg-orange-100 rounded-full flex items-center justify-center">
-                                                <Package className="w-8 h-8 text-orange-600" />
-                                            </div>
-                                            <p className="text-sm font-bold text-orange-900 mb-1">Ürün Seçilmedi</p>
-                                            <p className="text-xs text-orange-700 mb-4">Müşteriye teslim edilecek cihazı stoktan seçiniz</p>
-                                            <button
-                                                onClick={() => {
-                                                    fetchStock();
-                                                    setIsStockModalOpen(true);
-                                                }}
-                                                className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white hover:from-indigo-700 hover:to-indigo-800 text-sm font-bold rounded-lg shadow-lg hover:shadow-xl transition-all active:scale-95"
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    <Search className="w-4 h-4" />
-                                                    Stoktan Ürün Seç (Zorunlu)
-                                                </div>
-                                            </button>
-                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Sales Table */}
+                                <div className="overflow-x-auto relative z-10">
+                                    <table className="w-full text-left text-sm border-collapse">
+                                        <thead>
+                                            <tr className="bg-gray-50 text-gray-600 uppercase text-[10px] font-bold tracking-wider">
+                                                <th className="px-4 py-2 border-b">Tarih</th>
+                                                <th className="px-4 py-2 border-b">Ürün Detayı</th>
+                                                <th className="px-4 py-2 border-b">IMEI</th>
+                                                <th className="px-4 py-2 border-b text-right">Fiyat</th>
+                                                <th className="px-4 py-2 border-b text-center">İşlem</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y">
+                                            {multiProducts.length > 0 ? (
+                                                multiProducts.map((p, idx) => (
+                                                    <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
+                                                        <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
+                                                            {p.satis_tarihi ? new Date(p.satis_tarihi).toLocaleDateString('tr-TR') : '-'}
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <div className="font-bold text-gray-900">{p.marka} {p.model}</div>
+                                                            {p.seri_no && <div className="text-[10px] text-gray-400">Seri: {p.seri_no}</div>}
+                                                        </td>
+                                                        <td className="px-4 py-3 font-mono text-xs text-indigo-600 font-medium">
+                                                            {p.imei}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right font-bold text-emerald-700">
+                                                            {p.fiyat ? new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(p.fiyat) : '-'}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-center">
+                                                            <button
+                                                                onClick={() => {
+                                                                    if (!confirm('Bu satışı silmek istediğinize emin misiniz?')) return;
+                                                                    const newList = [...multiProducts];
+                                                                    newList.splice(idx, 1);
+                                                                    setMultiProducts(newList);
+                                                                    handleChange('satilan_urunler', JSON.stringify(newList));
+                                                                }}
+                                                                className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                                title="Siparişi Sil"
+                                                            >
+                                                                ❌
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan={5} className="px-4 py-10 text-center text-gray-400 italic">
+                                                        Henüz bir satış kaydı bulunmuyor.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div className="mt-6 pt-4 border-t border-dashed grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <Input
+                                        label="Kargo Takip No"
+                                        value={data.kargo_takip_no || ''}
+                                        onChange={(e) => handleChange('kargo_takip_no', e.target.value)}
+                                        placeholder="Kargo takip kodu..."
+                                    />
+                                    {data.kargo_takip_no && (
+                                        <a
+                                            href={`https://gonderitakip.ptt.gov.tr/Track/Verify?q=${data.kargo_takip_no}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="flex items-center justify-center p-2 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg border border-blue-200 hover:bg-blue-100 transition-all self-end mb-1"
+                                        >
+                                            🚚 KARGO TAKİBİ YAP
+                                        </a>
                                     )}
-
-                                    <div className="mb-4">
-                                        <Input
-                                            label="Satış Tarihi"
-                                            type="date"
-                                            value={data.satis_tarihi ? new Date(data.satis_tarihi).toISOString().split('T')[0] : ''}
-                                            onChange={(e) => handleChange('satis_tarihi', e.target.value ? new Date(e.target.value).toISOString() : null)}
-                                        />
-                                    </div>
-
-                                    <div className="pt-4 border-t border-dashed">
-                                        <Input
-                                            label="Kargo Takip No"
-                                            value={data.kargo_takip_no || ''}
-                                            onChange={(e) => handleChange('kargo_takip_no', e.target.value)}
-                                            placeholder="Kargo takip kodunu giriniz..."
-                                        />
-                                        {data.kargo_takip_no && (
-                                            <a
-                                                href={`https://gonderitakip.ptt.gov.tr/Track/Verify?q=${data.kargo_takip_no}`}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="block mt-2 text-xs text-center text-blue-600 hover:underline bg-blue-50 py-1 rounded"
-                                            >
-                                                🚚 Kargo Takibi İçin Tıkla
-                                            </a>
-                                        )}
-                                    </div>
                                 </div>
                             </div>
                         </div>
