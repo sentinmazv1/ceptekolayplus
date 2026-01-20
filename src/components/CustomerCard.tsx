@@ -516,11 +516,11 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                     <div className="flex items-center gap-2">
                         <Button
                             variant="secondary"
-                            onClick={() => setIsApprovalModalOpen(true)}
+                            onClick={() => window.open(`/dashboard/contract/${data.id}`, '_blank')}
                             className="bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 text-xs shadow-sm"
                             title="Yazdır"
                         >
-                            <Printer className="w-4 h-4 mr-2" /> Yazdır
+                            <Printer className="w-4 h-4 mr-2" /> Sözleşme Yazdır
                         </Button>
                         <Button
                             variant="secondary"
