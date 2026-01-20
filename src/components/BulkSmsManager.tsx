@@ -477,5 +477,6 @@ export function BulkSmsManager() {
 
                 </div>
             </div>
-            );
+        </div>
+    );
 }
