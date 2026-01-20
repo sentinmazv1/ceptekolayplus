@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
             const allRows: any[] = [];
 
             // Standardize generic row mapper
-            const mapRow = (row: any[], source: string) => {
+            const mapRow = (row: any[], source: string, status: string) => {
                 const name = row[1] ? String(row[1]).trim() : '';
                 const phone = row[2] ? String(row[2]).replace(/\s/g, '') : '';
                 const note = row[3] || '';
@@ -43,7 +43,8 @@ export async function POST(req: NextRequest) {
                     telefon: phone,
                     basvuru_kanali: source,
                     aciklama_uzun: `Otomasyon ile eklendi. Kaynak: ${source}. Detay: ${note}`,
-                    durum: 'Yeni',
+                    durum: status, // Dynamic Status
+                    ozel_musteri_mi: true, // Auto-mark as Priority/Special
                     raw_data: row // Keep raw if needed
                 };
             };
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
             // Process Aranma Talepleri
             if (aramaRows) {
                 aramaRows.forEach(r => {
-                    const mapped = mapRow(r, 'Aranma Talebi');
+                    const mapped = mapRow(r, 'Aranma Talebi', 'Yeni');
                     if (mapped) allRows.push(mapped);
                 });
             }
@@ -59,14 +60,13 @@ export async function POST(req: NextRequest) {
             // Process E-Devlet Verenler
             if (edevletRows) {
                 edevletRows.forEach(r => {
-                    const mapped = mapRow(r, 'E-Devlet');
+                    const mapped = mapRow(r, 'E-Devlet', 'E-Devlet Veren'); // Correct Status Mapping
                     if (mapped) allRows.push(mapped);
                 });
             }
 
             // Check Duplicates in DB
             // We can't query "IN (long_list)" easily if list is huge, but for reasonable batch sizes it's fine.
-            // If > 1000, maybe do chunks. Assuming < 1000 daily.
             const phones = allRows.map(r => r.telefon);
 
             const { data: existingLeads } = await supabaseAdmin
@@ -76,24 +76,16 @@ export async function POST(req: NextRequest) {
 
             const existingPhones = new Set(existingLeads?.map(l => l.telefon) || []);
 
-            const previewData = allRows.map(row => ({
-                ...row,
-                exists: existingPhones.has(row.telefon)
-            }));
-
-            // Filter out existing ones? Or just mark them? User wants "control".
-            // Let's sort: New ones first.
-            previewData.sort((a, b) => {
-                if (a.exists === b.exists) return 0;
-                return a.exists ? 1 : -1;
-            });
+            // FILTER: Only show NON-EXISTING leads for import
+            const newLeads = allRows.filter(row => !existingPhones.has(row.telefon));
 
             return NextResponse.json({
                 success: true,
                 mode: 'preview',
-                data: previewData,
-                count: previewData.length,
-                new_count: previewData.filter(x => !x.exists).length
+                data: newLeads, // Only send new ones
+                count: newLeads.length,
+                total_found: allRows.length,
+                duplicates_skipped: allRows.length - newLeads.length
             });
         }
 
@@ -108,23 +100,14 @@ export async function POST(req: NextRequest) {
             let skippedCount = 0;
 
             for (const lead of leads) {
-                // Secondary check for safety (optional but good)
-                // We rely on the Frontend sending filtered list, but addLead might not dedup if not careful.
-                // Note: we can't easily check dedup inside the loop efficiently without causing N+1 queries 
-                // unless we trust the frontend selection.
-                // We'll trust the selector for speed, or addLead handles constraints?
-                // addLead does a simple insert. Supabase *might* throw error if UNIQUE constraint on phone exists?
-                // Assuming no strict unique constraint on phone in DB based on "Mükerrer Kayıt Kontrol" existing.
-
                 try {
-                    // Check if exists one last time if paranoid, or just insert.
-                    // Let's just insert what Admin approved.
                     await addLead({
                         ad_soyad: lead.ad_soyad,
                         telefon: lead.telefon,
                         basvuru_kanali: lead.basvuru_kanali,
-                        durum: 'Yeni',
+                        durum: lead.durum, // Use the status from preview (source-based)
                         aciklama_uzun: lead.aciklama_uzun,
+                        ozel_musteri_mi: true, // Ensure priority tag
                         sahip: null
                     }, session.user.email || 'Admin Sync');
                     addedCount++;

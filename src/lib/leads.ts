@@ -484,15 +484,29 @@ export async function updateLead(customer: Customer, userEmail: string): Promise
 }
 
 export async function addLead(customer: Partial<Customer>, userEmail: string): Promise<Customer> {
+    // 1. Global Duplicate Check
+    if (customer.telefon) {
+        const { data: existing } = await supabaseAdmin
+            .from('leads')
+            .select('id, ad_soyad')
+            .eq('telefon', customer.telefon)
+            .single();
+
+        if (existing) {
+            throw new Error(`Bu telefon numarası (${customer.telefon}) zaten kayıtlı! (${existing.ad_soyad})`);
+        }
+    }
+
     const dbRow = {
         ad_soyad: customer.ad_soyad,
         telefon: customer.telefon,
         tc_kimlik: customer.tc_kimlik,
         durum: customer.durum || 'Yeni',
-        basvuru_kanali: 'Panel',
+        basvuru_kanali: customer.basvuru_kanali || 'Panel', // Allow passing source
         sahip_email: customer.sahip === null ? null : (customer.sahip || userEmail),
         created_at: new Date().toISOString(),
-        // Add basic defaults if needed, but 'update' usually handles details afterwards.
+        ozel_musteri_mi: customer.ozel_musteri_mi || false, // Support priority flag
+        aciklama_uzun: customer.aciklama_uzun
     };
     const { data, error } = await supabaseAdmin.from('leads').insert(dbRow).select().single();
     if (error) throw error;

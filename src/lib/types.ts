@@ -8,6 +8,7 @@ export interface User {
 
 export type LeadStatus =
   | 'Yeni'
+  | 'E-Devlet Veren'
   | 'Aranacak'
   | 'Ulaşılamadı'
   | 'Meşgul/Hattı kapalı'
