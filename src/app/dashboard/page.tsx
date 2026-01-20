@@ -103,16 +103,34 @@ export default function Dashboard() {
                 <div className="fixed inset-0 z-[100] flex items-center justify-center animate-in fade-in duration-200">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSourceNotification(null)} />
                     <div className="relative bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center transform scale-100 animate-in zoom-in-95 duration-200 border border-gray-100">
-                        <div className="mx-auto w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 ring-4 ring-blue-50/50">
-                            <span className="text-3xl filter drop-shadow-sm">
-                                {sourceNotification.includes('Yeni') ? '🆕' :
-                                    sourceNotification.includes('Randevu') ? '📅' : '♻️'}
+                        <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-5 ring-4 shadow-lg ${sourceNotification.includes('E-Devlet') ? 'bg-red-50 ring-red-100 text-red-600' :
+                                sourceNotification.includes('Aranma') ? 'bg-orange-50 ring-orange-100 text-orange-600' :
+                                    sourceNotification.includes('Randevu') ? 'bg-purple-50 ring-purple-100 text-purple-600' :
+                                        'bg-blue-50 ring-blue-100 text-blue-600'
+                            }`}>
+                            <span className="text-4xl filter drop-shadow-sm">
+                                {sourceNotification.includes('E-Devlet') ? '🔥' :
+                                    sourceNotification.includes('Aranma') ? '📢' :
+                                        sourceNotification.includes('Randevu') ? '📅' :
+                                            sourceNotification.includes('Tekrar') ? '♻️' : '🆕'}
                             </span>
                         </div>
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Müşteri Kaynağı</h3>
-                        <p className="text-2xl font-black text-gray-900 mb-6 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">{sourceNotification}</p>
-                        <Button className="w-full font-bold shadow-lg shadow-blue-200 hover:shadow-xl transition-all" size="lg" onClick={() => setSourceNotification(null)}>
-                            Tamam, Anlaşıldı
+                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Müşteri Kaynağı</h3>
+                        <p className={`text-2xl font-black mb-8 bg-clip-text text-transparent bg-gradient-to-r ${sourceNotification.includes('E-Devlet') ? 'from-red-600 to-orange-600' :
+                                sourceNotification.includes('Aranma') ? 'from-orange-600 to-yellow-600' :
+                                    sourceNotification.includes('Randevu') ? 'from-purple-600 to-indigo-600' :
+                                        'from-gray-900 to-gray-700'
+                            }`}>
+                            {sourceNotification}
+                        </p>
+                        <Button
+                            className={`w-full font-bold shadow-lg transition-all h-12 text-lg ${sourceNotification.includes('E-Devlet') ? 'bg-red-600 hover:bg-red-700 shadow-red-200' :
+                                    sourceNotification.includes('Aranma') ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-200' :
+                                        'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'
+                                }`}
+                            onClick={() => setSourceNotification(null)}
+                        >
+                            Görüşmeye Başla
                         </Button>
                     </div>
                 </div>

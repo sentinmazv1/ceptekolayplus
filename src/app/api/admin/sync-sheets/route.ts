@@ -29,41 +29,57 @@ export async function POST(req: NextRequest) {
 
             const allRows: any[] = [];
 
-            // Standardize generic row mapper
-            const mapRow = (row: any[], source: string, status: string) => {
-                const name = row[1] ? String(row[1]).trim() : '';
-                const phone = row[2] ? String(row[2]).replace(/\s/g, '') : '';
-                const note = row[3] || '';
-                const edevlet_pass = row[4] ? String(row[4]).trim() : ''; // Column E
-
-                if (!name || !phone || phone.length < 10) return null;
-
-                return {
-                    temp_id: crypto.randomUUID(),
-                    ad_soyad: name,
-                    telefon: phone,
-                    basvuru_kanali: source,
-                    aciklama_uzun: `Otomasyon ile eklendi. Kaynak: ${source}. Detay: ${note}`,
-                    durum: status, // Dynamic Status
-                    ozel_musteri_mi: true, // Auto-mark as Priority/Special
-                    e_devlet_sifre: edevlet_pass, // Map E-Devlet column
-                    raw_data: row // Keep raw if needed
-                };
-            };
-
             // Process Aranma Talepleri
+            // Columns: A=Timestamp?, B=Name, C=Phone, D=Note, E=...
+            // User didn't specify changes here, assuming: 1=Name, 2=Phone, 3=Note matches previous logic?
+            // Wait, standard Google Forms is: A=Time, B=Name, C=Phone.
+            // Let's keep logic for Aranma as is for now: 1=>Name, 2=>Phone.
             if (aramaRows) {
                 aramaRows.forEach(r => {
-                    const mapped = mapRow(r, 'Aranma Talebi', 'Yeni');
-                    if (mapped) allRows.push(mapped);
+                    const name = r[1] ? String(r[1]).trim() : '';
+                    const phone = r[2] ? String(r[2]).replace(/\s/g, '') : '';
+                    const note = r[3] || '';
+
+                    if (name && phone && phone.length >= 10) {
+                        allRows.push({
+                            temp_id: crypto.randomUUID(),
+                            ad_soyad: name,
+                            telefon: phone,
+                            basvuru_kanali: 'Aranma Talebi',
+                            aciklama_uzun: `Otomasyon ile eklendi. Kaynak: Aranma Talebi. Detay: ${note}`,
+                            durum: 'Yeni',
+                            ozel_musteri_mi: true,
+                            e_devlet_sifre: '',
+                            raw_data: r
+                        });
+                    }
                 });
             }
 
             // Process E-Devlet Verenler
+            // User Config: B=Name, C=TC, D=Phone, E=Pass
+            // Indices: 1, 2, 3, 4
             if (edevletRows) {
                 edevletRows.forEach(r => {
-                    const mapped = mapRow(r, 'E-Devlet', 'E-Devlet Veren'); // Correct Status Mapping
-                    if (mapped) allRows.push(mapped);
+                    const name = r[1] ? String(r[1]).trim() : '';
+                    const tc = r[2] ? String(r[2]).trim() : '';     // Column C
+                    const phone = r[3] ? String(r[3]).replace(/\s/g, '') : ''; // Column D
+                    const pass = r[4] ? String(r[4]).trim() : '';   // Column E
+
+                    if (name && phone && phone.length >= 10) {
+                        allRows.push({
+                            temp_id: crypto.randomUUID(),
+                            ad_soyad: name,
+                            telefon: phone,
+                            tc_kimlik: tc, // Map TC
+                            basvuru_kanali: 'E-Devlet',
+                            aciklama_uzun: `Otomasyon ile eklendi. Kaynak: E-Devlet.`,
+                            durum: 'E-Devlet Veren',
+                            ozel_musteri_mi: true,
+                            e_devlet_sifre: pass,
+                            raw_data: r
+                        });
+                    }
                 });
             }
 
