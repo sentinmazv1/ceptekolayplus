@@ -32,31 +32,10 @@ export async function GET(req: NextRequest) {
         .select('id, ad_soyad, telefon, durum, sehir, ilce, avukat_sorgu_durumu, created_at, updated_at, meslek_is, created_by')
         .order(dateField, { ascending: false });
 
-    console.log('[BulkSMS API] Initial query created');
-
-    // First, let's see ALL statuses in the database for comparison
-    const { data: allLeads, error: preError } = await supabaseAdmin
-        .from('leads')
-        .select('durum')
-        .limit(1000);
-
-    if (!preError && allLeads) {
-        const statusCounts: Record<string, number> = {};
-        allLeads.forEach(lead => {
-            const s = lead.durum || 'NULL';
-            statusCounts[s] = (statusCounts[s] || 0) + 1;
-        });
-        console.log('[BulkSMS API] Database status breakdown:', statusCounts);
-    }
-
-    // Apply status filter with simple exact match
+    // Apply status filter
     if (status && status !== 'all') {
-        console.log('[BulkSMS API] Applying status filter - value:', JSON.stringify(status));
-        console.log('[BulkSMS API] Status length:', status.length, 'trimmed:', JSON.stringify(status.trim()));
-
+        console.log('[BulkSMS API] Filtering by status:', status);
         query = query.eq('durum', status);
-    } else {
-        console.log('[BulkSMS API] No status filter - returning all');
     }
 
     if (city && city !== 'all') {
