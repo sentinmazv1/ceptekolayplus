@@ -32,24 +32,31 @@ export async function GET(req: NextRequest) {
         .select('id, ad_soyad, telefon, durum, sehir, ilce, avukat_sorgu_durumu, created_at, updated_at, meslek_is, created_by')
         .order(dateField, { ascending: false });
 
-    console.log('[BulkSMS API] Initial query created, applying filters...');
+    console.log('[BulkSMS API] Initial query created');
 
-    // Apply Filters with robust handling
-    if (status && status !== 'all' && status.trim() !== '') {
-        console.log('[BulkSMS API] Applying status filter:', status);
-        if (status.includes(',')) {
-            // Multiple statuses - use IN clause
-            const statuses = status.split(',').map(s => s.trim()).filter(s => s !== '');
-            console.log('[BulkSMS API] Multiple statuses detected:', statuses);
-            query = query.in('durum', statuses);
-        } else {
-            // Single status - use ilike with wildcards to handle spacing issues
-            const trimmedStatus = status.trim();
-            console.log('[BulkSMS API] Single status, using pattern match:', trimmedStatus);
-            query = query.ilike('durum', `%${trimmedStatus}%`);
-        }
+    // First, let's see ALL statuses in the database for comparison
+    const { data: allLeads, error: preError } = await supabaseAdmin
+        .from('leads')
+        .select('durum')
+        .limit(1000);
+
+    if (!preError && allLeads) {
+        const statusCounts: Record<string, number> = {};
+        allLeads.forEach(lead => {
+            const s = lead.durum || 'NULL';
+            statusCounts[s] = (statusCounts[s] || 0) + 1;
+        });
+        console.log('[BulkSMS API] Database status breakdown:', statusCounts);
+    }
+
+    // Apply status filter with simple exact match
+    if (status && status !== 'all') {
+        console.log('[BulkSMS API] Applying status filter - value:', JSON.stringify(status));
+        console.log('[BulkSMS API] Status length:', status.length, 'trimmed:', JSON.stringify(status.trim()));
+
+        query = query.eq('durum', status);
     } else {
-        console.log('[BulkSMS API] No status filter applied');
+        console.log('[BulkSMS API] No status filter - returning all');
     }
 
     if (city && city !== 'all') {
