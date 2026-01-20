@@ -5,11 +5,11 @@ const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID;
 const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
 let GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY;
 
-// Robust Private Key Sanitization
+// Robust Private Key Sanitization & Repair
 function sanitizePrivateKey(key: string | undefined): string | undefined {
     if (!key) return undefined;
 
-    let sanitized = key;
+    let sanitized = key.trim();
 
     // 1. Recursively remove surrounding quotes (double or single)
     while (
@@ -21,6 +21,20 @@ function sanitizePrivateKey(key: string | undefined): string | undefined {
 
     // 2. Handle escaped newlines
     sanitized = sanitized.replace(/\\n/g, '\n');
+
+    // 3. Auto-Repair: Add Headers/Footers if missing
+    //    Sometimes users copy just the base64 content
+    if (!sanitized.includes('-----BEGIN PRIVATE KEY-----')) {
+        console.log('Auto-repairing Private Key: Adding missing header...');
+        const content = sanitized.trim();
+        sanitized = `-----BEGIN PRIVATE KEY-----\n${content}`;
+    }
+
+    if (!sanitized.includes('-----END PRIVATE KEY-----')) {
+        console.log('Auto-repairing Private Key: Adding missing footer...');
+        if (!sanitized.endsWith('\n')) sanitized += '\n';
+        sanitized += '-----END PRIVATE KEY-----\n';
+    }
 
     return sanitized;
 }
@@ -53,16 +67,15 @@ export async function fetchSheetData(range: string) {
     } catch (error: any) {
         console.error('Error fetching sheet data:', error.message);
 
-        let msg = error.message;
-
         // Detailed Debug Info attached to the error for UI diagnosis
+        let msg = error.message;
         if (msg.includes('DECODER routines::unsupported') || msg.includes('bad decrypt') || msg.includes('routines:OPENSSL_internal')) {
             const keyLen = GOOGLE_PRIVATE_KEY ? GOOGLE_PRIVATE_KEY.length : 0;
             const hasHeader = GOOGLE_PRIVATE_KEY?.includes('-----BEGIN PRIVATE KEY-----');
             const hasFooter = GOOGLE_PRIVATE_KEY?.includes('-----END PRIVATE KEY-----');
             const newlineCount = (GOOGLE_PRIVATE_KEY?.match(/\n/g) || []).length;
 
-            msg = `Private Key Hatası! Detaylar: Uzunluk=${keyLen}, Header=${hasHeader}, Footer=${hasFooter}, SatırSayısı=${newlineCount}. (Orijinal: ${error.message})`;
+            msg = `Private Key Hatası! Header Eklendi mi?=${hasHeader}. Detaylar: Uzunluk=${keyLen}, Satır=${newlineCount}. (Orijinal: ${error.message})`;
         }
 
         throw new Error(msg);
