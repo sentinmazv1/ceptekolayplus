@@ -25,55 +25,74 @@ export async function GET(req: NextRequest) {
     const job = searchParams.get('job');
     const source = searchParams.get('source'); // created_by
 
-    console.log('[BulkSMS API] Params:', { status, city, district, attorneyStatus, startDate, endDate, job, source, dateType });
+    console.log('[BulkSMS API] Received params:', { status, city, district, attorneyStatus, startDate, endDate, job, source, dateType });
 
     let query = supabaseAdmin
         .from('leads')
-        // Ensure updated_at is selected
         .select('id, ad_soyad, telefon, durum, sehir, ilce, avukat_sorgu_durumu, created_at, updated_at, meslek_is, created_by')
         .order(dateField, { ascending: false });
 
-    // Apply Filters
-    if (status && status !== 'all') {
-        console.log('[BulkSMS API] Filtering status:', status);
+    console.log('[BulkSMS API] Initial query created, applying filters...');
+
+    // Apply Filters with robust handling
+    if (status && status !== 'all' && status.trim() !== '') {
+        console.log('[BulkSMS API] Applying status filter:', status);
         if (status.includes(',')) {
-            const statuses = status.split(',');
-            query = query.in('durum', statuses);
+            const statuses = status.split(',').map(s => s.trim());
+            // Use case-insensitive matching for Turkish characters
+            query = query.ilike('durum', statuses.join('|'));
         } else {
-            query = query.eq('durum', status);
+            // Use ilike for case-insensitive + handle Turkish characters
+            query = query.ilike('durum', status.trim());
         }
+    } else {
+        console.log('[BulkSMS API] No status filter applied');
     }
 
     if (city && city !== 'all') {
+        console.log('[BulkSMS API] Applying city filter:', city);
         query = query.eq('sehir', city);
     }
 
     if (district && district !== 'all') {
+        console.log('[BulkSMS API] Applying district filter:', district);
         query = query.eq('ilce', district);
     }
 
     if (attorneyStatus && attorneyStatus !== 'all') {
+        console.log('[BulkSMS API] Applying attorney status filter:', attorneyStatus);
         query = query.eq('avukat_sorgu_durumu', attorneyStatus);
     }
 
-    if (job && job !== 'all') {
-        query = query.ilike('meslek_is', `%${job}%`);
+    if (job && job.trim() !== '') {
+        console.log('[BulkSMS API] Applying job filter:', job);
+        query = query.ilike('meslek_is', `%${job.trim()}%`);
     }
 
     if (source && source !== 'all') {
+        console.log('[BulkSMS API] Applying source filter:', source);
         query = query.eq('created_by', source);
     }
 
-    if (startDate) {
+    // Date filtering with explicit checks
+    const hasStartDate = startDate && startDate.trim() !== '';
+    const hasEndDate = endDate && endDate.trim() !== '';
+
+    console.log('[BulkSMS API] Date filters:', { hasStartDate, hasEndDate, dateType });
+
+    if (hasStartDate || hasEndDate) {
         if (dateType === 'log_date') {
+            console.log('[BulkSMS API] Using log-based date filtering');
             // LOG BASED FILTERING
-            // Find customers who had ANY activity in this range
             let logQuery = supabaseAdmin
                 .from('logs')
-                .select('customer_id')
-                .gte('created_at', startDate);
+                .select('customer_id');
 
-            if (endDate) {
+            if (hasStartDate) {
+                logQuery = logQuery.gte('created_at', startDate);
+            }
+
+            if (hasEndDate) {
                 const end = new Date(endDate);
                 end.setDate(end.getDate() + 1);
                 end.setHours(0, 0, 0, 0);
@@ -82,37 +101,47 @@ export async function GET(req: NextRequest) {
 
             const { data: logData, error: logError } = await logQuery;
 
-            if (!logError && logData) {
-                const customerIds = logData.map((l: any) => l.customer_id);
-                // Filter main query to only these customers
-                if (customerIds.length > 0) {
-                    query = query.in('id', customerIds);
-                } else {
-                    // No logs found -> No users should be returned
-                    return NextResponse.json({ count: 0, users: [] });
-                }
+            if (logError) {
+                console.error('[BulkSMS API] Log query error:', logError);
+            } else if (logData && logData.length > 0) {
+                const customerIds = [...new Set(logData.map((l: any) => l.customer_id))]; // Remove duplicates
+                console.log(`[BulkSMS API] Found ${customerIds.length} unique customers in logs`);
+                query = query.in('id', customerIds);
+            } else {
+                console.log('[BulkSMS API] No logs found in date range, returning empty');
+                return NextResponse.json({ count: 0, users: [] });
             }
         } else {
             // STANDARD FIELD FILTERS (created_at / updated_at)
-            query = query.gte(dateField, startDate);
+            console.log(`[BulkSMS API] Using standard field filter on ${dateField}`);
 
-            if (endDate) {
+            if (hasStartDate) {
+                query = query.gte(dateField, startDate);
+            }
+
+            if (hasEndDate) {
                 const end = new Date(endDate);
                 end.setDate(end.getDate() + 1);
                 end.setHours(0, 0, 0, 0);
                 query = query.lt(dateField, end.toISOString());
             }
         }
-    } else if (dateType === 'log_date') {
-        // If log_date selected but NO dates provided? 
-        // User said: "Tarih girmezsek seçilen durumun hepsi".
-        // So we do NOT apply any date filter here. Logic flows through.
+    } else {
+        console.log('[BulkSMS API] No date filters applied - returning all matches');
     }
 
+
+    console.log('[BulkSMS API] Executing query...');
     const { data, error } = await query;
 
     if (error) {
+        console.error('[BulkSMS API] Query error:', error);
         return NextResponse.json({ message: error.message }, { status: 500 });
+    }
+
+    console.log(`[BulkSMS API] Query successful! Found ${data?.length || 0} users`);
+    if (data && data.length > 0) {
+        console.log('[BulkSMS API] Sample result (first 3):', data.slice(0, 3).map(u => ({ name: u.ad_soyad, status: u.durum })));
     }
 
     return NextResponse.json({
