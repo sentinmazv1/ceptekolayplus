@@ -10,20 +10,14 @@ function sanitizePrivateKey(key: string | undefined): string | undefined {
     if (!key) return undefined;
 
     let sanitized = key.trim();
-
-    // 1. Recursively remove surrounding quotes (double or single)
     while (
         (sanitized.startsWith('"') && sanitized.endsWith('"')) ||
         (sanitized.startsWith("'") && sanitized.endsWith("'"))
     ) {
         sanitized = sanitized.slice(1, -1);
     }
-
-    // 2. Handle escaped newlines
     sanitized = sanitized.replace(/\\n/g, '\n');
 
-    // 3. Auto-Repair: Add Headers/Footers if missing
-    //    Sometimes users copy just the base64 content
     if (!sanitized.includes('-----BEGIN PRIVATE KEY-----')) {
         const content = sanitized.trim();
         sanitized = `-----BEGIN PRIVATE KEY-----\n${content}`;
@@ -33,14 +27,11 @@ function sanitizePrivateKey(key: string | undefined): string | undefined {
         if (!sanitized.endsWith('\n')) sanitized += '\n';
         sanitized += '-----END PRIVATE KEY-----\n';
     }
-
     return sanitized;
 }
 
-// Apply sanitization
 GOOGLE_PRIVATE_KEY = sanitizePrivateKey(GOOGLE_PRIVATE_KEY);
 
-// Use JWT Client explicitly
 const auth = new google.auth.JWT({
     email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
     key: GOOGLE_PRIVATE_KEY,
@@ -55,12 +46,11 @@ export async function fetchSheetData(range: string) {
     }
 
     try {
-        await auth.authorize(); // Explicit check
+        await auth.authorize();
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId: GOOGLE_SHEET_ID,
             range,
         });
-
         return response.data.values || [];
     } catch (error: any) {
         console.error('Error fetching sheet data:', error.message);
@@ -76,7 +66,9 @@ export async function fetchSheetData(range: string) {
 
         // 2. Permission / Not Found Errors (404)
         else if (msg.includes('Requested entity was not found') || error.code === 404) {
-            msg = `E-Tabloya Erişilemedi! Lütfen "${GOOGLE_SERVICE_ACCOUNT_EMAIL}" adresini Google Sheet dosyanızda "Paylaş" diyerek ekleyin.`;
+            // Show the first and last few chars of the ID for verification
+            const idPreview = GOOGLE_SHEET_ID ? `${GOOGLE_SHEET_ID.substring(0, 5)}...${GOOGLE_SHEET_ID.substring(GOOGLE_SHEET_ID.length - 5)}` : 'BİLİNMİYOR';
+            msg = `E-Tablo Bulunamadı! Sistemdeki ID: "${idPreview}". Lütfen Vercel'deki GOOGLE_SHEET_ID ile tarayıcınızdaki ID'yi karşılaştırın. Ayrıca "${GOOGLE_SERVICE_ACCOUNT_EMAIL}" adresinin yetkili olduğundan emin olun.`;
         }
 
         throw new Error(msg);
