@@ -1,54 +1,36 @@
--- SMS Templates Migration - Array Fix
--- Tags column is an array in PostgreSQL, not text
+-- SMS Templates - Simple Migration
+-- Works with existing table structure, only uses columns that exist
 
--- Insert templates with proper array syntax for tags
-INSERT INTO sms_templates (title, content, type, tags) VALUES
+-- Option 1: Insert with only title and content (safest)
+INSERT INTO sms_templates (title, content) VALUES
 ('Ulaşılamadı Bildirimi', 
- 'Sayın {name}, başvurunuzla ilgili size ulaşmaya çalıştık ancak ulaşamadık. Müsait olduğunuzda 0551 349 6735 numaramızdan veya WhatsApp hattımızdan bize dönüş yapmanızı rica ederiz. CEPTE KOLAY',
- 'SMS',
- '{unreachable,quick_message,status_change}'),
+ 'Sayın {name}, başvurunuzla ilgili size ulaşmaya çalıştık ancak ulaşamadık. Müsait olduğunuzda 0551 349 6735 numaramızdan veya WhatsApp hattımızdan bize dönüş yapmanızı rica ederiz. CEPTE KOLAY'),
 
 ('Kefil Gerekli',
- 'Değerli Müşterimiz {name}, başvurunuzun olumlu sonuçlanabilmesi için kefil desteğine ihtiyaç duyulmuştur. Detaylı bilgi için 0551 349 6735 numaralı hattımızdan bize ulaşabilir veya mağazamızı ziyaret edebilirsiniz. CEPTE KOLAY',
- 'SMS',
- '{guarantor,quick_message,status_change}'),
+ 'Değerli Müşterimiz {name}, başvurunuzun olumlu sonuçlanabilmesi için kefil desteğine ihtiyaç duyulmuştur. Detaylı bilgi için 0551 349 6735 numaralı hattımızdan bize ulaşabilir veya mağazamızı ziyaret edebilirsiniz. CEPTE KOLAY'),
 
 ('Başvuru Onaylandı',
- 'Müjde! {name}, başvurunuz {limit} TL limit ile ONAYLANMIŞTIR! Ürününüzü teslim almak için sizi en kısa sürede mağazamıza bekliyoruz. Şimdiden iyi günlerde kullanın. CEPTE KOLAY',
- 'SMS',
- '{approved,quick_message,status_change}'),
+ 'Müjde! {name}, başvurunuz {limit} TL limit ile ONAYLANMIŞTIR! Ürününüzü teslim almak için sizi en kısa sürede mağazamıza bekliyoruz. Şimdiden iyi günlerde kullanın. CEPTE KOLAY'),
 
 ('Eksik Evrak',
- 'Sayın {name}, başvurunuzu tamamlayabilmemiz için bazı eksik evraklarınız bulunmaktadır. 0551 349 6735 WhatsApp hattımızdan bilgi alarak işlemlerinizi hızlandırabilirsiniz. CEPTE KOLAY',
- 'SMS',
- '{missing_docs,quick_message,status_change}'),
+ 'Sayın {name}, başvurunuzu tamamlayabilmemiz için bazı eksik evraklarınız bulunmaktadır. 0551 349 6735 WhatsApp hattımızdan bilgi alarak işlemlerinizi hızlandırabilirsiniz. CEPTE KOLAY'),
 
 ('Başvuru İptal',
- 'Sayın {name}, başvurunuzla ilgili işlemler durdurulmuş ve kaydınız iptal edilmiştir. İhtiyaçlarınız için kapımız size her zaman açık. CEPTE KOLAY',
- 'SMS',
- '{cancelled,quick_message,status_change}'),
+ 'Sayın {name}, başvurunuzla ilgili işlemler durdurulmuş ve kaydınız iptal edilmiştir. İhtiyaçlarınız için kapımız size her zaman açık. CEPTE KOLAY'),
 
 ('Ürün Teslim Edildi',
- 'Sayın {name}, {product} ürününüz teslim edilmiştir. IMEI: {imei}, Seri No: {serial}. İyi günlerde kullanmanızı dileriz. CEPTE KOLAY',
- 'SMS',
- '{delivered,quick_message}'),
+ 'Sayın {name}, {product} ürününüz teslim edilmiştir. IMEI: {imei}, Seri No: {serial}. İyi günlerde kullanmanızı dileriz. CEPTE KOLAY'),
 
 ('Mağaza Konumu',
- 'Mağaza Konumumuz: https://maps.app.goo.gl/VTBYugiDdTCAbnwB6 CEPTE KOLAY',
- 'SMS',
- '{location,info}'),
+ 'Mağaza Konumumuz: https://maps.app.goo.gl/VTBYugiDdTCAbnwB6 CEPTE KOLAY'),
 
 ('IBAN Bilgisi',
- 'Ödeme yapabileceğiniz IBAN bilgimiz: TR58 0001 0008 0498 1915 2750 01 - Alıcı: Cepte Kolay. CEPTE KOLAY',
- 'SMS',
- '{iban,payment,info}'),
+ 'Ödeme yapabileceğiniz IBAN bilgimiz: TR58 0001 0008 0498 1915 2750 01 - Alıcı: Cepte Kolay. CEPTE KOLAY'),
 
 ('Başvuru Alındı',
- 'Sayın {name}, paylaştığınız bilgiler için teşekkür ederiz. Başvurunuz değerlendirme aşamasında olup, en kısa sürede size dönüş yapılacaktır. İlginiz için teşekkürler. CEPTE KOLAY',
- 'SMS',
- '{application_received,quick_message}')
+ 'Sayın {name}, paylaştığınız bilgiler için teşekkür ederiz. Başvurunuz değerlendirme aşamasında olup, en kısa sürede size dönüş yapılacaktır. İlginiz için teşekkürler. CEPTE KOLAY')
 ON CONFLICT DO NOTHING;
 
 -- Verify
-SELECT COUNT(*) as total_templates FROM sms_templates;
-SELECT id, title, type, tags FROM sms_templates ORDER BY created_at DESC;
+SELECT COUNT(*) as total FROM sms_templates;
+SELECT id, title, substring(content, 1, 50) as preview FROM sms_templates ORDER BY created_at DESC;
