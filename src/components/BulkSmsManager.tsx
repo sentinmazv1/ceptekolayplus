@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Loader2, Search, Filter, Phone, MessageSquare, Send, Users, CheckCircle, X, CheckSquare, Square, RefreshCw, Smartphone } from 'lucide-react';
-import { Button } from './ui/Button'; // Assuming ui/Button exists in components
-import { cityList, getDistrictsByCityCode } from 'turkey-neighbourhoods';
+import { Button } from './ui/Button';
 
 export function BulkSmsManager() {
     // UI State
@@ -23,7 +22,7 @@ export function BulkSmsManager() {
         endDate: ''
     });
 
-    const [districts, setDistricts] = useState<string[]>([]);
+
 
     // Message Composition
     const [selectedTemplateId, setSelectedTemplateId] = useState('');
@@ -48,19 +47,7 @@ export function BulkSmsManager() {
         }
     }
 
-    useEffect(() => {
-        // District logic
-        if (filters.city && filters.city !== 'all') {
-            const c = cityList.find(x => x.name === filters.city);
-            if (c) {
-                setDistricts(getDistrictsByCityCode(c.code));
-            } else {
-                setDistricts([]);
-            }
-        } else {
-            setDistricts([]);
-        }
-    }, [filters.city]);
+
 
     async function fetchTemplates() {
         try {
