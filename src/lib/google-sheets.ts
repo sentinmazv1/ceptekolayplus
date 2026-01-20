@@ -25,13 +25,11 @@ function sanitizePrivateKey(key: string | undefined): string | undefined {
     // 3. Auto-Repair: Add Headers/Footers if missing
     //    Sometimes users copy just the base64 content
     if (!sanitized.includes('-----BEGIN PRIVATE KEY-----')) {
-        console.log('Auto-repairing Private Key: Adding missing header...');
         const content = sanitized.trim();
         sanitized = `-----BEGIN PRIVATE KEY-----\n${content}`;
     }
 
     if (!sanitized.includes('-----END PRIVATE KEY-----')) {
-        console.log('Auto-repairing Private Key: Adding missing footer...');
         if (!sanitized.endsWith('\n')) sanitized += '\n';
         sanitized += '-----END PRIVATE KEY-----\n';
     }
@@ -67,15 +65,18 @@ export async function fetchSheetData(range: string) {
     } catch (error: any) {
         console.error('Error fetching sheet data:', error.message);
 
-        // Detailed Debug Info attached to the error for UI diagnosis
         let msg = error.message;
+
+        // 1. Private Key Errors
         if (msg.includes('DECODER routines::unsupported') || msg.includes('bad decrypt') || msg.includes('routines:OPENSSL_internal')) {
             const keyLen = GOOGLE_PRIVATE_KEY ? GOOGLE_PRIVATE_KEY.length : 0;
-            const hasHeader = GOOGLE_PRIVATE_KEY?.includes('-----BEGIN PRIVATE KEY-----');
-            const hasFooter = GOOGLE_PRIVATE_KEY?.includes('-----END PRIVATE KEY-----');
             const newlineCount = (GOOGLE_PRIVATE_KEY?.match(/\n/g) || []).length;
+            msg = `Private Key Hatası! (Uzunluk=${keyLen}, Satır=${newlineCount}). (Orijinal: ${error.message})`;
+        }
 
-            msg = `Private Key Hatası! Header Eklendi mi?=${hasHeader}. Detaylar: Uzunluk=${keyLen}, Satır=${newlineCount}. (Orijinal: ${error.message})`;
+        // 2. Permission / Not Found Errors (404)
+        else if (msg.includes('Requested entity was not found') || error.code === 404) {
+            msg = `E-Tabloya Erişilemedi! Lütfen "${GOOGLE_SERVICE_ACCOUNT_EMAIL}" adresini Google Sheet dosyanızda "Paylaş" diyerek ekleyin.`;
         }
 
         throw new Error(msg);
