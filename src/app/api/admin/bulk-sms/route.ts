@@ -13,24 +13,17 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
 
-    // Filters
-    const dateType = searchParams.get('dateType') || 'created_at';
-    const dateField = dateType === 'updated_at' ? 'updated_at' : 'created_at'; // Fallback to created_at
-    const status = searchParams.get('status'); // Can be comma separated
+    // Simple filters: only status and dates
+    const status = searchParams.get('status');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
-    const city = searchParams.get('city');
-    const district = searchParams.get('district');
-    const attorneyStatus = searchParams.get('attorneyStatus');
-    const job = searchParams.get('job');
-    const source = searchParams.get('source'); // created_by
 
-    console.log('[BulkSMS API] Received params:', { status, city, district, attorneyStatus, startDate, endDate, job, source, dateType });
+    console.log('[BulkSMS API] Simple filters:', { status, startDate, endDate });
 
     let query = supabaseAdmin
         .from('leads')
-        .select('id, ad_soyad, telefon, durum, sehir, ilce, avukat_sorgu_durumu, created_at, updated_at, meslek_is, created_by')
-        .order(dateField, { ascending: false });
+        .select('id, ad_soyad, telefon, durum, sehir, ilce, created_at')
+        .order('created_at', { ascending: false });
 
     // Apply status filter
     if (status && status !== 'all') {
@@ -38,87 +31,20 @@ export async function GET(req: NextRequest) {
         query = query.eq('durum', status);
     }
 
-    if (city && city !== 'all') {
-        console.log('[BulkSMS API] Applying city filter:', city);
-        query = query.eq('sehir', city);
+    // Apply date filters
+    if (startDate) {
+        console.log('[BulkSMS API] Start date:', startDate);
+        query = query.gte('created_at', startDate);
     }
 
-    if (district && district !== 'all') {
-        console.log('[BulkSMS API] Applying district filter:', district);
-        query = query.eq('ilce', district);
+    if (endDate) {
+        // Include the entire end date
+        const end = new Date(endDate);
+        end.setDate(end.getDate() + 1);
+        end.setHours(0, 0, 0, 0);
+        console.log('[BulkSMS API] End date (inclusive):', end.toISOString());
+        query = query.lt('created_at', end.toISOString());
     }
-
-    if (attorneyStatus && attorneyStatus !== 'all') {
-        console.log('[BulkSMS API] Applying attorney status filter:', attorneyStatus);
-        query = query.eq('avukat_sorgu_durumu', attorneyStatus);
-    }
-
-    if (job && job.trim() !== '') {
-        console.log('[BulkSMS API] Applying job filter:', job);
-        query = query.ilike('meslek_is', `%${job.trim()}%`);
-    }
-
-    if (source && source !== 'all') {
-        console.log('[BulkSMS API] Applying source filter:', source);
-        query = query.eq('created_by', source);
-    }
-
-    // Date filtering with explicit checks
-    const hasStartDate = startDate && startDate.trim() !== '';
-    const hasEndDate = endDate && endDate.trim() !== '';
-
-    console.log('[BulkSMS API] Date filters:', { hasStartDate, hasEndDate, dateType });
-
-    if (hasStartDate || hasEndDate) {
-        if (dateType === 'log_date') {
-            console.log('[BulkSMS API] Using log-based date filtering');
-            // LOG BASED FILTERING
-            let logQuery = supabaseAdmin
-                .from('logs')
-                .select('customer_id');
-
-            if (hasStartDate) {
-                logQuery = logQuery.gte('created_at', startDate);
-            }
-
-            if (hasEndDate) {
-                const end = new Date(endDate);
-                end.setDate(end.getDate() + 1);
-                end.setHours(0, 0, 0, 0);
-                logQuery = logQuery.lt('created_at', end.toISOString());
-            }
-
-            const { data: logData, error: logError } = await logQuery;
-
-            if (logError) {
-                console.error('[BulkSMS API] Log query error:', logError);
-            } else if (logData && logData.length > 0) {
-                const customerIds = [...new Set(logData.map((l: any) => l.customer_id))]; // Remove duplicates
-                console.log(`[BulkSMS API] Found ${customerIds.length} unique customers in logs`);
-                query = query.in('id', customerIds);
-            } else {
-                console.log('[BulkSMS API] No logs found in date range, returning empty');
-                return NextResponse.json({ count: 0, users: [] });
-            }
-        } else {
-            // STANDARD FIELD FILTERS (created_at / updated_at)
-            console.log(`[BulkSMS API] Using standard field filter on ${dateField}`);
-
-            if (hasStartDate) {
-                query = query.gte(dateField, startDate);
-            }
-
-            if (hasEndDate) {
-                const end = new Date(endDate);
-                end.setDate(end.getDate() + 1);
-                end.setHours(0, 0, 0, 0);
-                query = query.lt(dateField, end.toISOString());
-            }
-        }
-    } else {
-        console.log('[BulkSMS API] No date filters applied - returning all matches');
-    }
-
 
     console.log('[BulkSMS API] Executing query...');
     const { data, error } = await query;
@@ -128,10 +54,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ message: error.message }, { status: 500 });
     }
 
-    console.log(`[BulkSMS API] Query successful! Found ${data?.length || 0} users`);
-    if (data && data.length > 0) {
-        console.log('[BulkSMS API] Sample result (first 3):', data.slice(0, 3).map(u => ({ name: u.ad_soyad, status: u.durum })));
-    }
+    console.log(`[BulkSMS API] Success! Found ${data?.length || 0} users`);
 
     return NextResponse.json({
         count: data.length,
@@ -140,7 +63,6 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    // This endpoint handles the actual SENDING mechanism
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
         return NextResponse.json({ message: 'Unauthorized' }, { status: 403 });
@@ -148,7 +70,7 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { userIds, message, templateId, channel } = body; // channel: 'SMS' | 'WHATSAPP'
+        const { userIds, message, templateId, channel } = body;
 
         if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
             return NextResponse.json({ message: 'No users selected' }, { status: 400 });
@@ -158,22 +80,15 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'Message content is empty' }, { status: 400 });
         }
 
-        // Mock Sending Process for Now
-        // In a real scenario, this would loop through userIds and call the SMS provider API
-        // For WhatsApp, it might just log it or send via informal API if available.
-
-        console.log(`[BULK ${channel}] Sending to ${userIds.length} users: ${message.substring(0, 50)}...`);
+        console.log(`[BULK ${channel}] Sending to ${userIds.length} users`);
 
         // Log the bulk action
-        const { error: logError } = await supabaseAdmin.from('logs').insert({
-            customer_id: null, // Global log or maybe log for each user? 
+        await supabaseAdmin.from('logs').insert({
+            customer_id: null,
             action: `BULK_${channel}`,
             user_email: session.user.email,
             details: `Sent to ${userIds.length} users. Msg: ${message.substring(0, 50)}...`
         });
-
-        // Loop to log per user (Optional, might be heavy for large batches)
-        // For now, let's just pretend we processed them.
 
         return NextResponse.json({
             success: true,
