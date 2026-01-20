@@ -209,56 +209,11 @@ export function BulkSmsManager() {
                             </select>
                         </div>
 
-                        <div className="col-span-1">
-                            <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Avukat Sorgusu</label>
-                            <select
-                                className="w-full text-xs border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                value={filters.attorneyStatus}
-                                onChange={e => setFilters({ ...filters, attorneyStatus: e.target.value })}
-                            >
-                                <option value="all">Farketmez</option>
-                                <option value="BEKLİYOR">Bekleyen</option>
-                                <option value="OLUMLU">Temiz (Olumlu)</option>
-                                <option value="OLUMSUZ">Sorunlu (Olumsuz)</option>
-                            </select>
-                        </div>
 
-                        <div className="col-span-1">
-                            <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Şehir</label>
-                            <select
-                                className="w-full text-xs border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                value={filters.city}
-                                onChange={e => setFilters({ ...filters, city: e.target.value, district: 'all' })}
-                            >
-                                <option value="all">Tümü</option>
-                                {cityList.map(c => <option key={c.code} value={c.name}>{c.name}</option>)}
-                            </select>
-                        </div>
 
-                        <div className="col-span-1">
-                            <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">İlçe</label>
-                            <select
-                                className="w-full text-xs border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                value={filters.district}
-                                onChange={e => setFilters({ ...filters, district: e.target.value })}
-                                disabled={filters.city === 'all'}
-                            >
-                                <option value="all">Tümü</option>
-                                {districts.map(d => <option key={d} value={d}>{d}</option>)}
-                            </select>
-                        </div>
 
-                        <div className="col-span-1">
-                            <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Tarih Tipi</label>
-                            <select
-                                className="w-full text-xs border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                value={filters.dateType}
-                                onChange={e => setFilters({ ...filters, dateType: e.target.value })}
-                            >
-                                <option value="created_at">Oluşturulma Tarihi</option>
-                                <option value="updated_at">Son İşlem / Güncelleme</option>
-                            </select>
-                        </div>
+
+
 
                         <div className="col-span-1">
                             <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Başlangıç Tarihi</label>
@@ -270,15 +225,7 @@ export function BulkSmsManager() {
                             <input type="date" className="w-full text-xs border border-gray-300 rounded-lg" onChange={e => setFilters({ ...filters, endDate: e.target.value })} />
                         </div>
 
-                        <div className="col-span-1">
-                            <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Meslek</label>
-                            <input
-                                className="w-full text-xs border-gray-300 rounded-lg shadow-sm"
-                                placeholder="Örn: Memur"
-                                value={filters.job}
-                                onChange={e => setFilters({ ...filters, job: e.target.value })}
-                            />
-                        </div>
+
 
                         <div className="col-span-1 flex items-end">
                             <Button size="sm" onClick={fetchUsers} className="w-full" disabled={loading}>
