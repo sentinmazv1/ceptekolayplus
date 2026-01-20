@@ -55,6 +55,32 @@ export function BulkSmsManager() {
         }
     }
 
+    async function runDiagnosis() {
+        if (!confirm('Veritabanı durum analizi çalıştırılsın mı?')) return;
+        try {
+            const res = await fetch('/api/admin/bulk-sms/diagnose');
+            const data = await res.json();
+            if (data.success) {
+                let msg = "VERİTABANI DURUM ANALİZİ:\n\n";
+                msg += "---- MEVCUT KAYIT SAYILARI (Leads Tablosu) ----\n";
+                for (const [key, value] of Object.entries((data.db_counts || {}))) {
+                    msg += `[${key}]: ${value} kayıt\n`;
+                }
+                msg += "\n---- TANIMLI DURUMLAR (Select Kutusundakiler) ----\n";
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (data.defined_statuses || []).forEach((s: any) => {
+                    msg += `- ${s.label}\n`;
+                });
+
+                alert(msg);
+            } else {
+                alert('Analiz hatası: ' + data.error);
+            }
+        } catch (error) {
+            alert('Hata oluştu');
+        }
+    }
+
     useEffect(() => {
         // District logic
         if (filters.city && filters.city !== 'all') {
