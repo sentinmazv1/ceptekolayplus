@@ -18,16 +18,9 @@ export function BulkSmsManager() {
 
     // Filters
     const [filters, setFilters] = useState({
-        status: [] as string[], // Multi-select support prep
-        statusValue: 'all', // For UI select
-        city: 'all',
-        district: 'all',
-        attorneyStatus: 'all',
+        statusValue: 'all',
         startDate: '',
-        endDate: '',
-        job: '',
-        source: 'all',
-        dateType: 'created_at' // Default to Created Date
+        endDate: ''
     });
 
     const [districts, setDistricts] = useState<string[]>([]);
@@ -99,14 +92,8 @@ export function BulkSmsManager() {
         try {
             const params = new URLSearchParams();
             if (filters.statusValue !== 'all') params.append('status', filters.statusValue);
-            if (filters.city !== 'all') params.append('city', filters.city);
-            if (filters.district !== 'all') params.append('district', filters.district);
-            if (filters.attorneyStatus !== 'all') params.append('attorneyStatus', filters.attorneyStatus);
             if (filters.startDate) params.append('startDate', filters.startDate);
             if (filters.endDate) params.append('endDate', filters.endDate);
-            if (filters.dateType) params.append('dateType', filters.dateType); // Pass dateType
-            if (filters.job) params.append('job', filters.job);
-            if (filters.source !== 'all') params.append('source', filters.source);
 
             const res = await fetch(`/api/admin/bulk-sms?${params.toString()}`);
             const data = await res.json();
