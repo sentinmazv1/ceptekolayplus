@@ -516,7 +516,19 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                     <div className="flex items-center gap-2">
                         <Button
                             variant="secondary"
-                            onClick={() => window.open(`/dashboard/contract/${data.id}`, '_blank')}
+                            onClick={() => {
+                                // Validation for Contract
+                                const missingFields = [];
+                                if (!data.winner_musteri_no) missingFields.push('Müşteri No');
+                                if (!data.ev_adresi) missingFields.push('Ev Adresi');
+                                if (!data.mulkiyet_durumu) missingFields.push('Mülkiyet Durumu (Yasal ve Varlık sekmesinde)');
+
+                                if (missingFields.length > 0) {
+                                    alert(`⚠️ Sözleşme oluşturulamadı!\n\nLütfen şu alanları doldurun:\n- ${missingFields.join('\n- ')}`);
+                                    return;
+                                }
+                                window.open(`/dashboard/contract/${data.id}`, '_blank');
+                            }}
                             className="bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 text-xs shadow-sm"
                             title="Yazdır"
                         >
@@ -681,6 +693,16 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                                 disabled={!data.sehir}
                                             />
                                         </div>
+                                        <div className="col-span-2">
+                                            <label className="block text-xs font-medium text-gray-700 mb-1">Ev Adresi (Sözleşme İçin)</label>
+                                            <textarea
+                                                className="w-full p-2 text-sm border rounded-lg focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
+                                                rows={2}
+                                                value={data.ev_adresi || ''}
+                                                onChange={(e) => handleChange('ev_adresi', e.target.value)}
+                                                placeholder="Tam ev adresi..."
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 
@@ -781,6 +803,18 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                         label="Meslek / Pozisyon"
                                         value={data.meslek_is || ''}
                                         onChange={(e) => handleChange('meslek_is', e.target.value)}
+                                    />
+                                    <Input
+                                        label="İş Yeri Ünvanı"
+                                        value={data.is_yeri_unvani || ''}
+                                        onChange={(e) => handleChange('is_yeri_unvani', e.target.value)}
+                                        placeholder="Sözleşme için"
+                                    />
+                                    <Input
+                                        label="İş Adresi"
+                                        value={data.is_adresi || ''}
+                                        onChange={(e) => handleChange('is_adresi', e.target.value)}
+                                        placeholder="Tam iş adresi"
                                     />
                                     <Input
                                         label="Son Maaş (TL)"

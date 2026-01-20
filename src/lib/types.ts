@@ -51,6 +51,9 @@ export interface Customer {
   arama_not_kisa?: string;
   aciklama_uzun?: string;
   e_devlet_sifre?: string;
+  ev_adresi?: string;
+  is_adresi?: string;
+  is_yeri_unvani?: string;
   psikoteknik_varmi?: 'Evet' | 'Hayır';
   psikoteknik_notu?: string;
   ikametgah_varmi?: 'Evet' | 'Hayır';
