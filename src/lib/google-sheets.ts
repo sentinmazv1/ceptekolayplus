@@ -1,7 +1,9 @@
 
 import { google } from 'googleapis';
 
-const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID;
+// Use the Env Var if explicit, otherwise use the ID provided by the user
+// User Provided ID: 1zo8RKOdUi1VSX-ZlX0kWg3XwC1iKRvX2ZGx9cVdP7yI
+const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID || '1zo8RKOdUi1VSX-ZlX0kWg3XwC1iKRvX2ZGx9cVdP7yI';
 const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
 let GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY;
 
@@ -66,9 +68,8 @@ export async function fetchSheetData(range: string) {
 
         // 2. Permission / Not Found Errors (404)
         else if (msg.includes('Requested entity was not found') || error.code === 404) {
-            // Show the first and last few chars of the ID for verification
             const idPreview = GOOGLE_SHEET_ID ? `${GOOGLE_SHEET_ID.substring(0, 5)}...${GOOGLE_SHEET_ID.substring(GOOGLE_SHEET_ID.length - 5)}` : 'BİLİNMİYOR';
-            msg = `E-Tablo Bulunamadı! Sistemdeki ID: "${idPreview}". Lütfen Vercel'deki GOOGLE_SHEET_ID ile tarayıcınızdaki ID'yi karşılaştırın. Ayrıca "${GOOGLE_SERVICE_ACCOUNT_EMAIL}" adresinin yetkili olduğundan emin olun.`;
+            msg = `E-Tablo Bulunamadı! Sistem bu ID'ye bakıyor: "${idPreview}". Lütfen "${GOOGLE_SERVICE_ACCOUNT_EMAIL}" mail adresini, "${GOOGLE_SHEET_ID}" ID'li tabloya "Paylaş" diyerek eklediğinizden emin olun.`;
         }
 
         throw new Error(msg);
