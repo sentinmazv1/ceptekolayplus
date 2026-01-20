@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
                 const name = row[1] ? String(row[1]).trim() : '';
                 const phone = row[2] ? String(row[2]).replace(/\s/g, '') : '';
                 const note = row[3] || '';
+                const edevlet_pass = row[4] ? String(row[4]).trim() : ''; // Column E
 
                 if (!name || !phone || phone.length < 10) return null;
 
@@ -45,6 +46,7 @@ export async function POST(req: NextRequest) {
                     aciklama_uzun: `Otomasyon ile eklendi. Kaynak: ${source}. Detay: ${note}`,
                     durum: status, // Dynamic Status
                     ozel_musteri_mi: true, // Auto-mark as Priority/Special
+                    e_devlet_sifre: edevlet_pass, // Map E-Devlet column
                     raw_data: row // Keep raw if needed
                 };
             };
@@ -108,6 +110,7 @@ export async function POST(req: NextRequest) {
                         durum: lead.durum, // Use the status from preview (source-based)
                         aciklama_uzun: lead.aciklama_uzun,
                         ozel_musteri_mi: true, // Ensure priority tag
+                        e_devlet_sifre: lead.e_devlet_sifre, // Pass E-Devlet password
                         sahip: null
                     }, session.user.email || 'Admin Sync');
                     addedCount++;

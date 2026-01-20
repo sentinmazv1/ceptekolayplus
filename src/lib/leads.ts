@@ -506,6 +506,7 @@ export async function addLead(customer: Partial<Customer>, userEmail: string): P
         sahip_email: customer.sahip === null ? null : (customer.sahip || userEmail),
         created_at: new Date().toISOString(),
         ozel_musteri_mi: customer.ozel_musteri_mi || false, // Support priority flag
+        e_devlet_sifre: customer.e_devlet_sifre, // Map E-Devlet password
         aciklama_uzun: customer.aciklama_uzun
     };
     const { data, error } = await supabaseAdmin.from('leads').insert(dbRow).select().single();
