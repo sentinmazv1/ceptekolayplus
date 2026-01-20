@@ -1,9 +1,24 @@
--- SMS/WhatsApp Template Migration
--- Migrate all hard-coded templates from @/lib/sms-templates.ts to sms_templates table
+-- SMS Templates Migration - Fixed
+-- First, ensure the table has all necessary columns
 
--- Insert all templates with tags for easy lookup
+-- Check and add missing columns if needed
+DO $$ 
+BEGIN
+    -- Add type column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name='sms_templates' AND column_name='type') THEN
+        ALTER TABLE sms_templates ADD COLUMN type VARCHAR(20) DEFAULT 'SMS';
+    END IF;
+    
+    -- Add tags column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name='sms_templates' AND column_name='tags') THEN
+        ALTER TABLE sms_templates ADD COLUMN tags TEXT;
+    END IF;
+END $$;
+
+-- Now insert the templates
 INSERT INTO sms_templates (title, content, type, tags) VALUES
--- Quick Messages
 ('Ulaşılamadı Bildirimi', 
  'Sayın {name}, başvurunuzla ilgili size ulaşmaya çalıştık ancak ulaşamadık. Müsait olduğunuzda 0551 349 6735 numaramızdan veya WhatsApp hattımızdan bize dönüş yapmanızı rica ederiz. CEPTE KOLAY',
  'SMS',
@@ -47,8 +62,9 @@ INSERT INTO sms_templates (title, content, type, tags) VALUES
 ('Başvuru Alındı',
  'Sayın {name}, paylaştığınız bilgiler için teşekkür ederiz. Başvurunuz değerlendirme aşamasında olup, en kısa sürede size dönüş yapılacaktır. İlginiz için teşekkürler. CEPTE KOLAY',
  'SMS',
- 'application_received,quick_message');
+ 'application_received,quick_message')
+ON CONFLICT DO NOTHING;
 
--- Verify insertion
+-- Verify
 SELECT COUNT(*) as total_templates FROM sms_templates;
-SELECT title, tags FROM sms_templates ORDER BY created_at DESC LIMIT 10;
+SELECT id, title, type, substring(tags, 1, 30) as tags_preview FROM sms_templates ORDER BY created_at DESC;
