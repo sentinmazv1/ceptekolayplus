@@ -1,9 +1,9 @@
 
 import { google } from 'googleapis';
 
-// Use the Env Var if explicit, otherwise use the ID provided by the user
+// FORCE USE OF THE CORRECT ID (Ignore Env Var for now to be 100% sure)
 // User Provided ID: 1zo8RKOdUi1VSX-ZlX0kWg3XwC1iKRvX2ZGx9cVdP7yI
-const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID || '1zo8RKOdUi1VSX-ZlX0kWg3XwC1iKRvX2ZGx9cVdP7yI';
+const GOOGLE_SHEET_ID = '1zo8RKOdUi1VSX-ZlX0kWg3XwC1iKRvX2ZGx9cVdP7yI';
 const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
 let GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY;
 
@@ -70,6 +70,10 @@ export async function fetchSheetData(range: string) {
         else if (msg.includes('Requested entity was not found') || error.code === 404) {
             const idPreview = GOOGLE_SHEET_ID ? `${GOOGLE_SHEET_ID.substring(0, 5)}...${GOOGLE_SHEET_ID.substring(GOOGLE_SHEET_ID.length - 5)}` : 'BİLİNMİYOR';
             msg = `E-Tablo Bulunamadı! Sistem bu ID'ye bakıyor: "${idPreview}". Lütfen "${GOOGLE_SERVICE_ACCOUNT_EMAIL}" mail adresini, "${GOOGLE_SHEET_ID}" ID'li tabloya "Paylaş" diyerek eklediğinizden emin olun.`;
+        }
+        // 3. Range / Tab Name Errors (400)
+        else if (msg.includes('Unable to parse range') || error.code === 400) {
+            msg = `Sayfa Bulunamadı! Tablo içinde '${range.split('!')[0]}' isimli bir sayfa (sekme) olduğundan emin olun. (Orijinal: ${error.message})`;
         }
 
         throw new Error(msg);
