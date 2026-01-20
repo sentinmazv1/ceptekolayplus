@@ -82,18 +82,76 @@ export async function POST(req: NextRequest) {
 
         console.log(`[BULK ${channel}] Sending to ${userIds.length} users`);
 
-        // Log the bulk action
+        // Import SMS sending function
+        const { sendSMS } = await import('@/lib/sms');
+
+        // Fetch user phone numbers
+        const { data: users, error: usersError } = await supabaseAdmin
+            .from('leads')
+            .select('id, ad_soyad, telefon')
+            .in('id', userIds);
+
+        if (usersError || !users) {
+            return NextResponse.json({ message: 'Failed to fetch users' }, { status: 500 });
+        }
+
+        // Send SMS to each user
+        let successCount = 0;
+        let failCount = 0;
+        const results = [];
+
+        for (const user of users) {
+            if (!user.telefon) {
+                failCount++;
+                results.push({ user: user.ad_soyad, status: 'failed', reason: 'No phone number' });
+                continue;
+            }
+
+            // Send SMS (only if channel is SMS)
+            if (channel === 'SMS') {
+                const result = await sendSMS(user.telefon, message);
+
+                if (result.success) {
+                    successCount++;
+                    results.push({ user: user.ad_soyad, phone: user.telefon, status: 'sent' });
+
+                    // Log successful send
+                    await supabaseAdmin.from('logs').insert({
+                        customer_id: user.id,
+                        action: 'SEND_SMS',
+                        user_email: session.user.email,
+                        details: `Bulk SMS: ${message.substring(0, 50)}...`,
+                        new_value: result.result || 'sent'
+                    });
+                } else {
+                    failCount++;
+                    results.push({ user: user.ad_soyad, phone: user.telefon, status: 'failed', reason: result.result });
+                }
+            } else {
+                // WhatsApp - for now just log
+                failCount++;
+                results.push({ user: user.ad_soyad, status: 'failed', reason: 'WhatsApp not yet implemented' });
+            }
+
+            // Small delay to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        // Log bulk action summary
         await supabaseAdmin.from('logs').insert({
             customer_id: null,
-            action: `BULK_${channel}`,
+            action: `BULK_${channel}_SUMMARY`,
             user_email: session.user.email,
-            details: `Sent to ${userIds.length} users. Msg: ${message.substring(0, 50)}...`
+            details: `Sent to ${userIds.length} users. Success: ${successCount}, Failed: ${failCount}`
         });
 
         return NextResponse.json({
             success: true,
             processed: userIds.length,
-            message: `${userIds.length} kişiye ${channel} gönderim kuyruğuna alındı.`
+            successCount,
+            failCount,
+            results,
+            message: `${channel} gönderimi tamamlandı. Başarılı: ${successCount}, Başarısız: ${failCount}`
         });
 
     } catch (error: any) {
