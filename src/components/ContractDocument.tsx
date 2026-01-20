@@ -14,20 +14,35 @@ export function ContractDocument({ customer }: ContractDocumentProps) {
     const val = (v: any, fallback = '...........................................') => v || fallback;
     const emptyLine = '...........................................';
 
-    // Parse Sold Products for details
-    let productName = '';
+    // Parse Sold Products
+    let products: any[] = [];
     try {
         if (customer.satilan_urunler) {
             const parsed = typeof customer.satilan_urunler === 'string' ? JSON.parse(customer.satilan_urunler) : customer.satilan_urunler;
-            if (Array.isArray(parsed) && parsed.length > 0) {
-                const item = parsed[0]; // Take first item for main contract
-                productName = `${item.marka || ''} ${item.model || ''} ${item.imei ? `(IMEI: ${item.imei})` : ''}`;
+            if (Array.isArray(parsed)) {
+                products = parsed.map(item => ({
+                    name: `${item.marka || ''} ${item.model || ''} ${item.imei ? `(IMEI: ${item.imei})` : ''}`,
+                    price: item.fiyat || 0
+                }));
             }
         }
-        if (!productName && customer.talep_edilen_urun) {
-            productName = customer.talep_edilen_urun;
+        // Fallback or Addition? If strictly sold_products is empty but requested exists
+        if (products.length === 0 && customer.talep_edilen_urun) {
+            products.push({
+                name: customer.talep_edilen_urun,
+                price: customer.talep_edilen_tutar || 0
+            });
         }
-    } catch (e) { console.error(e); }
+    } catch (e) {
+        console.error('Product parse error:', e);
+        // Fallback text if error
+        if (customer.talep_edilen_urun) {
+            products.push({ name: customer.talep_edilen_urun, price: 0 });
+        }
+    }
+
+    // Ensure at least one empty row if absolutely nothing
+    if (products.length === 0) products.push({ name: '...................................................', price: 0 });
 
     // Price Logic: Use Credit Limit as the main "Amount" per user request
     const limit = parseFloat(customer.kredi_limiti || '0');
@@ -138,12 +153,30 @@ export function ContractDocument({ customer }: ContractDocumentProps) {
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td className="border border-black p-2 text-center">1</td>
-                        <td className="border border-black p-2">{productName || '...................................................'}</td>
-                        <td className="border border-black p-2 text-right">{priceStr}</td>
-                        <td className="border border-black p-2 text-right">{priceStr}</td>
-                    </tr>
+                    {products.map((p, i) => (
+                        <tr key={i}>
+                            <td className="border border-black p-2 text-center">1</td>
+                            <td className="border border-black p-2">{p.name}</td>
+                            <td className="border border-black p-2 text-right">
+                                {p.price > 0
+                                    ? new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(p.price)
+                                    : '......................'}
+                            </td>
+                            <td className="border border-black p-2 text-right">
+                                {p.price > 0
+                                    ? new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(p.price)
+                                    : '......................'}
+                            </td>
+                        </tr>
+                    ))}
+                    {Array.from({ length: Math.max(0, 3 - products.length) }).map((_, i) => (
+                        <tr key={`empty-${i}`}>
+                            <td className="border border-black p-2 text-center">-</td>
+                            <td className="border border-black p-2"></td>
+                            <td className="border border-black p-2"></td>
+                            <td className="border border-black p-2"></td>
+                        </tr>
+                    ))}
                 </tbody>
             </table>
 
