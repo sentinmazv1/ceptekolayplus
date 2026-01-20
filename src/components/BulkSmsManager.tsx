@@ -55,7 +55,6 @@ export function BulkSmsManager() {
         }
     }
 
-
     useEffect(() => {
         // District logic
         if (filters.city && filters.city !== 'all') {
@@ -182,7 +181,6 @@ export function BulkSmsManager() {
                     <p className="text-sm text-gray-500">Detaylı filtreleme ile hedef kitleye SMS veya WhatsApp mesajı gönderin.</p>
                 </div>
 
-
                 <div className="flex bg-white p-1 rounded-lg border border-gray-200 shadow-sm">
                     <button
                         onClick={() => setChannel('SMS')}
@@ -285,7 +283,6 @@ export function BulkSmsManager() {
                             >
                                 <option value="created_at">Oluşturulma Tarihi</option>
                                 <option value="updated_at">Son İşlem / Güncelleme</option>
-                                <option value="log_date">İşlem Geçmişi (Loglar)</option>
                             </select>
                         </div>
 
@@ -445,6 +442,5 @@ export function BulkSmsManager() {
 
             </div>
         </div>
-        </div >
     );
 }
