@@ -12,7 +12,6 @@ function sanitizePrivateKey(key: string | undefined): string | undefined {
     let sanitized = key;
 
     // 1. Recursively remove surrounding quotes (double or single)
-    //    Some environments add extra quotes, or users copy them from .env examples
     while (
         (sanitized.startsWith('"') && sanitized.endsWith('"')) ||
         (sanitized.startsWith("'") && sanitized.endsWith("'"))
@@ -21,35 +20,13 @@ function sanitizePrivateKey(key: string | undefined): string | undefined {
     }
 
     // 2. Handle escaped newlines
-    //    Env vars often come as "line1\nline2", we need actual newlines for the PEM format
     sanitized = sanitized.replace(/\\n/g, '\n');
-
-    // 3. Ensure it looks like a PEM key (basic check)
-    if (!sanitized.includes('-----BEGIN PRIVATE KEY-----')) {
-        console.warn('Warning: Google Private Key does not look like a standard PEM key.');
-    }
 
     return sanitized;
 }
 
 // Apply sanitization
 GOOGLE_PRIVATE_KEY = sanitizePrivateKey(GOOGLE_PRIVATE_KEY);
-
-if (!GOOGLE_SHEET_ID || !GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) {
-    console.error('CRITICAL: Google Sheets credentials missing.');
-} else {
-    // Debug log for key format (safe - showing start/end only)
-    const keyLen = GOOGLE_PRIVATE_KEY.length;
-    const keyPreview = keyLen > 50
-        ? `${GOOGLE_PRIVATE_KEY.substring(0, 25)}...${GOOGLE_PRIVATE_KEY.substring(keyLen - 25)}`
-        : '(Too short)';
-
-    console.log('Google Service Account Init:', {
-        email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        keyLength: keyLen,
-        keyPreview: JSON.stringify(keyPreview) // Stringify allows seeing if \n are actual newlines or escaped
-    });
-}
 
 // Use JWT Client explicitly
 const auth = new google.auth.JWT({
@@ -61,6 +38,10 @@ const auth = new google.auth.JWT({
 const sheets = google.sheets({ version: 'v4', auth });
 
 export async function fetchSheetData(range: string) {
+    if (!GOOGLE_SHEET_ID || !GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) {
+        throw new Error('Google Sheets credentials missing in environment variables.');
+    }
+
     try {
         await auth.authorize(); // Explicit check
         const response = await sheets.spreadsheets.values.get({
@@ -71,14 +52,19 @@ export async function fetchSheetData(range: string) {
         return response.data.values || [];
     } catch (error: any) {
         console.error('Error fetching sheet data:', error.message);
-        if (error.response) {
-            console.error('API Error Details:', error.response.data);
-        }
-        // Helpful error for the user
+
         let msg = error.message;
-        if (msg.includes('DECODER routines::unsupported') || msg.includes('routines:OPENSSL_internal:BAD_END_LINE')) {
-            msg += ' (Private Key formatı hatalı. .env dosyasındaki anahtarın "\\n" karakterlerini ve tırnak işaretlerini kontrol edin.)';
+
+        // Detailed Debug Info attached to the error for UI diagnosis
+        if (msg.includes('DECODER routines::unsupported') || msg.includes('bad decrypt') || msg.includes('routines:OPENSSL_internal')) {
+            const keyLen = GOOGLE_PRIVATE_KEY ? GOOGLE_PRIVATE_KEY.length : 0;
+            const hasHeader = GOOGLE_PRIVATE_KEY?.includes('-----BEGIN PRIVATE KEY-----');
+            const hasFooter = GOOGLE_PRIVATE_KEY?.includes('-----END PRIVATE KEY-----');
+            const newlineCount = (GOOGLE_PRIVATE_KEY?.match(/\n/g) || []).length;
+
+            msg = `Private Key Hatası! Detaylar: Uzunluk=${keyLen}, Header=${hasHeader}, Footer=${hasFooter}, SatırSayısı=${newlineCount}. (Orijinal: ${error.message})`;
         }
-        throw new Error(`Google Sheets Hatası: ${msg}`);
+
+        throw new Error(msg);
     }
 }
