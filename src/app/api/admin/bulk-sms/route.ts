@@ -65,18 +65,48 @@ export async function GET(req: NextRequest) {
     }
 
     if (startDate) {
-        query = query.gte(dateField, startDate);
-    }
+        if (dateType === 'log_date') {
+            // LOG BASED FILTERING
+            // Find customers who had ANY activity in this range
+            let logQuery = supabaseAdmin
+                .from('logs')
+                .select('customer_id')
+                .gte('created_at', startDate);
 
-    if (endDate) {
-        // Postgre uses ISO strings. 
-        // If user sends '2024-01-20', we want to include everything until '2024-01-20 23:59:59.999'
-        // But simply setting hours on a Date object might have timezone offsets.
-        // Let's create a date, add 1 day, and use lt (less than) the next day 00:00
-        const end = new Date(endDate);
-        end.setDate(end.getDate() + 1); // Move to next day
-        end.setHours(0, 0, 0, 0);       // Reset to midnight
-        query = query.lt(dateField, end.toISOString());
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setDate(end.getDate() + 1);
+                end.setHours(0, 0, 0, 0);
+                logQuery = logQuery.lt('created_at', end.toISOString());
+            }
+
+            const { data: logData, error: logError } = await logQuery;
+
+            if (!logError && logData) {
+                const customerIds = logData.map((l: any) => l.customer_id);
+                // Filter main query to only these customers
+                if (customerIds.length > 0) {
+                    query = query.in('id', customerIds);
+                } else {
+                    // No logs found -> No users should be returned
+                    return NextResponse.json({ count: 0, users: [] });
+                }
+            }
+        } else {
+            // STANDARD FIELD FILTERS (created_at / updated_at)
+            query = query.gte(dateField, startDate);
+
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setDate(end.getDate() + 1);
+                end.setHours(0, 0, 0, 0);
+                query = query.lt(dateField, end.toISOString());
+            }
+        }
+    } else if (dateType === 'log_date') {
+        // If log_date selected but NO dates provided? 
+        // User said: "Tarih girmezsek seçilen durumun hepsi".
+        // So we do NOT apply any date filter here. Logic flows through.
     }
 
     const { data, error } = await query;

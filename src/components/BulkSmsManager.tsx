@@ -283,6 +283,7 @@ export function BulkSmsManager() {
                             >
                                 <option value="created_at">Oluşturulma Tarihi</option>
                                 <option value="updated_at">Son İşlem / Güncelleme</option>
+                                <option value="log_date">İşlem Geçmişi (Loglar)</option>
                             </select>
                         </div>
 
