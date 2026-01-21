@@ -1,39 +1,17 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getReportData, getAllLogs, getInventoryStats } from '@/lib/leads';
+import { getReportData, getAllLogs, getInventoryStats, getLeadStats } from '@/lib/leads';
 
-// Helper using Intl for robustness
-const trFormatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Istanbul',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-});
-
-// Helper for Strings
-const utcFormatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Istanbul',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-});
-
-export const dynamic = 'force-dynamic';
+// ... (existing code)
 
 export async function GET(req: NextRequest) {
     try {
-        // --- PARAMS ---
-        const url = new URL(req.url);
-        const todayStr = trFormatter.format(new Date());
-
-        // Date Range: Default to TODAY if not provided
-        const startDate = url.searchParams.get('startDate') || todayStr;
-        const endDate = url.searchParams.get('endDate') || todayStr;
-
-        const [customers, logs, inventoryStats] = await Promise.all([
+        // ...
+        const [customers, logs, inventoryStats, leadStats] = await Promise.all([
             getReportData(),
             getAllLogs(),
-            getInventoryStats()
+            getInventoryStats(),
+            getLeadStats()
         ]);
 
         if (!customers || customers.length === 0) {
@@ -82,6 +60,7 @@ export async function GET(req: NextRequest) {
             }>,
             hourly: {} as Record<string, Record<string, Record<number, number>>>,
             inventory: inventoryStats,
+            pool: leadStats,
         };
 
         // Date Helpers
