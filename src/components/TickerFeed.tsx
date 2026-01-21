@@ -18,7 +18,8 @@ export default function TickerFeed() {
 
     const fetchActivity = async () => {
         try {
-            const res = await fetch('/api/activity');
+            // Fetch last 30 minutes of activity to reduce load
+            const res = await fetch('/api/activity?minutes=30');
             if (res.ok) {
                 const data = await res.json();
                 if (data.success) {
@@ -34,7 +35,8 @@ export default function TickerFeed() {
 
     useEffect(() => {
         fetchActivity();
-        const interval = setInterval(fetchActivity, 60000);
+        // Update every 60 minutes as requested to save server load
+        const interval = setInterval(fetchActivity, 60 * 60 * 1000);
         return () => clearInterval(interval);
     }, []);
 

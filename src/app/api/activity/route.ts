@@ -13,7 +13,9 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        const logs = await getRecentLogs(50);
+        const url = new URL(req.url);
+        const minutes = url.searchParams.get('minutes') ? parseInt(url.searchParams.get('minutes')!) : undefined;
+        const logs = await getRecentLogs(50, minutes);
         return NextResponse.json({
             success: true,
             logs

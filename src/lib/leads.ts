@@ -562,8 +562,17 @@ export async function getLogs(customerId?: string): Promise<LogEntry[]> {
     return (data || []).map(row => ({ log_id: row.id, timestamp: row.created_at, user_email: row.user_email, customer_id: row.lead_id, action: row.action, old_value: row.old_value, new_value: row.new_value, note: row.note }));
 }
 
-export async function getRecentLogs(limit: number = 50): Promise<LogEntry[]> {
-    const { data } = await supabaseAdmin.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(limit);
+export async function getRecentLogs(limit: number = 50, sinceMinutes?: number): Promise<LogEntry[]> {
+    let query = supabaseAdmin.from('activity_logs').select('*').order('created_at', { ascending: false });
+
+    if (sinceMinutes) {
+        const timeThreshold = new Date(Date.now() - sinceMinutes * 60 * 1000).toISOString();
+        query = query.gte('created_at', timeThreshold);
+        // If time filtered, increase limit to capture all events in that window
+        limit = 1000;
+    }
+
+    const { data } = await query.limit(limit);
     return (data || []).map(row => ({ log_id: row.id, timestamp: row.created_at, user_email: row.user_email, customer_id: row.lead_id, action: row.action, old_value: row.old_value, new_value: row.new_value, note: row.note }));
 }
 

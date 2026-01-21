@@ -18,74 +18,140 @@ export function UserPerformanceCard({ user, stats, variant = 'default' }: { user
         return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(val);
     };
 
-    // WIDE VARIANT (IDLE MODE)
+    // WIDE VARIANT (IDLE MODE - COMPREHENSIVE VIEW)
     if (variant === 'wide') {
+        const paceColor = stats.paceMinutes < 5 ? 'text-green-600' : (stats.paceMinutes < 10 ? 'text-yellow-600' : 'text-red-500');
+
         return (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow relative overflow-hidden group flex items-center gap-6">
-                {/* Rank + User */}
-                <div className="flex items-center gap-4 w-64 shrink-0 border-r border-gray-100 pr-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 hover:shadow-md transition-shadow relative overflow-hidden group flex items-center justify-between gap-4">
+                {/* 1. IDENTITY & RANK */}
+                <div className="flex items-center gap-3 w-48 shrink-0 border-r border-gray-100 pr-4">
                     <div className="relative">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-xl shadow-lg">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
                             {user.substring(0, 2).toUpperCase()}
                         </div>
                         {user === 'ibrahim' && (
-                            <div className="absolute -top-2 -right-2 bg-yellow-400 text-white p-1 rounded-full shadow-md">
-                                <Award className="w-3 h-3" />
+                            <div className="absolute -top-1.5 -right-1.5 bg-yellow-400 text-white p-0.5 rounded-full shadow-sm">
+                                <Award className="w-2.5 h-2.5" />
                             </div>
                         )}
                     </div>
                     <div className="min-w-0">
-                        <h4 className="font-bold text-gray-900 text-lg">{user.split('@')[0]}</h4>
-                        <div className="flex items-center gap-2 mt-1">
-                            <span className={`w-2 h-2 rounded-full ${stats.calls > 0 ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></span>
-                            <span className="text-xs font-medium text-gray-500">Çevrimiçi • #{user === 'ibrahim' ? '1' : '2'}</span>
+                        <h4 className="font-bold text-gray-900 text-sm truncate">{user.split('@')[0]}</h4>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className={`w-1.5 h-1.5 rounded-full ${stats.calls > 0 ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></span>
+                            <span className="text-[10px] font-medium text-gray-400">#{user === 'ibrahim' ? '1' : '2'}</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Big Stats Row */}
-                <div className="flex-1 grid grid-cols-4 gap-8 items-center">
+                {/* 2. SALES FUNNEL (Horizontal Flow) */}
+                <div className="flex-1 flex items-center justify-between gap-6 px-4">
+                    {/* Pulled (Havuz) */}
+                    <div className="flex flex-col items-center">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase mb-0.5">Çekilen</span>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-xl font-bold text-gray-700">{stats.pulled || 0}</span>
+                        </div>
+                    </div>
+
+                    <ChevronRight className="w-4 h-4 text-gray-300" />
+
                     {/* Calls */}
-                    <div className="flex flex-col items-center border-r border-gray-50 last:border-0">
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">GÜNLÜK ARAMA</span>
-                        <div className="flex items-baseline gap-2">
-                            <Phone className="w-5 h-5 text-indigo-400" />
-                            <span className="text-3xl font-black text-gray-900">{stats.calls}</span>
+                    <div className="flex flex-col items-center">
+                        <span className="text-[10px] font-bold text-indigo-400 uppercase mb-0.5">Arama</span>
+                        <div className="flex items-baseline gap-1">
+                            <Phone className="w-3 h-3 text-indigo-400" />
+                            <span className="text-xl font-bold text-indigo-600">{stats.calls}</span>
                         </div>
                     </div>
 
-                    {/* Sales */}
-                    <div className="flex flex-col items-center border-r border-gray-50 last:border-0">
-                        <span className="text-xs font-bold text-emerald-600/70 uppercase tracking-wider mb-1">GÜNLÜK SATIŞ</span>
-                        <div className="flex items-baseline gap-2">
-                            <Target className="w-5 h-5 text-emerald-500" />
-                            <span className="text-3xl font-black text-emerald-600">{stats.sales}</span>
+                    <ChevronRight className="w-4 h-4 text-gray-300" />
+
+                    {/* Applications */}
+                    <div className="flex flex-col items-center">
+                        <span className="text-[10px] font-bold text-orange-400 uppercase mb-0.5">Başvuru</span>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-xl font-bold text-orange-600">{stats.applications}</span>
+                            <span className="text-[9px] text-gray-400">({appRate}%)</span>
                         </div>
                     </div>
 
-                    {/* Volume */}
-                    <div className="flex flex-col items-center border-r border-gray-50 last:border-0 col-span-2">
-                        <span className="text-xs font-bold text-blue-500/70 uppercase tracking-wider mb-1">TOPLAM CİRO (BUGÜN)</span>
-                        <div className="flex items-center gap-3">
-                            <TrendingUp className="w-6 h-6 text-blue-500" />
-                            <span className="text-4xl font-black text-blue-600 tracking-tight">
-                                {formatFullCurrency(stats.salesVolume || 0)}
-                            </span>
+                    <ChevronRight className="w-4 h-4 text-gray-300" />
+
+                    {/* Approvals */}
+                    <div className="flex flex-col items-center">
+                        <span className="text-[10px] font-bold text-blue-400 uppercase mb-0.5">Onay</span>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-xl font-bold text-blue-600">{stats.approvals}</span>
+                        </div>
+                    </div>
+
+                    <ChevronRight className="w-4 h-4 text-emerald-300" />
+
+                    {/* SALES (Final) */}
+                    <div className="flex flex-col items-center bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-100">
+                        <span className="text-[10px] font-bold text-emerald-600 uppercase mb-0.5">SATIŞ</span>
+                        <div className="flex items-baseline gap-1">
+                            <Target className="w-3.5 h-3.5 text-emerald-500" />
+                            <span className="text-2xl font-black text-emerald-700">{stats.sales}</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Goal Progress (Side) */}
-                <div className="w-48 shrink-0 flex flex-col justify-center pl-6 border-l border-gray-100">
-                    <div className="flex justify-between text-xs font-bold text-gray-500 mb-2 uppercase">
-                        <span>Hedef</span>
-                        <span className={goalPercent >= 100 ? 'text-green-600' : 'text-indigo-600'}>%{goalPercent}</span>
+                {/* 3. OPERATIONAL METRICS (Vertical compact) */}
+                <div className="flex items-center gap-6 border-l border-r border-gray-100 px-6 shrink-0">
+                    {/* Back Office */}
+                    <div className="flex flex-col items-center" title="Back-Office İşlemleri">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase">B.Office</span>
+                        <span className="text-lg font-bold text-gray-600">{stats.backoffice || 0}</span>
                     </div>
-                    <div className="h-3 w-full bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                            className={`h-full rounded-full ${goalPercent >= 100 ? 'bg-green-500' : 'bg-gradient-to-r from-indigo-500 to-purple-500'}`}
-                            style={{ width: `${Math.min(goalPercent, 100)}%` }}
-                        ></div>
+
+                    {/* Pace */}
+                    <div className="flex flex-col items-center" title="Ortalama İşlem Süresi">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase">Hız</span>
+                        <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-gray-400" />
+                            <span className={`text-lg font-bold ${paceColor}`}>{stats.paceMinutes || '-'} dk</span>
+                        </div>
+                    </div>
+
+                    {/* Messages */}
+                    <div className="flex flex-col items-center">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase">Mesaj</span>
+                        <div className="flex gap-2">
+                            <div className="flex items-center gap-0.5" title="SMS">
+                                <MessageSquare className="w-3 h-3 text-purple-400" />
+                                <span className="text-sm font-bold text-gray-600">{stats.sms || 0}</span>
+                            </div>
+                            <div className="flex items-center gap-0.5" title="WhatsApp">
+                                <MessageSquare className="w-3 h-3 text-green-400" />
+                                <span className="text-sm font-bold text-gray-600">{stats.whatsapp || 0}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 4. FINANCIALS (Revenue & Goal) */}
+                <div className="w-40 shrink-0 flex flex-col items-end gap-2 pl-2">
+                    <div className="flex flex-col items-end">
+                        <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">TOPLAM CİRO</span>
+                        <span className="text-xl font-black text-blue-600 tracking-tight">
+                            {formatFullCurrency(stats.salesVolume || 0)}
+                        </span>
+                    </div>
+
+                    <div className="w-full flex flex-col items-end gap-0.5">
+                        <div className="flex justify-between w-full text-[9px] font-bold text-gray-400 uppercase">
+                            <span>Hedef</span>
+                            <span className={goalPercent >= 100 ? 'text-green-600' : 'text-indigo-600'}>%{goalPercent}</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                            <div
+                                className={`h-full rounded-full ${goalPercent >= 100 ? 'bg-green-500' : 'bg-indigo-500'}`}
+                                style={{ width: `${Math.min(goalPercent, 100)}%` }}
+                            ></div>
+                        </div>
                     </div>
                 </div>
             </div>
