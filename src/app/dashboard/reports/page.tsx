@@ -47,15 +47,18 @@ interface ReportStats {
     };
     todayCalledByPerson: Record<string, number>;
     performance: Record<string, {
+        pulled: number;
         calls: number;
         approvals: number;
-        approvedLimit: number,
-        applications: number,
-        paceMinutes: number,
-        sms: number,
-        whatsapp: number,
-        dailyGoal: number,
-        image: string,
+        approvedLimit: number;
+        applications: number;
+        paceMinutes: number;
+        sms: number;
+        whatsapp: number;
+        sales: number;
+        backoffice: number;
+        dailyGoal: number;
+        image: string;
         totalLogs: number;
     }>;
 }
@@ -128,6 +131,30 @@ export default function ReportsPage() {
 
     return (
         <div className="min-h-screen bg-gray-50/50 p-4 md:p-8 pb-24 print:bg-white print:p-0 font-sans">
+            <style jsx global>{`
+                @media print {
+                    @page {
+                        size: A4;
+                        margin: 20mm;
+                    }
+                    body {
+                        background: white !important;
+                        color: black !important;
+                        -webkit-print-color-adjust: exact;
+                    }
+                    .chart-container {
+                        page-break-inside: avoid;
+                        height: 350px !important;
+                    }
+                    .print-section {
+                        page-break-inside: avoid;
+                        margin-bottom: 2rem;
+                    }
+                    .no-print {
+                        display: none !important;
+                    }
+                }
+            `}</style>
             {/* Header */}
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-8 gap-6 print:hidden">
                 <div className="flex items-center gap-4">
@@ -249,7 +276,7 @@ export default function ReportsPage() {
             )}
 
             {/* --- ROW 1: SALES FUNNEL (PREMIUM CARD) --- */}
-            <div className="mb-8 animate-in slide-in-from-bottom-4 duration-500">
+            <div className="mb-8 animate-in slide-in-from-bottom-4 duration-500 print-section">
                 <SalesFunnel stats={stats} />
             </div>
 
@@ -265,7 +292,7 @@ export default function ReportsPage() {
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-8">
+                <div className="flex flex-col gap-8 print:hidden">
                     {Object.entries(stats.performance)
                         .sort((a, b) => b[1].calls - a[1].calls)
                         .map(([user, pStats]) => (
@@ -274,11 +301,43 @@ export default function ReportsPage() {
                             </div>
                         ))}
                 </div>
+
+                {/* Print Only Performance Table */}
+                <div className="hidden print:block overflow-hidden border border-gray-300 rounded-lg">
+                    <table className="w-full text-sm text-left border-collapse">
+                        <thead className="bg-gray-100 text-gray-900 uppercase text-xs font-black">
+                            <tr className="border-b border-gray-300">
+                                <th className="px-4 py-3 border-r border-gray-300">Personel</th>
+                                <th className="px-4 py-3 border-r border-gray-300 text-center">Çekilen</th>
+                                <th className="px-4 py-3 border-r border-gray-300 text-center">Arama</th>
+                                <th className="px-4 py-3 border-r border-gray-300 text-center">Sms/Wa</th>
+                                <th className="px-4 py-3 border-r border-gray-300 text-center">Başvuru</th>
+                                <th className="px-4 py-3 border-r border-gray-300 text-center">Onay</th>
+                                <th className="px-4 py-3 text-center">Satış</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                            {Object.entries(stats.performance)
+                                .sort((a, b) => b[1].calls - a[1].calls)
+                                .map(([user, pStats]) => (
+                                    <tr key={user} className="border-b border-gray-200">
+                                        <td className="px-4 py-2 border-r border-gray-200 font-bold">{user.split('@')[0]}</td>
+                                        <td className="px-4 py-2 border-r border-gray-200 text-center tabular-nums">{pStats.pulled || 0}</td>
+                                        <td className="px-4 py-2 border-r border-gray-200 text-center tabular-nums font-black">{pStats.calls || 0}</td>
+                                        <td className="px-4 py-2 border-r border-gray-200 text-center tabular-nums">{(pStats.sms || 0) + (pStats.whatsapp || 0)}</td>
+                                        <td className="px-4 py-2 border-r border-gray-200 text-center tabular-nums font-bold text-blue-700">{pStats.applications || 0}</td>
+                                        <td className="px-4 py-2 border-r border-gray-200 text-center tabular-nums font-bold text-indigo-700">{pStats.approvals || 0}</td>
+                                        <td className="px-4 py-2 text-center tabular-nums font-black text-emerald-700">{pStats.sales || 0}</td>
+                                    </tr>
+                                ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {/* --- ROW 3: HOURLY & STATUS --- */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-10 break-inside-avoid animate-in slide-in-from-bottom-8 duration-700 delay-200">
-                <ChartCard title="Saatlik Çalışma Yoğunluğu" className="xl:col-span-2 h-[400px]">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-10 break-inside-avoid animate-in slide-in-from-bottom-8 duration-700 delay-200 print-section">
+                <ChartCard title="Saatlik Çalışma Yoğunluğu" className="xl:col-span-2 h-[400px] chart-container">
                     <div className="h-full w-full pt-4">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={hourlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -348,7 +407,7 @@ export default function ReportsPage() {
                     </h2>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 print:grid-cols-2">
                     <CityMiniTable title="En Çok Arama" data={stats.city} sortKey="total" color="blue" />
                     <CityMiniTable title="En Çok Teslimat" data={stats.city} sortKey="delivered" color="emerald" showPercent />
                     <CityMiniTable title="En Çok Red" data={stats.city} sortKey="rejected" color="red" showPercent />
@@ -378,25 +437,25 @@ function SalesFunnel({ stats }: { stats: any }) {
     const formatCurrency = (val: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(val);
 
     return (
-        <div className="bg-white rounded-[2rem] shadow-xl shadow-indigo-100 border border-indigo-50 relative overflow-hidden ring-1 ring-gray-100 group">
+        <div className="bg-white rounded-[2rem] shadow-xl shadow-indigo-100 border border-indigo-50 relative overflow-hidden ring-1 ring-gray-100 group print:border-2 print:border-gray-900 print:rounded-xl print:shadow-none">
             {/* Decorative Background */}
-            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-gradient-to-bl from-indigo-50/50 to-transparent rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
-            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-gradient-to-tr from-purple-50/50 to-transparent rounded-full blur-3xl -ml-24 -mb-24 pointer-events-none"></div>
+            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-gradient-to-bl from-indigo-50/50 to-transparent rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none print:hidden"></div>
+            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-gradient-to-tr from-purple-50/50 to-transparent rounded-full blur-3xl -ml-24 -mb-24 pointer-events-none print:hidden"></div>
 
-            <div className="relative z-10 p-8">
-                <div className="flex items-center gap-3 mb-10">
-                    <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg shadow-indigo-200">
-                        <TrendingUp className="w-6 h-6 text-white" />
+            <div className="relative z-10 p-8 print:p-4">
+                <div className="flex items-center gap-3 mb-10 print:mb-4">
+                    <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg shadow-indigo-200 print:bg-none print:p-0 print:shadow-none print:text-black">
+                        <TrendingUp className="w-6 h-6 text-white print:text-black" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-black text-gray-900 tracking-tight">GÜNLÜK SATIŞ HUNİSİ</h2>
-                        <p className="text-sm font-bold text-gray-500">Operasyonel Dönüşüm Oranları</p>
+                        <h2 className="text-2xl font-black text-gray-900 tracking-tight print:text-lg">GÜNLÜK SATIŞ HUNİSİ</h2>
+                        <p className="text-sm font-bold text-gray-500 print:text-xs">Operasyonel Dönüşüm Oranları</p>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 lg:grid-cols-5 gap-6 md:gap-8 relative px-4">
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-6 md:gap-8 relative px-4 print:grid-cols-5 print:gap-2 print:px-0">
                     {/* Arrow connectors (Desktop) */}
-                    <div className="hidden md:block absolute top-[40%] left-0 w-full h-1 bg-gray-100 -z-10 rounded-full"></div>
+                    <div className="hidden md:block absolute top-[40%] left-0 w-full h-1 bg-gray-100 -z-10 rounded-full print:hidden"></div>
 
                     <FunnelStep
                         title="YAPILAN ARAMA"
@@ -476,28 +535,28 @@ function FunnelStep({ title, value, icon: Icon, color, bg, desc, subValue, isFin
     return (
         <div className={`relative flex flex-col items-center text-center group/card`}>
             {/* Step Number Badge */}
-            <div className={`absolute -top-3 -right-3 w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shadow-sm border-2 border-white z-20 ${isFinal ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400 group-hover/card:bg-indigo-500 group-hover/card:text-white transition-colors'}`}>
+            <div className={`absolute -top-3 -right-3 w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shadow-sm border-2 border-white z-20 print:hidden ${isFinal ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400 group-hover/card:bg-indigo-500 group-hover/card:text-white transition-colors'}`}>
                 {step}
             </div>
 
-            <div className={`w-full p-6 rounded-3xl border-2 transition-all duration-300 ${bg} ${isFinal ? 'border-green-300 shadow-xl shadow-green-100 scale-105' : 'border-transparent shadow-sm hover:shadow-xl hover:-translate-y-2 hover:bg-white hover:border-indigo-100'}`}>
-                <div className={`mx-auto w-14 h-14 rounded-2xl bg-white shadow-md flex items-center justify-center mb-4 ${color}`}>
-                    <Icon className="w-7 h-7" />
+            <div className={`w-full p-6 rounded-3xl border-2 transition-all duration-300 print:p-2 print:rounded-lg print:border-gray-200 ${bg} ${isFinal ? 'border-green-300 shadow-xl shadow-green-100 scale-105 print:scale-100 print:border-gray-900 print:shadow-none' : 'border-transparent shadow-sm hover:shadow-xl hover:-translate-y-2 hover:bg-white hover:border-indigo-100'}`}>
+                <div className={`mx-auto w-14 h-14 rounded-2xl bg-white shadow-md flex items-center justify-center mb-4 transition-all print:w-8 print:h-8 print:mb-1 print:shadow-none ${color}`}>
+                    <Icon className="w-7 h-7 print:w-4 print:h-4" />
                 </div>
 
-                <div className="text-[10px] uppercase font-extrabold text-gray-500 tracking-widest mb-2">{title}</div>
+                <div className="text-[10px] uppercase font-extrabold text-gray-500 tracking-widest mb-2 print:mb-0 print:text-[8px]">{title}</div>
 
-                <div className={`text-4xl font-black ${color} mb-1 tracking-tighter tabular-nums`}>
+                <div className={`text-4xl font-black ${color} mb-1 tracking-tighter tabular-nums print:text-xl print:text-black print:mb-0`}>
                     {value}
                 </div>
 
                 {subValue && (
-                    <div className="inline-block px-2 py-0.5 rounded-md bg-white/60 text-[10px] font-bold text-gray-500 uppercase tracking-tight mb-2 border border-black/5">
+                    <div className="inline-block px-2 py-0.5 rounded-md bg-white/60 text-[10px] font-bold text-gray-500 uppercase tracking-tight mb-2 border border-black/5 print:text-[7px] print:mb-0 print:bg-transparent print:border-none print:text-black">
                         {subValue}
                     </div>
                 )}
 
-                <div className="text-xs font-bold text-gray-600 border-t border-black/5 pt-2 mt-1 w-full">
+                <div className="text-xs font-bold text-gray-600 border-t border-black/5 pt-2 mt-1 w-full print:hidden">
                     {desc}
                 </div>
             </div>
