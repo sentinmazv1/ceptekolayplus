@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { logAction } from '@/lib/leads';
-import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
@@ -19,7 +18,7 @@ export async function POST(req: NextRequest) {
         }
 
         await logAction({
-            log_id: uuidv4(),
+            log_id: crypto.randomUUID(),
             timestamp: new Date().toISOString(),
             user_email: session.user.email,
             customer_id: customer_id,
