@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/Button';
 interface ActionCenterProps {
     onPullLead: () => void;
     loading: boolean;
+    myStats?: { calls: number; sales: number; salesVolume: number };
 }
 
-export function ActionCenter({ onPullLead, loading }: ActionCenterProps) {
+export function ActionCenter({ onPullLead, loading, myStats }: ActionCenterProps) {
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -79,14 +80,32 @@ export function ActionCenter({ onPullLead, loading }: ActionCenterProps) {
                     </form>
                 </div>
 
-                {/* 3. Mini Personal Stats (Optional / Future expansion) */}
-                <div className="hidden xl:flex items-center gap-4 border-l border-gray-100 pl-8">
-                    <div className="text-right">
-                        <div className="text-xs font-bold text-gray-400">GÜNLÜK HEDEF</div>
-                        <div className="text-sm font-black text-gray-900">12 / 80 Arama</div>
+                {/* 3. Mini Personal Stats */}
+                <div className="hidden xl:flex items-center gap-6 border-l border-gray-100 pl-8 shrink-0">
+                    {/* My Calls */}
+                    <div className="text-right group cursor-default">
+                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">GÜNLÜK ARAMA</div>
+                        <div className="flex items-baseline justify-end gap-1">
+                            <div className="text-2xl font-black text-gray-900 leading-none">{myStats?.calls || 0}</div>
+                            <span className="text-xs font-medium text-gray-400">/ 80</span>
+                        </div>
+                        <div className="w-24 h-1 mt-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${Math.min(((myStats?.calls || 0) / 80) * 100, 100)}%` }}></div>
+                        </div>
                     </div>
-                    <div className="w-12 h-12 rounded-full border-4 border-indigo-100 border-t-indigo-500 flex items-center justify-center text-[10px] font-bold text-indigo-700 bg-white shadow-sm">
-                        %15
+
+                    {/* My Sales */}
+                    <div className="text-right group cursor-default">
+                        <div className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-wider mb-0.5">SATIŞ CIROSU</div>
+                        <div className="flex items-baseline justify-end gap-1">
+                            <div className="text-2xl font-black text-emerald-600 leading-none">
+                                {new Intl.NumberFormat('tr-TR', { notation: "compact", compactDisplay: "short", maximumFractionDigits: 1 }).format(myStats?.salesVolume || 0)}
+                            </div>
+                            <span className="text-xs font-bold text-emerald-400">₺</span>
+                        </div>
+                        <div className="w-24 h-1 mt-2 bg-emerald-100/50 rounded-full overflow-hidden">
+                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: '100%' }}></div>
+                        </div>
                     </div>
                 </div>
 
