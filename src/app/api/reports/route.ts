@@ -237,27 +237,52 @@ export async function GET(req: NextRequest) {
                 }
             }
 
-            // E. Funnel: Delivered
-            const isDelivered = (status === 'Teslim edildi' || status === 'Satış yapıldı/Tamamlandı');
-            if (isDelivered) {
+            // E. Funnel: Delivered (Item Based)
+            let itemSaleCount = 0;
+            let itemRevenue = 0;
+
+            // 1. Process List
+            try {
+                if (row.satilan_urunler) {
+                    const products = typeof row.satilan_urunler === 'string' ? JSON.parse(row.satilan_urunler) : row.satilan_urunler;
+                    if (Array.isArray(products)) {
+                        products.forEach((p: any) => {
+                            // Check item date
+                            const pDate = p.satis_tarihi || row.teslim_tarihi;
+                            if (pDate && isInRange(pDate)) {
+                                itemSaleCount++;
+                                itemRevenue += parseFloat(String(p.fiyat || '0'));
+                            }
+                        });
+                    }
+                }
+            } catch (e) {
+                // ignore parse error
+            }
+
+            // 2. Legacy Fallback
+            if (itemSaleCount === 0 && (status === 'Teslim edildi' || status === 'Satış yapıldı/Tamamlandı')) {
                 const dDate = row.teslim_tarihi || row.updated_at;
                 if (isInRange(dDate)) {
-                    deliveredIds.add(row.id);
-
-                    // Calculate Delivered Volume (using Credit Limit as proxy for Deal Value)
-                    let limitStr = String(row.kredi_limiti || '0');
-                    limitStr = limitStr.replace(/[^0-9,.-]/g, '');
-                    if (limitStr.includes(',') && limitStr.includes('.')) {
-                        limitStr = limitStr.replace(/\./g, '').replace(',', '.');
-                    } else if (limitStr.includes(',')) {
-                        limitStr = limitStr.replace(',', '.');
-                    }
-                    const limit = parseFloat(limitStr) || 0;
-                    stats.funnel.deliveredVolume += limit;
+                    itemSaleCount = 1;
+                    // Limit as proxy
+                    let limitStr = String(row.kredi_limiti || '0').replace(/[^0-9,.-]/g, '');
+                    if (limitStr.includes(',') && limitStr.includes('.')) limitStr = limitStr.replace(/\./g, '').replace(',', '.');
+                    else if (limitStr.includes(',')) limitStr = limitStr.replace(',', '.');
+                    itemRevenue = parseFloat(limitStr) || 0;
                 }
             }
 
+            if (itemSaleCount > 0) {
+                stats.funnel.delivered += itemSaleCount;
+                stats.funnel.deliveredVolume += itemRevenue;
+                stats.funnel.sale += itemSaleCount;
+                deliveredIds.add(row.id); // Still track unique customers for reference if needed
+            }
+
             // F. Standard Aggregates
+            const isDelivered = (status === 'Teslim edildi' || status === 'Satış yapıldı/Tamamlandı');
+
             if (row.sehir) {
                 if (!stats.city[row.sehir]) stats.city[row.sehir] = { total: 0, delivered: 0, approved: 0, rejected: 0, cancelled: 0, kefil: 0, noEdevlet: 0, unreachable: 0, other: 0 };
 
@@ -296,8 +321,7 @@ export async function GET(req: NextRequest) {
         stats.funnel.applications = applicationIds.size;
         stats.funnel.attorneyQueries = attorneyQueryIds.size;
         stats.funnel.approved = approvedIds.size;
-        stats.funnel.delivered = deliveredIds.size;
-        stats.funnel.sale = deliveredIds.size;
+        // Delivered & Sale are calculated cumulatively above based on items
         stats.funnel.totalCalled = Object.values(stats.performance).reduce((a, b) => a + b.calls, 0);
 
         Object.keys(userAppIds).forEach(u => {

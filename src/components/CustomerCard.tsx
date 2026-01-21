@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { Customer, LeadStatus, InventoryItem, LogEntry } from '@/lib/types';
-import { WHATSAPP_TEMPLATES } from '@/lib/whatsapp-templates';
+
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Select } from './ui/Select';
@@ -117,6 +117,19 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
     const [statusOptions, setStatusOptions] = useState<{ value: string, label: string }[]>([]);
     const [quickNotes, setQuickNotes] = useState<{ label: string }[]>([]);
 
+    // Dynamic Templates
+    const [smsTemplates, setSmsTemplates] = useState<any[]>([]);
+    const [whatsappTemplates, setWhatsappTemplates] = useState<any[]>([]);
+
+    const replaceTemplateVariables = (content: string) => {
+        return content
+            .replace(/{name}/g, data.ad_soyad || '')
+            .replace(/{limit}/g, data.kredi_limiti ? `${data.kredi_limiti} TL` : '...')
+            .replace(/{product}/g, data.talep_edilen_urun || 'Cihaz')
+            .replace(/{imei}/g, data.urun_imei || '...')
+            .replace(/{serial}/g, data.urun_seri_no || '...');
+    };
+
     useEffect(() => {
         // Fetch statuses from API
         fetch('/api/admin/statuses')
@@ -137,6 +150,18 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                 }
             })
             .catch(err => console.error('Quick Notes fetch error:', err));
+
+        // Fetch Templates
+        fetch('/api/admin/sms-templates?type=SMS')
+            .then(res => res.json())
+            .then(data => { if (data.templates) setSmsTemplates(data.templates); })
+            .catch(err => console.error('SMS Template fetch error:', err));
+
+        fetch('/api/admin/sms-templates?type=WHATSAPP')
+            .then(res => res.json())
+            .then(data => { if (data.templates) setWhatsappTemplates(data.templates); })
+            .catch(err => console.error('WhatsApp Template fetch error:', err));
+
     }, []);
 
     // SMS Modal State
@@ -1749,64 +1774,22 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                 </div>
                             </div>
 
-                            {/* Template Shortcuts */}
+                            {/* Dynamic SMS Templates */}
                             <div className="mb-4 flex flex-col gap-3 max-h-60 overflow-y-auto pr-1">
-                                <div className="text-xs font-semibold text-gray-500 border-b pb-1">Tanışma & Süreç</div>
+                                {smsTemplates.length === 0 && (
+                                    <div className="text-gray-400 text-xs italic p-2 text-center">Şablon bulunamadı. Toplu Mesaj panelinden ekleyebilirsiniz.</div>
+                                )}
                                 <div className="flex flex-wrap gap-2">
-                                    <button
-                                        onClick={() => setSmsMessage(`Sayın ${data.ad_soyad}, paylaştığınız bilgiler için teşekkür ederiz. Başvurunuz değerlendirme aşamasında olup, en kısa sürede size dönüş yapılacaktır. İlginiz için teşekkürler. CEPTE KOLAY`)}
-                                        className="text-xs bg-cyan-50 border border-cyan-200 hover:bg-cyan-100 px-2 py-1 rounded text-cyan-700 transition"
-                                    >
-                                        Başvuru Alındı
-                                    </button>
-                                    <button
-                                        onClick={() => setSmsMessage(`Müjde! ${data.ad_soyad}, ${data.talep_edilen_urun || 'cihaz'} talebiniz ONAYLANMISTIR! Urununuzu teslim almak icin sizi en kisa surede magazamiza bekliyoruz. Simdiden iyi gunlerde kullanin. CEPTE KOLAY`)}
-                                        className="text-xs bg-green-50 border border-green-200 hover:bg-green-100 px-2 py-1 rounded text-green-700 transition"
-                                    >
-                                        Onaylandı
-                                    </button>
-                                    <button
-                                        onClick={() => setSmsMessage(`Değerli Müşterimiz ${data.ad_soyad}, başvurunuzun olumlu sonuçlanabilmesi için kefil desteğine ihtiyaç duyulmuştur. Detaylı bilgi için 0551 349 6735 numaralı hattımızdan bize ulaşabilir veya mağazamızı ziyaret edebilirsiniz. CEPTE KOLAY`)}
-                                        className="text-xs bg-orange-50 border border-orange-200 hover:bg-orange-100 px-2 py-1 rounded text-orange-700 transition"
-                                    >
-                                        Kefil İstendi
-                                    </button>
-                                    <button
-                                        onClick={() => setSmsMessage(`Sayın ${data.ad_soyad}, başvurunuzla ilgili size ulaşmaya çalıştık ancak ulaşamadık. Müsait olduğunuzda 0551 349 6735 numaramızdan veya WhatsApp hattımızdan bize dönüş yapmanızı rica ederiz. CEPTE KOLAY`)}
-                                        className="text-xs bg-gray-50 border border-gray-200 hover:bg-gray-100 px-2 py-1 rounded text-gray-700 transition"
-                                    >
-                                        Ulaşılamadı
-                                    </button>
-                                    <button
-                                        onClick={() => setSmsMessage(`Sayın ${data.ad_soyad}, başvurunuzu tamamlayabilmemiz için bazı eksik evraklarınız bulunmaktadır. 0551 349 6735 WhatsApp hattımızdan bilgi alarak işlemlerinizi hızlandırabilirsiniz. CEPTE KOLAY`)}
-                                        className="text-xs bg-blue-50 border border-blue-200 hover:bg-blue-100 px-2 py-1 rounded text-blue-700 transition"
-                                    >
-                                        Eksik Evrak
-                                    </button>
-                                    <button
-                                        onClick={() => setSmsMessage(`Sayın ${data.ad_soyad}, başvurunuzla ilgili işlemler durdurulmuş ve kaydınız iptal edilmiştir. İhtiyaçlarınız için kapımız size her zaman açık. CEPTE KOLAY`)}
-                                        className="text-xs bg-red-50 border border-red-200 hover:bg-red-100 px-2 py-1 rounded text-red-700 transition"
-                                    >
-                                        İptal
-                                    </button>
-                                    <button
-                                        onClick={() => setSmsMessage(`Sayın ${data.ad_soyad}, ${data.talep_edilen_urun || 'Cihaz'} urununuz teslim edilmistir. IMEI: ${data.urun_imei || '...'}, Seri No: ${data.urun_seri_no || '...'}. Iyi gunlerde kullanmanizi dileriz. CEPTE KOLAY`)}
-                                        className="text-xs bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 px-2 py-1 rounded text-indigo-700 transition"
-                                    >
-                                        Teslim Edildi
-                                    </button>
-                                    <button
-                                        onClick={() => setSmsMessage(`Magaza Konumumuz: https://maps.app.goo.gl/VTBYugiDdTCAbnwB6 CEPTE KOLAY`)}
-                                        className="text-xs bg-purple-50 border border-purple-200 hover:bg-purple-100 px-2 py-1 rounded text-purple-700 transition"
-                                    >
-                                        Konum
-                                    </button>
-                                    <button
-                                        onClick={() => setSmsMessage(`Odeme yapabileceginiz IBAN bilgimiz: TR58 0001 0008 0498 1915 2750 01 - Alici: Cepte Kolay. CEPTE KOLAY`)}
-                                        className="text-xs bg-teal-50 border border-teal-200 hover:bg-teal-100 px-2 py-1 rounded text-teal-700 transition"
-                                    >
-                                        IBAN
-                                    </button>
+                                    {smsTemplates.map(t => (
+                                        <button
+                                            key={t.id}
+                                            onClick={() => setSmsMessage(replaceTemplateVariables(t.content))}
+                                            className="text-xs bg-gray-50 border border-gray-200 hover:bg-gray-100 px-2 py-1 rounded text-gray-700 transition truncate max-w-full"
+                                            title={t.content}
+                                        >
+                                            {t.title}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
 
@@ -1843,112 +1826,22 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                 </div>
                             </div>
 
-                            {/* Template Shortcuts */}
+                            {/* Dynamic WhatsApp Templates */}
                             <div className="mb-4 flex flex-col gap-3 max-h-60 overflow-y-auto pr-1">
-                                <div className="text-xs font-semibold text-gray-500 border-b pb-1">Tanışma & Süreç</div>
+                                {whatsappTemplates.length === 0 && (
+                                    <div className="text-gray-400 text-xs italic p-2 text-center">Şablon bulunamadı. Toplu Mesaj panelinden ekleyebilirsiniz.</div>
+                                )}
                                 <div className="flex flex-wrap gap-2">
-                                    <button
-                                        onClick={() => setWhatsAppMessage(WHATSAPP_TEMPLATES.WELCOME(data.ad_soyad))}
-                                        className="text-xs bg-cyan-50 border border-cyan-200 hover:bg-cyan-100 px-2 py-1 rounded text-cyan-700 transition"
-                                    >
-                                        1. Karşılama
-                                    </button>
-                                    <button
-                                        onClick={() => setWhatsAppMessage(WHATSAPP_TEMPLATES.PROCESS_INFO())}
-                                        className="text-xs bg-cyan-50 border border-cyan-200 hover:bg-cyan-100 px-2 py-1 rounded text-cyan-700 transition"
-                                    >
-                                        2. Süreç Anlatımı
-                                    </button>
-                                    <button
-                                        onClick={() => setWhatsAppMessage(WHATSAPP_TEMPLATES.CRITICAL_WARNING())}
-                                        className="text-xs bg-orange-50 border border-orange-200 hover:bg-orange-100 px-2 py-1 rounded text-orange-700 transition"
-                                    >
-                                        3. Uyarı (TC/Şifre)
-                                    </button>
-                                    <button
-                                        onClick={() => setWhatsAppMessage(WHATSAPP_TEMPLATES.CONFIRMATION())}
-                                        className="text-xs bg-cyan-50 border border-cyan-200 hover:bg-cyan-100 px-2 py-1 rounded text-cyan-700 transition"
-                                    >
-                                        4. Onay Alma
-                                    </button>
-                                </div>
-
-                                <div className="text-xs font-semibold text-gray-500 border-b pb-1">Kontrol & Sonuç</div>
-                                <div className="flex flex-wrap gap-2">
-                                    <button
-                                        onClick={() => setWhatsAppMessage(WHATSAPP_TEMPLATES.REQUEST_ID_PASS())}
-                                        className="text-xs bg-blue-50 border border-blue-200 hover:bg-blue-100 px-2 py-1 rounded text-blue-700 transition"
-                                    >
-                                        5. Bilgi İsteme
-                                    </button>
-                                    <button
-                                        onClick={() => setWhatsAppMessage(WHATSAPP_TEMPLATES.CHECK_STARTED())}
-                                        className="text-xs bg-blue-50 border border-blue-200 hover:bg-blue-100 px-2 py-1 rounded text-blue-700 transition"
-                                    >
-                                        6. Kontrol Başladı
-                                    </button>
-                                    <button
-                                        onClick={() => setWhatsAppMessage(WHATSAPP_TEMPLATES.POSITIVE_RESULT(data.ad_soyad, data.kredi_limiti || '...'))}
-                                        className="text-xs bg-green-50 border border-green-200 hover:bg-green-100 px-2 py-1 rounded text-green-700 transition"
-                                    >
-                                        7. Olumlu Sonuç
-                                    </button>
-                                    <button
-                                        onClick={() => setWhatsAppMessage(WHATSAPP_TEMPLATES.NEGATIVE_RESULT())}
-                                        className="text-xs bg-red-50 border border-red-200 hover:bg-red-100 px-2 py-1 rounded text-red-700 transition"
-                                    >
-                                        12. Olumsuz Sonuç
-                                    </button>
-                                </div>
-
-                                <div className="text-xs font-semibold text-gray-500 border-b pb-1">Kapanış & Diğer</div>
-                                <div className="flex flex-wrap gap-2">
-                                    <button
-                                        onClick={() => setWhatsAppMessage(WHATSAPP_TEMPLATES.CALL_PERMISSION())}
-                                        className="text-xs bg-purple-50 border border-purple-200 hover:bg-purple-100 px-2 py-1 rounded text-purple-700 transition"
-                                    >
-                                        8. Arama İzni
-                                    </button>
-                                    <button
-                                        onClick={() => setWhatsAppMessage(WHATSAPP_TEMPLATES.REFUSED_TO_GIVE_INFO())}
-                                        className="text-xs bg-gray-50 border border-gray-200 hover:bg-gray-100 px-2 py-1 rounded text-gray-700 transition"
-                                    >
-                                        9. Bilgi Vermeyen
-                                    </button>
-                                    <button
-                                        onClick={() => setWhatsAppMessage(WHATSAPP_TEMPLATES.NO_RESPONSE_24H(data.ad_soyad))}
-                                        className="text-xs bg-gray-50 border border-gray-200 hover:bg-gray-100 px-2 py-1 rounded text-gray-700 transition"
-                                    >
-                                        10. Cevap Yok (24s)
-                                    </button>
-                                    <button
-                                        onClick={() => setWhatsAppMessage(WHATSAPP_TEMPLATES.UNREACHABLE_AFTER_CALL())}
-                                        className="text-xs bg-gray-50 border border-gray-200 hover:bg-gray-100 px-2 py-1 rounded text-gray-700 transition"
-                                    >
-                                        11. Ulaşılamadı
-                                    </button>
-                                </div>
-
-                                <div className="text-xs font-semibold text-gray-500 border-b pb-1">Bilgi & Teslimat</div>
-                                <div className="flex flex-wrap gap-2">
-                                    <button
-                                        onClick={() => setWhatsAppMessage(WHATSAPP_TEMPLATES.LOCATION())}
-                                        className="text-xs bg-teal-50 border border-teal-200 hover:bg-teal-100 px-2 py-1 rounded text-teal-700 transition"
-                                    >
-                                        13. Konum
-                                    </button>
-                                    <button
-                                        onClick={() => setWhatsAppMessage(WHATSAPP_TEMPLATES.IBAN())}
-                                        className="text-xs bg-teal-50 border border-teal-200 hover:bg-teal-100 px-2 py-1 rounded text-teal-700 transition"
-                                    >
-                                        14. IBAN
-                                    </button>
-                                    <button
-                                        onClick={() => setWhatsAppMessage(WHATSAPP_TEMPLATES.DELIVERED(data.ad_soyad, data.talep_edilen_urun || 'Cihaz', data.urun_imei || '...', data.urun_seri_no || '...'))}
-                                        className="text-xs bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 px-2 py-1 rounded text-indigo-700 transition"
-                                    >
-                                        15. Teslimat
-                                    </button>
+                                    {whatsappTemplates.map(t => (
+                                        <button
+                                            key={t.id}
+                                            onClick={() => setWhatsAppMessage(replaceTemplateVariables(t.content))}
+                                            className="text-xs bg-green-50 border border-green-200 hover:bg-green-100 px-2 py-1 rounded text-green-700 transition truncate max-w-full"
+                                            title={t.content}
+                                        >
+                                            {t.title}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
 

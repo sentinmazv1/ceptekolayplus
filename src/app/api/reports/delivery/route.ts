@@ -17,18 +17,34 @@ export async function GET(req: NextRequest) {
 
         if (dateFilter) {
             deliveredCustomers = deliveredCustomers.filter(c => {
-                // Check 'teslim_tarihi' first, fallback to 'updated_at'
+                let hasItemMatch = false;
+
+                // 1. Check Sales History (Item Level)
+                try {
+                    if (c.satilan_urunler) {
+                        const products = typeof c.satilan_urunler === 'string' ? JSON.parse(c.satilan_urunler) : c.satilan_urunler;
+                        if (Array.isArray(products)) {
+                            hasItemMatch = products.some((p: any) => {
+                                const pDateRaw = p.satis_tarihi || c.teslim_tarihi; // Item date or Customer Delivery date
+                                if (!pDateRaw) return false;
+                                // Convert to YYYY-MM-DD
+                                const pDateStr = new Date(pDateRaw).toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' });
+                                return pDateStr === dateFilter;
+                            });
+                        }
+                    }
+                } catch (e) { }
+
+                if (hasItemMatch) return true;
+
+                // 2. Fallback: Check Customer Main Delivery Date (Legacy or if list parsing fails)
                 const rawDate = c.teslim_tarihi || c.updated_at;
                 if (!rawDate) return false;
 
-                // Create date object
                 const d = new Date(rawDate);
-                if (isNaN(d.getTime())) return false; // Invalid date
+                if (isNaN(d.getTime())) return false;
 
-                // Convert to Turkey Time YYYY-MM-DD
                 const turkeyDate = d.toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' });
-
-                // Compare exact string match (YYYY-MM-DD)
                 return turkeyDate === dateFilter;
             });
         }

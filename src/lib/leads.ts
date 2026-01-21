@@ -129,7 +129,10 @@ export async function getLeadStats(user?: { email: string; role: string }) {
     const pMyRetry = baseFilter(supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).in('durum', retryStates));
     const pPending = baseFilter(supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).eq('durum', 'Başvuru alındı'));
     const pGuarantor = baseFilter(supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).eq('durum', 'Kefil bekleniyor'));
-    const pDelivered = baseFilter(supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).eq('durum', 'Teslim edildi'));
+
+    // DELIVERED: Fetch data to count ITEMS, not just customers
+    const pDelivered = baseFilter(supabaseAdmin.from('leads').select('satilan_urunler').eq('durum', 'Teslim edildi'));
+
     const pApproved = baseFilter(supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).eq('durum', 'Onaylandı'));
     const pToday = baseFilter(supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).ilike('son_arama_zamani', `${todayStr}%`));
 
@@ -143,13 +146,30 @@ export async function getLeadStats(user?: { email: string; role: string }) {
         { count: myRetry },   // My retry pile
         { count: pending },
         { count: guarantor },
-        { count: delivered },
+        { data: deliveredRows },
         { count: approved },
         { count: today }
     ] = await Promise.all([
         pWaitNew, pWaitSched, pWaitRetry,
         pTotalSched, pMyRetry, pPending, pGuarantor, pDelivered, pApproved, pToday
     ]);
+
+    // Calculate Total Delivered ITEMS
+    let deliveredItemCount = 0;
+    if (deliveredRows) {
+        deliveredRows.forEach((r: any) => {
+            let c = 0;
+            if (r.satilan_urunler) {
+                try {
+                    const list = typeof r.satilan_urunler === 'string' ? JSON.parse(r.satilan_urunler) : r.satilan_urunler;
+                    if (Array.isArray(list)) c = list.length;
+                } catch (e) { }
+            }
+            // Fallback: If status is delivered but list is empty/invalid, count as 1 (Legacy)
+            if (c === 0) c = 1;
+            deliveredItemCount += c;
+        });
+    }
 
     const totalAvailable = (waitNew || 0) + (waitSched || 0) + (waitRetry || 0);
 
@@ -170,7 +190,7 @@ export async function getLeadStats(user?: { email: string; role: string }) {
         waiting_retry: waitRetry || 0, // CORRECTED: This should be Pool Retry, not My Retry
         pending_approval: pending || 0,
         waiting_guarantor: guarantor || 0,
-        delivered: delivered || 0,
+        delivered: deliveredItemCount,
         approved: approved || 0,
         today_called: today || 0,
         statusCounts: statusCounts,
