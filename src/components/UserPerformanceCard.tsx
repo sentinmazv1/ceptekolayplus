@@ -23,126 +23,126 @@ export function UserPerformanceCard({ user, stats, variant = 'default' }: { user
         const paceColor = stats.paceMinutes < 5 ? 'text-green-600' : (stats.paceMinutes < 10 ? 'text-yellow-600' : 'text-red-500');
 
         return (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 hover:shadow-md transition-shadow relative overflow-hidden group flex items-center justify-between gap-4">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-2 hover:shadow-md transition-shadow relative overflow-hidden group flex items-center justify-between gap-2">
                 {/* 1. IDENTITY & RANK */}
-                <div className="flex items-center gap-3 w-48 shrink-0 border-r border-gray-100 pr-4">
+                <div className="flex items-center gap-2 w-40 shrink-0 border-r border-gray-100 pr-2">
                     <div className="relative">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">
                             {user.substring(0, 2).toUpperCase()}
                         </div>
                         {user === 'ibrahim' && (
                             <div className="absolute -top-1.5 -right-1.5 bg-yellow-400 text-white p-0.5 rounded-full shadow-sm">
-                                <Award className="w-2.5 h-2.5" />
+                                <Award className="w-2 h-2" />
                             </div>
                         )}
                     </div>
-                    <div className="min-w-0">
-                        <h4 className="font-bold text-gray-900 text-sm truncate">{user.split('@')[0]}</h4>
-                        <div className="flex items-center gap-1.5 mt-0.5">
+                    <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-gray-900 text-xs truncate" title={user}>{user.split('@')[0]}</h4>
+                        <div className="flex items-center gap-1 mt-0.5">
                             <span className={`w-1.5 h-1.5 rounded-full ${stats.calls > 0 ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></span>
-                            <span className="text-[10px] font-medium text-gray-400">#{user === 'ibrahim' ? '1' : '2'}</span>
+                            <span className="text-[9px] font-medium text-gray-400">#{user === 'ibrahim' ? '1' : '2'}</span>
                         </div>
                     </div>
                 </div>
 
                 {/* 2. SALES FUNNEL (Horizontal Flow) */}
-                <div className="flex-1 flex items-center justify-between gap-6 px-4">
+                <div className="flex-1 flex items-center justify-between gap-2 px-2">
                     {/* Pulled (Havuz) */}
                     <div className="flex flex-col items-center">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase mb-0.5">Çekilen</span>
-                        <div className="flex items-baseline gap-1">
-                            <span className="text-xl font-bold text-gray-700">{stats.pulled || 0}</span>
+                        <span className="text-[9px] font-bold text-gray-400 uppercase mb-0.5">Çekilen</span>
+                        <div className="flex items-baseline gap-0.5">
+                            <span className="text-lg font-bold text-gray-700">{stats.pulled || 0}</span>
                         </div>
                     </div>
 
-                    <ChevronRight className="w-4 h-4 text-gray-300" />
+                    <ChevronRight className="w-3 h-3 text-gray-300" />
 
                     {/* Calls */}
                     <div className="flex flex-col items-center">
-                        <span className="text-[10px] font-bold text-indigo-400 uppercase mb-0.5">Arama</span>
-                        <div className="flex items-baseline gap-1">
+                        <span className="text-[9px] font-bold text-indigo-400 uppercase mb-0.5">Arama</span>
+                        <div className="flex items-baseline gap-0.5">
                             <Phone className="w-3 h-3 text-indigo-400" />
-                            <span className="text-xl font-bold text-indigo-600">{stats.calls}</span>
+                            <span className="text-lg font-bold text-indigo-600">{stats.calls}</span>
                         </div>
                     </div>
 
-                    <ChevronRight className="w-4 h-4 text-gray-300" />
+                    <ChevronRight className="w-3 h-3 text-gray-300" />
 
                     {/* Applications */}
                     <div className="flex flex-col items-center">
-                        <span className="text-[10px] font-bold text-orange-400 uppercase mb-0.5">Başvuru</span>
-                        <div className="flex items-baseline gap-1">
-                            <span className="text-xl font-bold text-orange-600">{stats.applications}</span>
+                        <span className="text-[9px] font-bold text-orange-400 uppercase mb-0.5">Başvuru</span>
+                        <div className="flex items-baseline gap-0.5">
+                            <span className="text-lg font-bold text-orange-600">{stats.applications}</span>
                             <span className="text-[9px] text-gray-400">({appRate}%)</span>
                         </div>
                     </div>
 
-                    <ChevronRight className="w-4 h-4 text-gray-300" />
+                    <ChevronRight className="w-3 h-3 text-gray-300" />
 
                     {/* Approvals */}
                     <div className="flex flex-col items-center">
-                        <span className="text-[10px] font-bold text-blue-400 uppercase mb-0.5">Onay</span>
-                        <div className="flex items-baseline gap-1">
-                            <span className="text-xl font-bold text-blue-600">{stats.approvals}</span>
+                        <span className="text-[9px] font-bold text-blue-400 uppercase mb-0.5">Onay</span>
+                        <div className="flex items-baseline gap-0.5">
+                            <span className="text-lg font-bold text-blue-600">{stats.approvals}</span>
                         </div>
                     </div>
 
-                    <ChevronRight className="w-4 h-4 text-emerald-300" />
+                    <ChevronRight className="w-3 h-3 text-emerald-300" />
 
                     {/* SALES (Final) */}
-                    <div className="flex flex-col items-center bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-100">
-                        <span className="text-[10px] font-bold text-emerald-600 uppercase mb-0.5">SATIŞ</span>
-                        <div className="flex items-baseline gap-1">
-                            <Target className="w-3.5 h-3.5 text-emerald-500" />
-                            <span className="text-2xl font-black text-emerald-700">{stats.sales}</span>
+                    <div className="flex flex-col items-center bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100">
+                        <span className="text-[9px] font-bold text-emerald-600 uppercase mb-0.5">SATIŞ</span>
+                        <div className="flex items-baseline gap-0.5">
+                            <Target className="w-3 h-3 text-emerald-500" />
+                            <span className="text-xl font-black text-emerald-700">{stats.sales}</span>
                         </div>
                     </div>
                 </div>
 
                 {/* 3. OPERATIONAL METRICS (Vertical compact) */}
-                <div className="flex items-center gap-6 border-l border-r border-gray-100 px-6 shrink-0">
+                <div className="flex items-center gap-3 border-l border-r border-gray-100 px-3 shrink-0">
                     {/* Back Office */}
                     <div className="flex flex-col items-center" title="Back-Office İşlemleri">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase">B.Office</span>
-                        <span className="text-lg font-bold text-gray-600">{stats.backoffice || 0}</span>
+                        <span className="text-[9px] font-bold text-gray-400 uppercase">B.Office</span>
+                        <span className="text-base font-bold text-gray-600">{stats.backoffice || 0}</span>
                     </div>
 
                     {/* Pace */}
                     <div className="flex flex-col items-center" title="Ortalama İşlem Süresi">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase">Hız</span>
-                        <div className="flex items-center gap-1">
-                            <Clock className="w-3 h-3 text-gray-400" />
-                            <span className={`text-lg font-bold ${paceColor}`}>{stats.paceMinutes || '-'} dk</span>
+                        <span className="text-[9px] font-bold text-gray-400 uppercase">Hız</span>
+                        <div className="flex items-center gap-0.5">
+                            <Clock className="w-2.5 h-2.5 text-gray-400" />
+                            <span className={`text-base font-bold ${paceColor}`}>{stats.paceMinutes || '-'} dk</span>
                         </div>
                     </div>
 
                     {/* Messages */}
                     <div className="flex flex-col items-center">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase">Mesaj</span>
-                        <div className="flex gap-2">
+                        <span className="text-[9px] font-bold text-gray-400 uppercase">Mesaj</span>
+                        <div className="flex gap-1.5">
                             <div className="flex items-center gap-0.5" title="SMS">
-                                <MessageSquare className="w-3 h-3 text-purple-400" />
-                                <span className="text-sm font-bold text-gray-600">{stats.sms || 0}</span>
+                                <MessageSquare className="w-2.5 h-2.5 text-purple-400" />
+                                <span className="text-xs font-bold text-gray-600">{stats.sms || 0}</span>
                             </div>
                             <div className="flex items-center gap-0.5" title="WhatsApp">
-                                <MessageSquare className="w-3 h-3 text-green-400" />
-                                <span className="text-sm font-bold text-gray-600">{stats.whatsapp || 0}</span>
+                                <MessageSquare className="w-2.5 h-2.5 text-green-400" />
+                                <span className="text-xs font-bold text-gray-600">{stats.whatsapp || 0}</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* 4. FINANCIALS (Revenue & Goal) */}
-                <div className="w-40 shrink-0 flex flex-col items-end gap-2 pl-2">
+                <div className="w-36 shrink-0 flex flex-col items-end gap-1 pl-1">
                     <div className="flex flex-col items-end">
-                        <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">TOPLAM CİRO</span>
-                        <span className="text-xl font-black text-blue-600 tracking-tight">
+                        <span className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">TOPLAM CİRO</span>
+                        <span className="text-lg font-black text-blue-600 tracking-tight">
                             {formatFullCurrency(stats.salesVolume || 0)}
                         </span>
                     </div>
 
                     <div className="w-full flex flex-col items-end gap-0.5">
-                        <div className="flex justify-between w-full text-[9px] font-bold text-gray-400 uppercase">
+                        <div className="flex justify-between w-full text-[8px] font-bold text-gray-400 uppercase">
                             <span>Hedef</span>
                             <span className={goalPercent >= 100 ? 'text-green-600' : 'text-indigo-600'}>%{goalPercent}</span>
                         </div>
@@ -221,6 +221,6 @@ export function UserPerformanceCard({ user, stats, variant = 'default' }: { user
                     </div>
                 </div>
             </div>
-        </div>
-    );
+            );
+    }
 }
