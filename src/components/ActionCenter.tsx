@@ -58,6 +58,7 @@ export function ActionCenter({ onPullLead, loading, myStats, newLeadCount = 0 }:
                                 </div>
                                 <div className="text-xl font-black tracking-tight">Müşteri Çek</div>
                             </div>
+                        </div>
                     </Button>
                 </div>
 
