@@ -4,9 +4,31 @@ import { getReportData, getAllLogs, getInventoryStats, getLeadStats } from '@/li
 
 // ... (existing code)
 
+// Helper for Strings
+const utcFormatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Istanbul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+});
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
     try {
-        // ...
+        // --- PARAMS ---
+        const url = new URL(req.url);
+        const todayStr = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Europe/Istanbul',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        }).format(new Date());
+
+        // Date Range: Default to TODAY if not provided
+        const startDate = url.searchParams.get('startDate') || todayStr;
+        const endDate = url.searchParams.get('endDate') || todayStr;
+
         const [customers, logs, inventoryStats, leadStats] = await Promise.all([
             getReportData(),
             getAllLogs(),
