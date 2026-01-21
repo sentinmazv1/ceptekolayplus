@@ -189,7 +189,14 @@ export default function Dashboard() {
                                         .sort((a: any, b: any) => b[1].calls - a[1].calls) // Sort by Calls
                                         .map(([user, pStats]: any, idx) => (
                                             <div key={user} className="w-full">
-                                                <UserPerformanceCard user={user} stats={pStats} variant="wide" rank={idx + 1} />
+                                                {/* Mobile: Card View */}
+                                                <div className="block md:hidden">
+                                                    <UserPerformanceCard user={user} stats={pStats} variant="default" rank={idx + 1} />
+                                                </div>
+                                                {/* Desktop: Wide Row View */}
+                                                <div className="hidden md:block">
+                                                    <UserPerformanceCard user={user} stats={pStats} variant="wide" rank={idx + 1} />
+                                                </div>
                                             </div>
                                         ))}
                                 </div>
