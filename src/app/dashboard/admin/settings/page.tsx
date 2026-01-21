@@ -757,7 +757,7 @@ function SmsTemplateManager({ templates, refresh }: { templates: any[], refresh:
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Mesaj İçeriği
                                 <span className="text-xs text-gray-400 font-normal ml-2">
-                                    Değişkenler: {'{ad_soyad}'}, {'{urun}'}, {'{limit}'}
+                                    Değişkenler: {'{name}'}, {'{limit}'}, {'{product}'}, {'{imei}'}, {'{serial}'}
                                 </span>
                             </label>
                             <textarea

@@ -339,6 +339,13 @@ export function BulkSmsManager() {
                                 value={messageContent}
                                 onChange={(e) => setMessageContent(e.target.value)}
                             ></textarea>
+                            <div className="mt-2 p-2 bg-gray-50 border border-dashed rounded text-[10px] text-gray-500 grid grid-cols-2 gap-x-4 gap-y-1">
+                                <div><span className="font-bold text-indigo-600">{'{name}'}</span> : Ad Soyad</div>
+                                <div><span className="font-bold text-indigo-600">{'{limit}'}</span> : Kredi Limiti</div>
+                                <div><span className="font-bold text-indigo-600">{'{product}'}</span> : Ürün</div>
+                                <div><span className="font-bold text-indigo-600">{'{imei}'}</span> : IMEI</div>
+                                <div><span className="font-bold text-indigo-600">{'{serial}'}</span> : Seri No</div>
+                            </div>
                             <div className="flex justify-between items-center mt-1 text-xs text-gray-400">
                                 <span>{messageContent.length} karakter</span>
                                 {channel === 'SMS' && <span>{Math.ceil(messageContent.length / 160)} SMS (Yaklaşık)</span>}

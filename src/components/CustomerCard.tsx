@@ -9,6 +9,7 @@ import { Input } from './ui/Input';
 import { Select } from './ui/Select';
 import { Loader2, AlertCircle, CheckCircle, Info, Phone, Package, Smartphone, Search, RefreshCw, MessageSquare, Scale, UploadCloud, FileText, Image as ImageIcon, Briefcase, Home, ShieldCheck, X, Shield, Printer, User, Calendar, ShieldAlert } from 'lucide-react';
 import { cityList, getDistrictsByCityCode } from 'turkey-neighbourhoods';
+import { replaceTemplateVariables as replaceVariables } from '@/lib/template-utils';
 
 
 
@@ -122,12 +123,16 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
     const [whatsappTemplates, setWhatsappTemplates] = useState<any[]>([]);
 
     const replaceTemplateVariables = (content: string) => {
-        return content
-            .replace(/{name}/g, data.ad_soyad || '')
-            .replace(/{limit}/g, data.kredi_limiti ? `${data.kredi_limiti} TL` : '...')
-            .replace(/{product}/g, data.talep_edilen_urun || 'Cihaz')
-            .replace(/{imei}/g, data.urun_imei || '...')
-            .replace(/{serial}/g, data.urun_seri_no || '...');
+        return replaceVariables(content, {
+            name: data.ad_soyad || '',
+            ad_soyad: data.ad_soyad || '',
+            limit: data.kredi_limiti ? `${data.kredi_limiti} TL` : '...',
+            product: data.talep_edilen_urun || 'Cihaz',
+            urun: data.talep_edilen_urun || 'Cihaz',
+            imei: data.urun_imei || '...',
+            serial: data.urun_seri_no || '...',
+            seri_no: data.urun_seri_no || '...'
+        });
     };
 
     useEffect(() => {
@@ -1769,6 +1774,13 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                     value={smsMessage}
                                     onChange={(e) => setSmsMessage(e.target.value)}
                                 />
+                                <div className="mt-2 p-2 bg-gray-50 border border-dashed rounded text-[10px] text-gray-500 grid grid-cols-2 gap-x-4 gap-y-1">
+                                    <div><span className="font-bold text-indigo-600">{'{name}'}</span> : Ad Soyad</div>
+                                    <div><span className="font-bold text-indigo-600">{'{limit}'}</span> : Kredi Limiti</div>
+                                    <div><span className="font-bold text-indigo-600">{'{product}'}</span> : Ürün</div>
+                                    <div><span className="font-bold text-indigo-600">{'{imei}'}</span> : IMEI</div>
+                                    <div><span className="font-bold text-indigo-600">{'{serial}'}</span> : Seri No</div>
+                                </div>
                                 <div className="text-right text-xs text-gray-500 mt-1">
                                     {smsMessage.length} karakter - {Math.ceil(smsMessage.length / 160)} SMS
                                 </div>
@@ -1821,6 +1833,13 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                     value={whatsAppMessage}
                                     onChange={(e) => setWhatsAppMessage(e.target.value)}
                                 />
+                                <div className="mt-2 p-2 bg-gray-50 border border-dashed rounded text-[10px] text-gray-500 grid grid-cols-2 gap-x-4 gap-y-1">
+                                    <div><span className="font-bold text-indigo-600">{'{name}'}</span> : Ad Soyad</div>
+                                    <div><span className="font-bold text-indigo-600">{'{limit}'}</span> : Kredi Limiti</div>
+                                    <div><span className="font-bold text-indigo-600">{'{product}'}</span> : Ürün</div>
+                                    <div><span className="font-bold text-indigo-600">{'{imei}'}</span> : IMEI</div>
+                                    <div><span className="font-bold text-indigo-600">{'{serial}'}</span> : Seri No</div>
+                                </div>
                                 <div className="text-right text-xs text-gray-500 mt-1">
                                     {whatsAppMessage.length} karakter
                                 </div>

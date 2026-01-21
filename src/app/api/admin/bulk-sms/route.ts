@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
+import { replaceTemplateVariables } from '@/lib/template-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
         // Fetch user phone numbers
         const { data: users, error: usersError } = await supabaseAdmin
             .from('leads')
-            .select('id, ad_soyad, telefon')
+            .select('id, ad_soyad, telefon, kredi_limiti, talep_edilen_urun, urun_imei, urun_seri_no')
             .in('id', userIds);
 
         if (usersError || !users) {
@@ -107,9 +108,21 @@ export async function POST(req: NextRequest) {
                 continue;
             }
 
+            // Personalized Message
+            const personalizedMessage = replaceTemplateVariables(message, {
+                name: user.ad_soyad || '',
+                ad_soyad: user.ad_soyad || '',
+                limit: user.kredi_limiti ? `${user.kredi_limiti} TL` : '...',
+                product: user.talep_edilen_urun || 'Cihaz',
+                urun: user.talep_edilen_urun || 'Cihaz',
+                imei: user.urun_imei || '...',
+                serial: user.urun_seri_no || '...',
+                seri_no: user.urun_seri_no || '...'
+            });
+
             // Send SMS (only if channel is SMS)
             if (channel === 'SMS') {
-                const result = await sendSMS(user.telefon, message);
+                const result = await sendSMS(user.telefon, personalizedMessage);
 
                 if (result.success) {
                     successCount++;
@@ -120,7 +133,7 @@ export async function POST(req: NextRequest) {
                         customer_id: user.id,
                         action: 'SEND_SMS',
                         user_email: session.user.email,
-                        details: `Bulk SMS: ${message.substring(0, 50)}...`,
+                        details: `Bulk SMS: ${personalizedMessage.substring(0, 50)}...`,
                         new_value: result.result || 'sent'
                     });
                 } else {
