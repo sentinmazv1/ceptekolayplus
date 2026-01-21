@@ -1,12 +1,9 @@
 
-import { Target, Phone, MessageSquare, MessageCircle, TrendingUp, Clock } from 'lucide-react';
+import { Target, Phone, MessageSquare, TrendingUp, Clock, ChevronRight, Award, Zap, Activity } from 'lucide-react';
 
 export function UserPerformanceCard({ user, stats }: { user: string, stats: any }) {
-    // Rates calculation using new metrics
-    // Conversion: Applications / Calls
+    // Rates calculation
     const appRate = stats.calls > 0 ? Math.round((stats.applications / stats.calls) * 100) : 0;
-    // Approal Rate: Approvals / Applications
-    const approvalRate = stats.applications > 0 ? Math.round((stats.approvals / stats.applications) * 100) : 0;
 
     // Goal Progress
     const goalPercent = stats.dailyGoal > 0 ? Math.min(100, Math.round((stats.calls / stats.dailyGoal) * 100)) : 0;
@@ -17,119 +14,150 @@ export function UserPerformanceCard({ user, stats }: { user: string, stats: any 
     };
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col hover:shadow-lg transition-shadow duration-200">
-            {/* Header */}
-            <div className="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-white border border-indigo-100 text-indigo-700 flex items-center justify-center font-black text-lg shadow-sm">
-                        {user.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                        <div className="font-bold text-gray-900 text-base">{user.split('@')[0]}</div>
-                        <div className="flex items-center gap-1 text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full w-fit">
-                            <span>Hedef: {stats.dailyGoal} Çağrı</span>
-                        </div>
-                    </div>
-                </div>
-                {/* Goal Gauge */}
-                <div className="relative w-12 h-12 flex items-center justify-center">
-                    <svg className="w-full h-full transform -rotate-90">
-                        <circle cx="24" cy="24" r="20" stroke="#E5E7EB" strokeWidth="4" fill="none" />
-                        <circle cx="24" cy="24" r="20" stroke="#4F46E5" strokeWidth="4" fill="none" strokeDasharray={`${goalPercent * 1.25} 125`} strokeLinecap="round" />
-                    </svg>
-                    <span className="absolute text-[10px] font-bold text-gray-700">%{goalPercent}</span>
-                </div>
-            </div>
+        <div className="group relative bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/80 overflow-hidden hover:shadow-[0_20px_50px_rgba(79,70,229,0.1)] transition-all duration-500 hover:-translate-y-1">
+            {/* Top Accents */}
+            <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${goalPercent >= 100 ? 'from-emerald-400 to-teal-500' : 'from-indigo-500 via-purple-500 to-indigo-500'}`} />
 
-            <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6 divide-y md:divide-y-0 md:divide-x divide-gray-100">
-                {/* Left: Input Activity (Funnel Start) */}
-                <div className="space-y-4">
-                    <h4 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                        <Target className="w-3 h-3 text-indigo-500" />
-                        GİRİŞ / AKTİVİTE
-                    </h4>
+            <div className="p-6">
+                <div className="flex flex-col lg:flex-row lg:items-center gap-8">
 
-                    <div className="flex justify-between items-center group/item hover:bg-gray-50 p-1.5 rounded-lg transition-colors">
-                        <div className="flex items-center gap-2 text-gray-600">
-                            <Clock className="w-4 h-4 text-blue-500" />
-                            <span className="text-xs font-bold">Müşteri Çekme</span>
-                        </div>
-                        <span className="text-lg font-black text-gray-900">{stats.pulled || 0}</span>
-                    </div>
-
-                    <div className="flex justify-between items-center group/item hover:bg-gray-50 p-1.5 rounded-lg transition-colors">
-                        <div className="flex items-center gap-2 text-gray-600">
-                            <Phone className="w-4 h-4 text-indigo-600" />
-                            <span className="text-xs font-bold">Arama</span>
-                        </div>
-                        <span className="text-lg font-black text-gray-900">{stats.calls}</span>
-                    </div>
-
-                    <div className="flex justify-between items-center group/item hover:bg-gray-50 p-1.5 rounded-lg transition-colors">
-                        <div className="flex items-center gap-2 text-gray-600">
-                            <MessageSquare className="w-4 h-4 text-emerald-500" />
-                            <span className="text-xs font-bold">SMS / WA</span>
-                        </div>
-                        <span className="text-base font-bold text-gray-700">{(stats.sms || 0) + (stats.whatsapp || 0)}</span>
-                    </div>
-
-                    <div className="pt-2 border-t border-gray-50">
-                        <div className="flex justify-between items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100 shadow-inner">
-                            <div className="flex flex-col">
-                                <span className="text-[9px] font-black text-gray-400 uppercase">Back Office</span>
-                                <span className="text-[8px] text-gray-400 font-bold tracking-tighter">DİĞER İŞLEMLER</span>
+                    {/* 1. Header & Identity Section */}
+                    <div className="flex-shrink-0 w-full lg:w-64 border-b lg:border-b-0 lg:border-r border-gray-50 pb-6 lg:pb-0 lg:pr-8">
+                        <div className="flex items-center gap-4 mb-5">
+                            <div className="relative">
+                                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-2xl shadow-lg transform group-hover:rotate-3 transition-transform duration-500">
+                                    {user.charAt(0).toUpperCase()}
+                                </div>
+                                {goalPercent >= 100 && (
+                                    <div className="absolute -top-2 -right-2 bg-yellow-400 text-white p-1 rounded-full shadow-md animate-bounce">
+                                        <Award className="w-4 h-4" />
+                                    </div>
+                                )}
                             </div>
-                            <span className="text-xl font-black text-gray-800 tabular-nums">
-                                {stats.backoffice || 0}
-                            </span>
+                            <div>
+                                <h3 className="text-xl font-black text-gray-900 tracking-tight group-hover:text-indigo-600 transition-colors">
+                                    {user.split('@')[0]}
+                                </h3>
+                                <div className="flex items-center gap-1.5 mt-1.5">
+                                    <div className="flex items-center gap-1 text-[10px] font-black text-indigo-600 bg-indigo-50/50 px-2 py-1 rounded-lg border border-indigo-100/50">
+                                        <Target className="w-3 h-3" />
+                                        <span>{stats.dailyGoal} ÇAĞRI HEDEFİ</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Enhanced Goal Bar */}
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-end">
+                                <span className="text-[11px] font-black text-gray-400 uppercase tracking-wider">Günlük İlerleme</span>
+                                <span className={`text-sm font-black ${goalPercent >= 100 ? 'text-emerald-500' : 'text-indigo-600'}`}>%{goalPercent}</span>
+                            </div>
+                            <div className="h-3 w-full bg-gray-50 rounded-full overflow-hidden border border-gray-100 shadow-inner">
+                                <div
+                                    className={`h-full rounded-full transition-all duration-1000 ease-out relative ${goalPercent >= 100 ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-gradient-to-r from-indigo-500 to-purple-500'}`}
+                                    style={{ width: `${goalPercent}%` }}
+                                >
+                                    {goalPercent > 15 && <div className="absolute inset-0 bg-white/20 animate-pulse" />}
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Right: Output Results (Funnel End) */}
-                <div className="pt-6 md:pt-0 md:pl-6 space-y-3">
-                    <h4 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                        <TrendingUp className="w-3 h-3 text-emerald-500" />
-                        ÇIKTI / SONUÇ
-                    </h4>
+                    {/* 2. Funnel Flow (Center) */}
+                    <div className="flex-grow grid grid-cols-2 sm:grid-cols-4 gap-6 items-center">
 
-                    <div className="flex justify-between items-center bg-blue-50/50 p-2.5 rounded-xl border border-blue-100 shadow-sm">
-                        <div className="flex flex-col">
-                            <span className="text-[10px] font-black text-blue-800 uppercase tracking-wide">Başvuru</span>
-                            <span className="text-[9px] text-blue-500 font-bold">%{appRate} Dönüşüm</span>
+                        {/* Pulls */}
+                        <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-50/30 border border-slate-100/50 group/item hover:bg-white hover:shadow-md transition-all">
+                            <Clock className="w-5 h-5 text-slate-400 mb-2" />
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Müşteri Çekme</span>
+                            <span className="text-2xl font-black text-slate-700">{stats.pulled || 0}</span>
                         </div>
-                        <span className="text-2xl font-black text-blue-700">{stats.applications || 0}</span>
+
+                        {/* Calls */}
+                        <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-indigo-50/30 border border-indigo-100/50 group/item hover:bg-white hover:shadow-md transition-all">
+                            <Phone className="w-5 h-5 text-indigo-500 mb-2" />
+                            <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Gerçek Arama</span>
+                            <span className="text-2xl font-black text-indigo-700">{stats.calls || 0}</span>
+                        </div>
+
+                        {/* SMS / WA */}
+                        <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-emerald-50/30 border border-emerald-100/50 group/item hover:bg-white hover:shadow-md transition-all">
+                            <MessageSquare className="w-5 h-5 text-emerald-500 mb-2" />
+                            <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">SMS / WA</span>
+                            <span className="text-2xl font-black text-emerald-700">{(stats.sms || 0) + (stats.whatsapp || 0)}</span>
+                        </div>
+
+                        {/* Back Office */}
+                        <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-amber-50/30 border border-amber-100/50 group/item hover:bg-white hover:shadow-md transition-all">
+                            <Activity className="w-5 h-5 text-amber-500 mb-2" />
+                            <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-1">Back Office</span>
+                            <span className="text-2xl font-black text-amber-700">{stats.backoffice || 0}</span>
+                        </div>
                     </div>
 
-                    <div className="flex justify-between items-center bg-purple-50/50 p-2.5 rounded-xl border border-purple-100 shadow-sm">
-                        <div className="flex flex-col">
-                            <span className="text-[10px] font-black text-purple-800 uppercase tracking-wide">Onay</span>
-                            <span className="text-[9px] text-purple-500 font-bold">{formatShortCurrency(stats.approvedLimit || 0)}</span>
-                        </div>
-                        <span className="text-2xl font-black text-purple-700 text-right">{stats.approvals || 0}</span>
-                    </div>
+                    {/* 3. Results Section (Right) */}
+                    <div className="flex-shrink-0 w-full lg:w-80 flex flex-col gap-3 justify-center">
+                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-1">
+                            <TrendingUp className="w-4 h-4 text-emerald-500" />
+                            KAZANIM / SONUÇ
+                        </h4>
 
-                    <div className="flex justify-between items-center bg-emerald-500 p-2.5 rounded-xl border border-emerald-600 shadow-md text-white">
-                        <div className="flex flex-col">
-                            <span className="text-[10px] font-black uppercase tracking-tight">Teslimat / Satış</span>
-                            <span className="text-[9px] font-bold opacity-80">TAMAMLANDI</span>
+                        <div className="grid grid-cols-2 gap-3">
+                            {/* App */}
+                            <div className="bg-blue-600 rounded-2xl p-3 text-white shadow-lg shadow-blue-200 border border-blue-700">
+                                <span className="block text-[10px] font-bold opacity-80 uppercase leading-none mb-1.5">Başvuru</span>
+                                <div className="flex items-end justify-between">
+                                    <span className="text-2xl font-black">{stats.applications || 0}</span>
+                                    <span className="text-[9px] font-black bg-white/20 px-1.5 py-0.5 rounded">%{appRate}</span>
+                                </div>
+                            </div>
+                            {/* Sales */}
+                            <div className="bg-emerald-600 rounded-2xl p-3 text-white shadow-lg shadow-emerald-200 border border-emerald-700">
+                                <span className="block text-[10px] font-bold opacity-80 uppercase leading-none mb-1.5">Satış</span>
+                                <div className="flex items-end justify-between">
+                                    <span className="text-2xl font-black">{stats.sales || 0}</span>
+                                    <Zap className="w-4 h-4 text-emerald-300 fill-emerald-300" />
+                                </div>
+                            </div>
                         </div>
-                        <span className="text-2xl font-black">{stats.sales || 0}</span>
+
+                        {/* App Limit Summary */}
+                        <div className="bg-slate-900 rounded-2xl p-3 text-white flex justify-between items-center shadow-lg border border-slate-800">
+                            <div className="flex flex-col">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Onaylanan Toplam Limit</span>
+                                <span className="text-sm font-black text-emerald-400">{formatShortCurrency(stats.approvedLimit || 0)}</span>
+                            </div>
+                            <div className="bg-slate-800 h-10 w-10 rounded-xl flex items-center justify-center font-black text-lg text-emerald-400 border border-slate-700">
+                                {stats.approvals || 0}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Footer: Pace */}
-            <div className="bg-gray-50/80 p-3 flex justify-between items-center border-t border-gray-100">
-                <div className="flex items-center gap-1.5 text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                    <Clock className="w-3.5 h-3.5" /> TEMP (HIZ)
+            {/* Premium Footer - Stats & Info */}
+            <div className="bg-gray-50/50 border-t border-gray-100 flex flex-wrap divide-x divide-gray-100">
+                <div className="flex-1 min-w-[150px] p-3 flex items-center justify-center gap-3">
+                    <div className="flex flex-col items-center">
+                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Ortalama Tempo</span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                            <Clock className={`w-3.5 h-3.5 ${stats.paceMinutes > 10 ? 'text-red-500 animate-pulse' : 'text-emerald-500'}`} />
+                            <span className="text-xs font-black text-gray-700">{stats.paceMinutes || 0} Dakika / İşlem</span>
+                        </div>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <span className={`text-[11px] font-black ${stats.paceMinutes > 8 ? 'text-red-600 bg-red-50' : 'text-emerald-700 bg-green-50'} px-2.5 py-1 rounded-lg border border-current/10 shadow-sm`}>
-                        {stats.paceMinutes > 0 ? `${stats.paceMinutes} dk / işlem` : '-'}
-                    </span>
+                <div className="px-6 py-3 flex items-center justify-center text-gray-400">
+                    <ChevronRight className="w-5 h-5 opacity-30" />
+                </div>
+                <div className="flex-1 min-w-[150px] p-3 bg-gradient-to-br from-indigo-50/30 to-white flex items-center justify-center gap-3">
+                    <div className="flex items-center gap-2 group-hover:scale-110 transition-transform">
+                        <div className={`w-2 h-2 rounded-full ${stats.calls > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
+                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Çevrimiçi Performans</span>
+                    </div>
                 </div>
             </div>
         </div>
     );
 }
+
