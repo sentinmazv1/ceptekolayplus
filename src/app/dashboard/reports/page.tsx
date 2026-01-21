@@ -366,7 +366,7 @@ export default function ReportsPage() {
                         Akıbet Dağılımı
                     </h3>
 
-                    <div className="flex-1 overflow-auto max-h-[300px] pr-2 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent relative z-10">
+                    <div className="flex-1 overflow-auto max-h-[300px] pr-2 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent relative z-10 print:max-h-none print:overflow-visible">
                         <table className="w-full text-sm">
                             <thead className="text-xs text-gray-400 font-bold uppercase sticky top-0 bg-white z-10">
                                 <tr>
