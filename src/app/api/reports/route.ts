@@ -137,7 +137,7 @@ export async function GET(req: NextRequest) {
                 } else {
                     // 2. Backoffice Actions (Any other meaningful change like notes or field updates)
                     if (['UPDATE_STATUS', 'UPDATE_FIELDS', 'ADD_NOTE'].includes(action)) {
-                        userBackOfficeIds[user].add(l.customer_id);
+                        stats.performance[user].backoffice++;
                     }
                 }
 
@@ -333,10 +333,6 @@ export async function GET(req: NextRequest) {
         Object.keys(userAppIds).forEach(u => {
             if (stats.performance[u]) {
                 stats.performance[u].applications = userAppIds[u].size;
-                // Override totalLogs with calculated Unique BackOffice keys
-                if (userBackOfficeIds[u]) {
-                    stats.performance[u].backoffice = userBackOfficeIds[u].size;
-                }
             }
         });
 
