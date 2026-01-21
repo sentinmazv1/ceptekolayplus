@@ -221,6 +221,6 @@ export function UserPerformanceCard({ user, stats, variant = 'default' }: { user
                     </div>
                 </div>
             </div>
-            );
-    }
+        </div>
+    );
 }
