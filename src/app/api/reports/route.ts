@@ -254,7 +254,8 @@ export async function GET(req: NextRequest) {
                             const pDate = p.satis_tarihi || row.teslim_tarihi;
                             if (pDate && isInRange(pDate)) {
                                 itemSaleCount++;
-                                itemRevenue += parseFloat(String(p.fiyat || '0'));
+                                // Support both new satis_fiyati and legacy fiyat, prioritizing satis_fiyati
+                                itemRevenue += parseFloat(String(p.satis_fiyati || p.fiyat || '0'));
                             }
                         });
                     }

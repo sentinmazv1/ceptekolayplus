@@ -1561,10 +1561,10 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                                 <th className="px-4 py-2 border-b text-center">İşlem</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y">
+                                        <tbody>
                                             {multiProducts.length > 0 ? (
                                                 multiProducts.map((p, idx) => (
-                                                    <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
+                                                    <tr key={idx} className="hover:bg-gray-50/50 transition-colors group">
                                                         <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
                                                             {p.satis_tarihi ? new Date(p.satis_tarihi).toLocaleDateString('tr-TR') : '-'}
                                                         </td>
@@ -1575,9 +1575,39 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                                         <td className="px-4 py-3 font-mono text-xs text-indigo-600 font-medium">
                                                             {p.imei}
                                                         </td>
-                                                        <td className="px-4 py-3 text-right font-bold text-emerald-700">
-                                                            <div>{p.satis_fiyati ? new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(p.satis_fiyati) : '-'}</div>
-                                                            {p.vade_ay && <div className="text-[10px] text-gray-500 font-normal">{p.vade_ay === 1 ? 'Nakit/Tek Çekim' : `${p.vade_ay} Taksit`}</div>}
+                                                        <td className="px-4 py-3 text-right">
+                                                            {/* Editable Price Field */}
+                                                            <div className="flex flex-col items-end gap-1">
+                                                                <input
+                                                                    type="number"
+                                                                    className="text-right font-bold text-emerald-700 bg-transparent border-b border-transparent hover:border-gray-300 focus:border-indigo-500 focus:outline-none w-24 py-0.5 text-sm transition-colors"
+                                                                    value={p.satis_fiyati || 0}
+                                                                    onChange={(e) => {
+                                                                        const val = parseFloat(e.target.value);
+                                                                        const newList = [...multiProducts];
+                                                                        newList[idx] = { ...newList[idx], satis_fiyati: val };
+                                                                        setMultiProducts(newList);
+                                                                        handleChange('satilan_urunler', JSON.stringify(newList));
+                                                                    }}
+                                                                />
+                                                                <select
+                                                                    className="text-[10px] text-gray-500 font-normal bg-transparent border-none p-0 cursor-pointer focus:ring-0 text-right w-full"
+                                                                    value={p.vade_ay || 1}
+                                                                    onChange={(e) => {
+                                                                        const val = parseInt(e.target.value);
+                                                                        const newList = [...multiProducts];
+                                                                        newList[idx] = { ...newList[idx], vade_ay: val };
+                                                                        setMultiProducts(newList);
+                                                                        handleChange('satilan_urunler', JSON.stringify(newList));
+                                                                    }}
+                                                                >
+                                                                    <option value={1}>Nakit/Tek Çekim</option>
+                                                                    <option value={3}>3 Taksit</option>
+                                                                    <option value={6}>6 Taksit</option>
+                                                                    <option value={12}>12 Taksit</option>
+                                                                    <option value={15}>15 Taksit</option>
+                                                                </select>
+                                                            </div>
                                                         </td>
                                                         <td className="px-4 py-3 text-center">
                                                             <button
@@ -1588,7 +1618,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                                                     setMultiProducts(newList);
                                                                     handleChange('satilan_urunler', JSON.stringify(newList));
                                                                 }}
-                                                                className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                                className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
                                                                 title="Siparişi Sil"
                                                             >
                                                                 ❌
