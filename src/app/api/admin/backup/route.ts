@@ -41,17 +41,25 @@ export async function GET() {
         if (invError) throw invError;
         backup.data.inventory = inventory;
 
-        // 3. LOGS (İşlem Kayıtları) - Fetch last 10000 to avoid timeout/memory issues
+        // 3. ACTIVITY LOGS (İşlem Kayıtları) - Fetch last 10000 to avoid timeout/memory issues
         const { data: logs, error: logsError } = await supabaseAdmin
-            .from('logs')
+            .from('activity_logs')
             .select('*')
-            .order('timestamp', { ascending: false })
+            .order('created_at', { ascending: false })
             .limit(10000);
 
         if (logsError) throw logsError;
         backup.data.logs = logs;
 
-        // 4. USERS (Kullanıcılar)
+        // 4. SMS TEMPLATES (Şablonlar)
+        const { data: templates, error: templatesError } = await supabaseAdmin
+            .from('sms_templates')
+            .select('*');
+
+        if (templatesError) throw templatesError;
+        backup.data.sms_templates = templates;
+
+        // 5. USERS (Kullanıcılar)
         const { data: users, error: usersError } = await supabaseAdmin
             .from('users')
             .select('*');
@@ -59,7 +67,7 @@ export async function GET() {
         if (usersError) throw usersError;
         backup.data.users = users;
 
-        // 5. STATUSES (Durumlar)
+        // 6. STATUSES (Durumlar)
         const { data: statuses, error: statusError } = await supabaseAdmin
             .from('statuses')
             .select('*');
@@ -67,7 +75,7 @@ export async function GET() {
         if (statusError) throw statusError;
         backup.data.statuses = statuses;
 
-        // 6. PRODUCTS (Ürünler)
+        // 7. PRODUCTS (Ürünler)
         const { data: products, error: productsError } = await supabaseAdmin
             .from('products')
             .select('*');
@@ -75,7 +83,7 @@ export async function GET() {
         if (productsError) throw productsError;
         backup.data.products = products;
 
-        // 7. QUICK NOTES
+        // 8. QUICK NOTES
         const { data: quickNotes, error: notesError } = await supabaseAdmin
             .from('quick_notes')
             .select('*');
