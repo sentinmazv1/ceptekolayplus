@@ -129,11 +129,11 @@ export async function POST(req: NextRequest) {
                     results.push({ user: user.ad_soyad, phone: user.telefon, status: 'sent' });
 
                     // Log successful send
-                    await supabaseAdmin.from('logs').insert({
-                        customer_id: user.id,
+                    await supabaseAdmin.from('activity_logs').insert({
+                        lead_id: user.id,
                         action: 'SEND_SMS',
                         user_email: session.user.email,
-                        details: `Bulk SMS: ${personalizedMessage.substring(0, 50)}...`,
+                        note: `Bulk SMS: ${personalizedMessage.substring(0, 50)}...`,
                         new_value: result.result || 'sent'
                     });
                 } else {
@@ -151,11 +151,11 @@ export async function POST(req: NextRequest) {
         }
 
         // Log bulk action summary
-        await supabaseAdmin.from('logs').insert({
-            customer_id: null,
+        await supabaseAdmin.from('activity_logs').insert({
+            lead_id: null,
             action: `BULK_${channel}_SUMMARY`,
             user_email: session.user.email,
-            details: `Sent to ${userIds.length} users. Success: ${successCount}, Failed: ${failCount}`
+            note: `Sent to ${userIds.length} users. Success: ${successCount}, Failed: ${failCount}`
         });
 
         return NextResponse.json({

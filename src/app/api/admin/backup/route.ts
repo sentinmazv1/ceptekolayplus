@@ -18,7 +18,7 @@ export async function GET() {
         const backup: any = {
             metadata: {
                 backup_date: new Date().toISOString(),
-                version: '1.0',
+                version: '1.1',
                 app: 'CEPTEKOLAY Plus'
             },
             data: {}
