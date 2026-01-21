@@ -1,7 +1,7 @@
 
 import { Target, Phone, MessageSquare, TrendingUp, Clock, ChevronRight, Award, Zap, Activity } from 'lucide-react';
 
-export function UserPerformanceCard({ user, stats, variant = 'default' }: { user: string, stats: any, variant?: 'default' | 'wide' }) {
+export function UserPerformanceCard({ user, stats, variant = 'default', rank }: { user: string, stats: any, variant?: 'default' | 'wide', rank?: number }) {
     // Rates calculation
     const appRate = stats.calls > 0 ? Math.round((stats.applications / stats.calls) * 100) : 0;
 
@@ -30,7 +30,7 @@ export function UserPerformanceCard({ user, stats, variant = 'default' }: { user
                         <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">
                             {user.substring(0, 2).toUpperCase()}
                         </div>
-                        {user === 'ibrahim' && (
+                        {rank === 1 && (
                             <div className="absolute -top-1.5 -right-1.5 bg-yellow-400 text-white p-0.5 rounded-full shadow-sm">
                                 <Award className="w-2 h-2" />
                             </div>
@@ -40,7 +40,9 @@ export function UserPerformanceCard({ user, stats, variant = 'default' }: { user
                         <h4 className="font-bold text-gray-900 text-xs truncate" title={user}>{user.split('@')[0]}</h4>
                         <div className="flex items-center gap-1 mt-0.5">
                             <span className={`w-1.5 h-1.5 rounded-full ${stats.calls > 0 ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></span>
-                            <span className="text-[9px] font-medium text-gray-400">#{user === 'ibrahim' ? '1' : '2'}</span>
+                            {rank && rank > 0 && (
+                                <span className="text-[9px] font-medium text-gray-400">#{rank}</span>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -161,9 +163,11 @@ export function UserPerformanceCard({ user, stats, variant = 'default' }: { user
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow relative group h-full">
             {/* Rank Badge */}
-            <div className="absolute top-0 right-0 p-2 opacity-50 text-xs font-black text-gray-300 group-hover:opacity-100 transition-opacity">
-                #{user === 'ibrahim' ? '1' : '2'}
-            </div>
+            {rank && rank > 0 && (
+                <div className="absolute top-0 right-0 p-2 opacity-50 text-xs font-black text-gray-300 group-hover:opacity-100 transition-opacity">
+                    #{rank}
+                </div>
+            )}
 
             <div className="p-4 flex flex-col gap-4">
                 {/* Header: User Info */}

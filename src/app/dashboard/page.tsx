@@ -189,7 +189,7 @@ export default function Dashboard() {
                                         .sort((a: any, b: any) => b[1].calls - a[1].calls) // Sort by Calls
                                         .map(([user, pStats]: any, idx) => (
                                             <div key={user} className="w-full">
-                                                <UserPerformanceCard user={user} stats={pStats} variant="wide" />
+                                                <UserPerformanceCard user={user} stats={pStats} variant="wide" rank={idx + 1} />
                                             </div>
                                         ))}
                                 </div>
