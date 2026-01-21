@@ -7,7 +7,7 @@ import { Customer, LeadStatus, InventoryItem, LogEntry } from '@/lib/types';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Select } from './ui/Select';
-import { Loader2, AlertCircle, CheckCircle, Info, Phone, Package, Smartphone, Search, RefreshCw, MessageSquare, Scale, UploadCloud, FileText, Image as ImageIcon, Briefcase, Home, ShieldCheck, X, Shield, Printer, User, Calendar, ShieldAlert } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle, Info, Phone, Package, Smartphone, Search, RefreshCw, MessageSquare, Scale, Briefcase, Home, ShieldCheck, X, Shield, Printer, User, Calendar, ShieldAlert, FileText, Image as ImageIcon } from 'lucide-react';
 import { cityList, getDistrictsByCityCode } from 'turkey-neighbourhoods';
 import { replaceTemplateVariables as replaceVariables } from '@/lib/template-utils';
 
@@ -110,7 +110,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
     const [stockSearch, setStockSearch] = useState('');
 
     // Logs State
-    const [activeTab, setActiveTab] = useState<'details' | 'is' | 'yasal' | 'urun' | 'dosya' | 'history' | 'kefil'>('details');
+    const [activeTab, setActiveTab] = useState<'details' | 'is' | 'yasal' | 'urun' | 'history' | 'kefil'>('details');
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [logsLoading, setLogsLoading] = useState(false);
 
@@ -636,7 +636,6 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                 <TabButton id="yasal" label="Yasal & Varlık" icon={Scale} />
                 <TabButton id="is" label="İş & Finans" icon={Briefcase} />
                 <TabButton id="urun" label="Ürün & Teslimat" icon={Package} />
-                <TabButton id="dosya" label="Dosyalar" icon={ImageIcon} />
                 <TabButton id="kefil" label="Kefil Bilgileri" icon={ShieldCheck} />
                 <TabButton id="history" label="Geçmiş & Loglar" icon={RefreshCw} />
             </div>
@@ -1515,134 +1514,6 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                             🚚 KARGO TAKİBİ YAP
                                         </a>
                                     )}
-                                </div>
-                            </div>
-                        </div>
-                    )
-                }
-
-                {
-                    activeTab === 'dosya' && (
-                        <div className="p-1 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                                        <ImageIcon className="w-5 h-5 text-indigo-600" /> Dosyalar & Belgeler
-                                    </h3>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    {/* Upload Area 1 */}
-                                    <div className="group">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-indigo-600 transition-colors">Kimlik / Belge 1</label>
-                                        <div className="relative">
-                                            {data.gorsel_1 ? (
-                                                <div className="relative rounded-lg overflow-hidden border border-gray-200 group-hover:border-indigo-200 transition-all shadow-sm">
-                                                    <img src={data.gorsel_1} alt="Belge 1" className="w-full h-48 object-cover hover:scale-105 transition-transform duration-500" />
-                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                                        <button
-                                                            onClick={() => window.open(data.gorsel_1, '_blank')}
-                                                            className="p-2 bg-white rounded-full text-gray-900 hover:bg-gray-100"
-                                                            title="Görüntüle"
-                                                        >
-                                                            <Search className="w-4 h-4" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleChange('gorsel_1', '')}
-                                                            className="p-2 bg-white rounded-full text-red-600 hover:bg-red-50"
-                                                            title="Sil"
-                                                        >
-                                                            <X className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-indigo-50/50 hover:border-indigo-300 transition-all cursor-pointer relative">
-                                                    <input
-                                                        type="file"
-                                                        className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                                                        onChange={(e) => {
-                                                            const file = e.target.files?.[0];
-                                                            if (file) {
-                                                                if (file.size > 5 * 1024 * 1024) {
-                                                                    alert('⚠️ Dosya boyutu 5MB\'dan büyük olamaz!');
-                                                                    return;
-                                                                }
-                                                                setLoading(true);
-                                                                const formData = new FormData();
-                                                                formData.append('file', file);
-                                                                fetch('/api/upload', { method: 'POST', body: formData })
-                                                                    .then(res => res.json())
-                                                                    .then(res => {
-                                                                        if (res.url) handleChange('gorsel_1', res.url);
-                                                                    })
-                                                                    .finally(() => setLoading(false));
-                                                            }
-                                                        }}
-                                                    />
-                                                    <UploadCloud className="w-10 h-10 text-gray-400 mx-auto mb-2 group-hover:text-indigo-400 transition-colors" />
-                                                    <p className="text-sm text-gray-500 font-medium">Yüklemek için tıklayın veya sürükleyin</p>
-                                                    <p className="text-xs text-gray-400 mt-1">PNG, JPG, PDF (Max 5MB)</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Upload Area 2 */}
-                                    <div className="group">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-indigo-600 transition-colors">Ek Belge / Maaş Bordrosu</label>
-                                        <div className="relative">
-                                            {data.gorsel_2 ? (
-                                                <div className="relative rounded-lg overflow-hidden border border-gray-200 group-hover:border-indigo-200 transition-all shadow-sm">
-                                                    <img src={data.gorsel_2} alt="Belge 2" className="w-full h-48 object-cover hover:scale-105 transition-transform duration-500" />
-                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                                        <button
-                                                            onClick={() => window.open(data.gorsel_2, '_blank')}
-                                                            className="p-2 bg-white rounded-full text-gray-900 hover:bg-gray-100"
-                                                            title="Görüntüle"
-                                                        >
-                                                            <Search className="w-4 h-4" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleChange('gorsel_2', '')}
-                                                            className="p-2 bg-white rounded-full text-red-600 hover:bg-red-50"
-                                                            title="Sil"
-                                                        >
-                                                            <X className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-indigo-50/50 hover:border-indigo-300 transition-all cursor-pointer relative">
-                                                    <input
-                                                        type="file"
-                                                        className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                                                        onChange={(e) => {
-                                                            const file = e.target.files?.[0];
-                                                            if (file) {
-                                                                if (file.size > 5 * 1024 * 1024) {
-                                                                    alert('⚠️ Dosya boyutu 5MB\'dan büyük olamaz!');
-                                                                    return;
-                                                                }
-                                                                setLoading(true);
-                                                                const formData = new FormData();
-                                                                formData.append('file', file);
-                                                                fetch('/api/upload', { method: 'POST', body: formData })
-                                                                    .then(res => res.json())
-                                                                    .then(res => {
-                                                                        if (res.url) handleChange('gorsel_2', res.url);
-                                                                    })
-                                                                    .finally(() => setLoading(false));
-                                                            }
-                                                        }}
-                                                    />
-                                                    <FileText className="w-10 h-10 text-gray-400 mx-auto mb-2 group-hover:text-indigo-400 transition-colors" />
-                                                    <p className="text-sm text-gray-500 font-medium">Yüklemek için tıklayın veya sürükleyin</p>
-                                                    <p className="text-xs text-gray-400 mt-1">PNG, JPG, PDF (Max 5MB)</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>

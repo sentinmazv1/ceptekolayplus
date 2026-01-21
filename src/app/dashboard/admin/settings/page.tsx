@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Loader2, Trash2, Edit2, Plus, GripVertical, Check, X, UserPlus, Shield, Info, Upload, FileSpreadsheet, Download, Search, Phone, RefreshCcw, User, Calendar, CheckCircle, Package, RefreshCw, Database, Smartphone, MessageSquare } from 'lucide-react';
+import { Loader2, Trash2, Edit2, Plus, GripVertical, Check, X, UserPlus, Shield, Info, Upload, FileSpreadsheet, Download, Search, Phone, RefreshCcw, User, Calendar, CheckCircle, Package, RefreshCw, Database, Smartphone, MessageSquare, Activity, HardDrive } from 'lucide-react';
 import { Customer } from '@/lib/types';
 import * as XLSX from 'xlsx';
 import { BulkSmsManager } from '@/components/BulkSmsManager';
 
 export default function SettingsPage() {
-    const [activeTab, setActiveTab] = useState<'statuses' | 'sms_templates' | 'bulk_sms' | 'users' | 'import' | 'sync_sheets' | 'migrate_deliveries' | 'duplicates' | 'quick_notes' | 'backup'>('statuses');
+    const [activeTab, setActiveTab] = useState<'statuses' | 'sms_templates' | 'bulk_sms' | 'users' | 'import' | 'sync_sheets' | 'migrate_deliveries' | 'duplicates' | 'quick_notes' | 'backup' | 'system_health'>('statuses');
     const [loading, setLoading] = useState(false);
 
     // Data Holders
@@ -83,6 +83,7 @@ export default function SettingsPage() {
             items: [
                 { id: 'migrate_deliveries', label: 'Teslim Verileri Düzeltme', icon: RefreshCw },
                 { id: 'duplicates', label: 'Mükerrer Kayıt Kontrolü', icon: CheckCircle },
+                { id: 'system_health', label: 'Sistem Sağlığı & Bakım', icon: Activity },
             ]
         }
     ];
@@ -145,6 +146,7 @@ export default function SettingsPage() {
 
                             {activeTab === 'migrate_deliveries' && <MigrationManager />}
                             {activeTab === 'duplicates' && <DuplicateManager groups={duplicateGroups} refresh={fetchData} />}
+                            {activeTab === 'system_health' && <SystemHealthDashboard />}
                         </div>
                     )}
                 </div>
@@ -1247,6 +1249,146 @@ function BackupManager() {
                         )}
                     </button>
                     <span className="text-xs text-gray-400 font-mono">JSON formatında indirilir</span>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function SystemHealthDashboard() {
+    const [data, setData] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [cleanupLoading, setCleanupLoading] = useState(false);
+
+    useEffect(() => {
+        fetchHealth();
+    }, []);
+
+    async function fetchHealth() {
+        setLoading(true);
+        try {
+            const res = await fetch('/api/admin/system/health');
+            const d = await res.json();
+            setData(d);
+        } catch (e) {
+            console.error('Health fetch error', e);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function handleCleanup() {
+        if (!confirm('3 aydan eski TÜM log kayıtları silinecek. Emin misiniz?')) return;
+        setCleanupLoading(true);
+        try {
+            const res = await fetch('/api/admin/system/cleanup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'CLEANUP_LOGS' })
+            });
+            const d = await res.json();
+            alert(d.message);
+            fetchHealth();
+        } catch (e) {
+            alert('Temizlik hatası');
+        } finally {
+            setCleanupLoading(false);
+        }
+    }
+
+    if (loading && !data) return (
+        <div className="p-12 text-center text-gray-400">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-indigo-600" />
+            Sistem verileri taranıyor...
+        </div>
+    );
+
+    return (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex justify-between items-center">
+                <div>
+                    <h3 className="text-lg font-bold text-gray-900">Sistem Sağlığı & Veri Kullanımı</h3>
+                    <p className="text-sm text-gray-500">Veritabanı limitlerinizi ve doluluk oranınızı takip edin.</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={fetchHealth} disabled={loading}>
+                    <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                    Yenile
+                </Button>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                <div className="flex justify-between mb-2">
+                    <span className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                        <Database className="w-4 h-4 text-indigo-600" />
+                        Veritabanı Depolama (Tahmini)
+                    </span>
+                    <span className={`text-sm font-bold ${data?.storage?.usagePercent > 80 ? 'text-red-600' : 'text-indigo-600'}`}>
+                        {data?.storage?.usagePercent}%
+                    </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden border border-gray-300">
+                    <div
+                        className={`h-full transition-all duration-1000 ${data?.storage?.usagePercent > 80 ? 'bg-red-500' : 'bg-indigo-600'}`}
+                        style={{ width: `${data?.storage?.usagePercent}%` }}
+                    />
+                </div>
+                <div className="flex justify-between mt-2 text-xs text-gray-500">
+                    <span>Kullanılan: ~{data?.storage?.estimatedMB} MB</span>
+                    <span>Limit: {data?.storage?.limitMB} MB (Free Plan)</span>
+                </div>
+                {data?.storage?.usagePercent > 80 && (
+                    <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded-lg flex items-start gap-3 text-red-700 text-xs">
+                        <Shield className="w-4 h-4 shrink-0 mt-0.5" />
+                        <div>
+                            <strong>Dikkat:</strong> Veritabanı limitinize yaklaştınız! Eski logları temizlemek veya dosya yüklemelerini durdurmak yer açmanıza yardımcı olacaktır.
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Counters Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                    { label: 'Toplam Müşteri', value: data?.counts?.leads, icon: User, color: 'text-blue-600', bg: 'bg-blue-50' },
+                    { label: 'Sistem Logları', value: data?.counts?.logs, icon: Activity, color: 'text-orange-600', bg: 'bg-orange-50' },
+                    { label: 'Mesaj Şablonları', value: data?.counts?.templates, icon: Smartphone, color: 'text-green-600', bg: 'bg-green-50' },
+                    { label: 'Stok Kalemi', value: data?.counts?.inventory, icon: Package, color: 'text-purple-600', bg: 'bg-purple-50' },
+                ].map((stat, i) => (
+                    <div key={i} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm transition-all hover:shadow-md">
+                        <div className={`w-8 h-8 ${stat.bg} ${stat.color} rounded-lg flex items-center justify-center mb-3`}>
+                            <stat.icon className="w-4 h-4" />
+                        </div>
+                        <div className="text-2xl font-bold text-gray-900">{stat.value?.toLocaleString() || '0'}</div>
+                        <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">{stat.label}</div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Maintenance Actions */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+                    <h4 className="font-bold text-gray-900 flex items-center gap-2">
+                        <HardDrive className="w-4 h-4 text-gray-500" />
+                        Bakım Araçları
+                    </h4>
+                </div>
+                <div className="divide-y divide-gray-100">
+                    <div className="p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div className="flex-1">
+                            <h5 className="font-bold text-gray-800">Eski Logları Temizle</h5>
+                            <p className="text-sm text-gray-500 max-w-2xl">3 aydan daha eski olan tüm sistem işlem kayıtlarını (SMS gönderimleri, durum güncellemeleri vb.) kalıcı olarak siler. Bu işlem veritabanında yer açmanıza yardımcı olur.</p>
+                        </div>
+                        <Button
+                            variant="outline"
+                            className="bg-red-50 text-red-600 border-red-100 hover:bg-red-100 hover:text-red-700 whitespace-nowrap min-w-[200px]"
+                            onClick={handleCleanup}
+                            disabled={cleanupLoading}
+                        >
+                            {cleanupLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                            Log Temizliğini Başlat
+                        </Button>
+                    </div>
                 </div>
             </div>
         </div>
