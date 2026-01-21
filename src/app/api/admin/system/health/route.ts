@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
             .select('*', { count: 'exact', head: true });
 
         const { count: logsCount, error: logsError } = await supabaseAdmin
-            .from('logs')
+            .from('activity_logs')
             .select('*', { count: 'exact', head: true });
 
         const { count: templatesCount, error: templatesError } = await supabaseAdmin

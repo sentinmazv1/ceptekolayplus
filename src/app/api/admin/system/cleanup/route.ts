@@ -24,9 +24,9 @@ export async function POST(req: NextRequest) {
         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
         const { error, count } = await supabaseAdmin
-            .from('logs')
+            .from('activity_logs')
             .delete({ count: 'exact' })
-            .lt('timestamp', threeMonthsAgo.toISOString());
+            .lt('created_at', threeMonthsAgo.toISOString());
 
         if (error) {
             console.error('Cleanup Error:', error);
