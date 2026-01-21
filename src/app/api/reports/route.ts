@@ -75,6 +75,7 @@ export async function GET(req: NextRequest) {
                 sms: number,
                 whatsapp: number,
                 sales: number,
+                salesVolume: number,
                 backoffice: number,
                 dailyGoal: number,
                 image: string
@@ -118,7 +119,7 @@ export async function GET(req: NextRequest) {
 
             if (ts >= start && ts <= end) {
                 // Init Perf
-                if (!stats.performance[user]) stats.performance[user] = { pulled: 0, calls: 0, approvals: 0, approvedLimit: 0, applications: 0, paceMinutes: 0, sms: 0, whatsapp: 0, sales: 0, backoffice: 0, dailyGoal: 0, image: '' };
+                if (!stats.performance[user]) stats.performance[user] = { pulled: 0, calls: 0, approvals: 0, approvedLimit: 0, applications: 0, paceMinutes: 0, sms: 0, whatsapp: 0, sales: 0, salesVolume: 0, backoffice: 0, dailyGoal: 0, image: '' };
                 if (!userAppIds[user]) userAppIds[user] = new Set();
                 if (!userBackOfficeIds[user]) userBackOfficeIds[user] = new Set();
 
@@ -283,6 +284,7 @@ export async function GET(req: NextRequest) {
 
                 if (isTrackedUser && stats.performance[owner]) {
                     stats.performance[owner].sales += itemSaleCount;
+                    stats.performance[owner].salesVolume = (stats.performance[owner].salesVolume || 0) + itemRevenue;
                 }
             }
 

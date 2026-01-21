@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { Customer, LeadStatus, InventoryItem, LogEntry } from '@/lib/types';
+import { Customer, LeadStatus, InventoryItem, LogEntry, SoldItem } from '@/lib/types';
 
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
@@ -122,6 +122,8 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
     const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
     const [stockItems, setStockItems] = useState<InventoryItem[]>([]);
     const [stockLoading, setStockLoading] = useState(false);
+    const [selectedStockItem, setSelectedStockItem] = useState<InventoryItem | null>(null);
+    const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
 
     const [stockSearch, setStockSearch] = useState('');
 
@@ -292,49 +294,67 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
     };
 
     const handleStockAssign = async (item: InventoryItem) => {
-        if (!confirm(`${item.marka} ${item.model} (${item.imei}) cihazını bu müşteriye atamak istediğinize emin misiniz?`)) return;
+        setSelectedStockItem(item);
+        setIsPriceModalOpen(true);
+    };
 
-        setLoading(true); // Main loading
+    const confirmStockAssign = async (price: number, term: number) => {
+        if (!selectedStockItem) return;
+
+        setStockLoading(true); // Re-use stock loading state
         try {
+            // 1. Backend Assignment
             const res = await fetch('/api/inventory/assign', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    inventoryId: item.id,
+                    inventoryId: selectedStockItem.id,
                     customerId: data.id
                 })
             });
 
             const json = await res.json();
             if (res.ok) {
-                // Update local state with new values
+                // 2. Update Local State
                 const currentItems = data.satilan_urunler ? JSON.parse(data.satilan_urunler) : [];
-                const newItem = {
-                    imei: item.imei,
-                    seri_no: item.seri_no,
-                    marka: item.marka,
-                    model: item.model,
-                    satis_tarihi: new Date().toISOString()
+                const newItem: SoldItem = {
+                    marka: selectedStockItem.marka,
+                    model: selectedStockItem.model,
+                    imei: selectedStockItem.imei,
+                    seri_no: selectedStockItem.seri_no,
+                    satis_tarihi: new Date().toISOString(),
+                    // Price Fields
+                    satis_fiyati: price,
+                    vade_ay: term,
+                    fiyat: price, // Legacy
+                    garanti_baslangic: new Date().toISOString()
                 };
                 const updatedItems = [...currentItems, newItem];
 
                 setData(prev => ({
                     ...prev,
-                    urun_imei: item.imei,
-                    urun_seri_no: item.seri_no,
+                    urun_imei: selectedStockItem.imei,
+                    urun_seri_no: selectedStockItem.seri_no,
                     satilan_urunler: JSON.stringify(updatedItems),
-                    durum: 'Teslim edildi', // Optional: Auto update status
+                    durum: 'Teslim edildi',
                     teslim_tarihi: new Date().toISOString()
                 }));
+                // Update MultiProducts UI Helper State too if it exists? 
+                // Creating a simplified sync:
+                setMultiProducts(updatedItems);
+
+                setIsPriceModalOpen(false);
                 setIsStockModalOpen(false);
-                alert('Cihaz başarıyla atandı ve stoktan düşüldü.');
+                setSelectedStockItem(null);
+                alert('Cihaz başarıyla atandı.');
             } else {
                 alert('Atama başarısız: ' + json.message);
             }
-        } catch (err) {
+        } catch (error) {
+            console.error('Stock Assign Error:', error);
             alert('Bir hata oluştu.');
         } finally {
-            setLoading(false);
+            setStockLoading(false);
         }
     };
 
@@ -1556,7 +1576,8 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                                             {p.imei}
                                                         </td>
                                                         <td className="px-4 py-3 text-right font-bold text-emerald-700">
-                                                            {p.fiyat ? new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(p.fiyat) : '-'}
+                                                            <div>{p.satis_fiyati ? new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(p.satis_fiyati) : '-'}</div>
+                                                            {p.vade_ay && <div className="text-[10px] text-gray-500 font-normal">{p.vade_ay === 1 ? 'Nakit/Tek Çekim' : `${p.vade_ay} Taksit`}</div>}
                                                         </td>
                                                         <td className="px-4 py-3 text-center">
                                                             <button
@@ -1894,6 +1915,42 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                 {stockItems.length === 0 && !stockLoading && (
                                     <p className="text-center text-gray-500 py-4">Stokta uygun cihaz bulunamadı.</p>
                                 )}
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+            {
+                isPriceModalOpen && selectedStockItem && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col animate-in fade-in zoom-in duration-200">
+                            <div className="p-4 border-b bg-gray-50 rounded-t-xl flex justify-between items-center">
+                                <div>
+                                    <h3 className="font-bold text-gray-800">Satış Fiyatı Seçin</h3>
+                                    <p className="text-xs text-gray-500">{selectedStockItem.marka} {selectedStockItem.model}</p>
+                                </div>
+                                <button onClick={() => setIsPriceModalOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+                            </div>
+                            <div className="p-4 space-y-2">
+                                {[
+                                    { label: 'Nakit / Tek Çekim', price: selectedStockItem.alis_fiyati, term: 1 },
+                                    { label: '3 Taksit', price: selectedStockItem.fiyat_3_taksit, term: 3 },
+                                    { label: '6 Taksit', price: selectedStockItem.fiyat_6_taksit, term: 6 },
+                                    { label: '12 Taksit', price: selectedStockItem.fiyat_12_taksit, term: 12 },
+                                    { label: '15 Taksit', price: selectedStockItem.fiyat_15_taksit, term: 15 },
+                                ].map((opt, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => confirmStockAssign(opt.price || 0, opt.term)}
+                                        disabled={!opt.price}
+                                        className="w-full flex justify-between items-center p-3 border rounded-lg hover:bg-indigo-50 hover:border-indigo-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed group"
+                                    >
+                                        <span className="font-medium text-gray-700 group-hover:text-indigo-700">{opt.label}</span>
+                                        <span className="font-bold text-gray-900 group-hover:text-indigo-900">
+                                            {opt.price ? new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(opt.price) : '-'}
+                                        </span>
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     </div>

@@ -48,12 +48,12 @@ export function UserPerformanceCard({ user, stats }: { user: string, stats: any 
                         </div>
 
                         {/* Enhanced Goal Bar */}
-                        <div className="space-y-1.5">
+                        <div className="space-y-1.5 mt-2">
                             <div className="flex justify-between items-end">
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">GÜNLÜK İLERLEME</span>
-                                <span className={`text-xs font-black ${goalPercent >= 100 ? 'text-emerald-500' : 'text-indigo-600'}`}>%{goalPercent}</span>
+                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider truncate mr-2">GÜNLÜK HEDEF</span>
+                                <span className={`text-[10px] font-black ${goalPercent >= 100 ? 'text-emerald-500' : 'text-indigo-600'} whitespace-nowrap`}>%{goalPercent}</span>
                             </div>
-                            <div className="h-2.5 w-full bg-gray-50 rounded-full overflow-hidden border border-gray-100 shadow-inner">
+                            <div className="h-2 w-full bg-gray-50 rounded-full overflow-hidden border border-gray-100 shadow-inner">
                                 <div
                                     className={`h-full rounded-full transition-all duration-1000 ease-out relative ${goalPercent >= 100 ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-gradient-to-r from-indigo-500 to-purple-500'}`}
                                     style={{ width: `${goalPercent}%` }}
@@ -108,11 +108,19 @@ export function UserPerformanceCard({ user, stats }: { user: string, stats: any 
                                 </div>
                             </div>
                             {/* Sales */}
-                            <div className="bg-emerald-600 rounded-2xl p-3 text-white shadow-lg shadow-emerald-200 border border-emerald-700">
-                                <span className="block text-[9px] font-bold opacity-80 uppercase leading-none mb-1.5">Satış</span>
-                                <div className="flex items-end justify-between">
-                                    <span className="text-xl font-black">{stats.sales || 0}</span>
-                                    <Zap className="w-4 h-4 text-emerald-300 fill-emerald-300" />
+                            <div className="bg-emerald-600 rounded-2xl p-3 text-white shadow-lg shadow-emerald-200 border border-emerald-700 relative overflow-hidden">
+                                <span className="block text-[9px] font-bold opacity-80 uppercase leading-none mb-1">Satış (Kümülatif)</span>
+                                <div className="flex flex-col">
+                                    <div className="flex items-end justify-between">
+                                        <span className="text-xl font-black">{stats.sales || 0}</span>
+                                        <div className="text-[10px] bg-emerald-500/50 px-1.5 py-0.5 rounded font-medium border border-emerald-400/30 backdrop-blur-sm">
+                                            {formatShortCurrency(stats.salesVolume || 0)}
+                                        </div>
+                                    </div>
+                                    {/* Mini visual indicator for Volume */}
+                                    <div className="mt-1.5 h-1 w-full bg-black/20 rounded-full overflow-hidden">
+                                        <div className="h-full bg-white/80 w-3/4 rounded-full" />
+                                    </div>
                                 </div>
                             </div>
                         </div>

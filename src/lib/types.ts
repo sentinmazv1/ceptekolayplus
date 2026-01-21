@@ -160,7 +160,9 @@ export interface SoldItem {
   marka: string;
   model: string;
   satis_tarihi: string;
-  fiyat?: number;
+  fiyat?: number; // Legacy field
+  satis_fiyati?: number; // Actual sold price
+  vade_ay?: number; // Installment term (1, 3, 6, 12, 15)
   garanti_baslangic?: string;
 }
 
