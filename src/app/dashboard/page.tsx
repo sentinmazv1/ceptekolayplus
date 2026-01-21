@@ -19,6 +19,7 @@ export default function Dashboard() {
     const [error, setError] = useState<string | null>(null);
     const [performanceStats, setPerformanceStats] = useState<any>(null);
     const [myStats, setMyStats] = useState<any>(null); // New state for ActionCenter
+    const [newLeadCount, setNewLeadCount] = useState<number>(0); // New State
 
     const [sourceNotification, setSourceNotification] = useState<string | null>(null);
 
@@ -39,8 +40,9 @@ export default function Dashboard() {
             const res = await fetch(`/api/reports?startDate=${today}&endDate=${today}`);
             if (res.ok) {
                 const json = await res.json();
-                if (json.success && json.stats?.performance) {
-                    setPerformanceStats(json.stats.performance);
+                if (json.success && json.stats) {
+                    if (json.stats.performance) setPerformanceStats(json.stats.performance);
+                    if (json.stats.pool) setNewLeadCount(json.stats.pool.waiting_new || 0);
 
                     // Extract My Stats for the Action Center
                     if (session?.user?.email) {
@@ -124,7 +126,7 @@ export default function Dashboard() {
 
                 {/* 2. ACTION CENTER (Sticky Topish) */}
                 <div className="sticky top-2 z-40 bg-gray-50/95 backdrop-blur-sm -mx-4 px-4 pt-2 -mt-2 pb-2 transition-all">
-                    <ActionCenter onPullLead={pullLead} loading={loading} myStats={myStats} />
+                    <ActionCenter onPullLead={pullLead} loading={loading} myStats={myStats} newLeadCount={newLeadCount} />
                 </div>
 
                 {/* 3. MAIN STAGE */}
