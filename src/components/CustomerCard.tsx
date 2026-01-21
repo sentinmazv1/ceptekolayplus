@@ -640,8 +640,8 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                 </div>
 
                 {/* GLOBAL ACTION BAR */}
-                <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between gap-3 sticky top-[73px] z-20 shadow-sm animate-in slide-in-from-top-1">
-                    <div className="flex items-center gap-2">
+                <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 flex flex-col-reverse md:flex-row items-center justify-between gap-3 sticky top-[73px] z-20 shadow-sm animate-in slide-in-from-top-1">
+                    <div className="flex items-center justify-between w-full md:w-auto gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
                         <Button
                             variant="secondary"
                             onClick={() => {
@@ -683,7 +683,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                         size="sm"
                         onClick={handleSave}
                         disabled={loading}
-                        className={`font-semibold shadow-lg border-0 transition-all active:scale-95 min-w-[120px] ring-offset-2 focus:ring-2 focus:ring-indigo-500 ${loading ? 'bg-gray-400' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}
+                        className={`w-full md:w-auto font-semibold shadow-lg border-0 transition-all active:scale-95 min-w-[120px] ring-offset-2 focus:ring-2 focus:ring-indigo-500 ${loading ? 'bg-gray-400' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}
                     >
                         {loading ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <CheckCircle className="w-4 h-4 mr-2" />}
                         {loading ? 'Kaydediliyor...' : 'Kaydet'}
