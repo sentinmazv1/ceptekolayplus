@@ -135,23 +135,37 @@ export default function ReportsPage() {
                 @media print {
                     @page {
                         size: A4;
-                        margin: 20mm;
+                        margin: 10mm;
                     }
                     body {
                         background: white !important;
                         color: black !important;
                         -webkit-print-color-adjust: exact;
+                        font-size: 10pt;
                     }
                     .chart-container {
                         page-break-inside: avoid;
-                        height: 350px !important;
+                        height: 280px !important;
                     }
                     .print-section {
                         page-break-inside: avoid;
-                        margin-bottom: 2rem;
+                        margin-bottom: 0.5rem !important;
                     }
                     .no-print {
                         display: none !important;
+                    }
+                    h1, h2, h3 {
+                        margin-bottom: 0.5rem !important;
+                        margin-top: 0.5rem !important;
+                    }
+                    .p-8, .p-6, .p-4 {
+                        padding: 0.5rem !important;
+                    }
+                    .mb-8, .mb-10, .mb-6 {
+                        margin-bottom: 0.5rem !important;
+                    }
+                    .gap-8, .gap-6, .gap-4 {
+                        gap: 0.25rem !important;
                     }
                 }
             `}</style>
@@ -211,64 +225,52 @@ export default function ReportsPage() {
             </div>
 
             {/* PRINT HEADER */}
-            <div className="hidden print:block mb-8 border-b-2 border-gray-900 pb-6">
+            <div className="hidden print:block mb-2 border-b-2 border-gray-900 pb-2">
                 <div className="flex justify-between items-end">
                     <div>
-                        <h1 className="text-5xl font-black text-gray-900 tracking-tight">YÖNETİCİ RAPORU</h1>
-                        <p className="text-gray-600 mt-2 font-bold text-xl uppercase tracking-wider">Operasyonel Performans Özeti</p>
+                        <h1 className="text-3xl font-black text-gray-900 tracking-tight">YÖNETİCİ RAPORU</h1>
+                        <p className="text-sm text-gray-600 mt-1 font-bold uppercase tracking-wider">Operasyonel Performans Özeti</p>
                     </div>
                     <div className="text-right">
-                        <p className="text-xs text-gray-500 font-bold mb-1 uppercase tracking-widest">RAPORLANAN DÖNEM</p>
-                        <div className="inline-block bg-gray-100 px-4 py-2 rounded-lg border border-gray-200">
-                            <p className="text-2xl font-black text-gray-900 tabular-nums">
-                                {new Date(startDate).toLocaleDateString('tr-TR')} - {new Date(endDate).toLocaleDateString('tr-TR')}
-                            </p>
-                        </div>
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">RAPORLANAN DÖNEM</p>
+                        <p className="text-xl font-black text-gray-900 tabular-nums">
+                            {new Date(startDate).toLocaleDateString('tr-TR')} - {new Date(endDate).toLocaleDateString('tr-TR')}
+                        </p>
                     </div>
                 </div>
             </div>
 
             {/* --- ROW 0: INVENTORY STATS --- */}
             {stats.inventory && (
-                <div className="mb-8 animate-in slide-in-from-bottom-2 duration-500">
-                    <div className="flex items-center gap-3 mb-6 px-1">
-                        <div className="p-2.5 bg-slate-900 rounded-xl text-white shadow-sm">
-                            <Package className="w-6 h-6" />
+                <div className="mb-4 print-section">
+                    <div className="flex items-center gap-3 mb-2 px-1">
+                        <div className="p-1.5 bg-slate-900 rounded-lg text-white shadow-sm print:hidden">
+                            <Package className="w-5 h-5" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Envanter Durumu</h2>
-                            <p className="text-xs font-bold text-gray-500 hidden md:block">Güncel Stok & Maliyet Analizi</p>
+                            <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">Envanter Durumu</h2>
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 print:grid-cols-3">
                         {/* Card 1: Total Stock */}
-                        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between group hover:border-indigo-200 transition-colors">
+                        <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between group print:p-2">
                             <div>
-                                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Toplam Stok Adeti</p>
-                                <p className="text-3xl font-black text-slate-800 tabular-nums">{stats.inventory.totalItems || 0} <span className="text-sm font-bold text-gray-400">Adet</span></p>
-                            </div>
-                            <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                                <Package className="w-6 h-6" />
+                                <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Stok</p>
+                                <p className="text-xl font-black text-slate-800 tabular-nums">{stats.inventory.totalItems || 0} Adet</p>
                             </div>
                         </div>
                         {/* Card 2: Cost Volume */}
-                        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between group hover:border-rose-200 transition-colors">
+                        <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between group print:p-2">
                             <div>
-                                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Toplam Alış Hacmi (Maliyet)</p>
-                                <p className="text-3xl font-black text-slate-800 tabular-nums">{formatTRY(stats.inventory.totalCost || 0)}</p>
-                            </div>
-                            <div className="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-colors">
-                                <TrendingUp className="w-6 h-6" />
+                                <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Maliyet</p>
+                                <p className="text-xl font-black text-slate-800 tabular-nums">{formatTRY(stats.inventory.totalCost || 0)}</p>
                             </div>
                         </div>
                         {/* Card 3: Potential Volume */}
-                        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between group hover:border-emerald-200 transition-colors">
+                        <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between group print:p-2">
                             <div>
-                                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Toplam Potansiyel Ciro (15 Ay)</p>
-                                <p className="text-3xl font-black text-slate-800 tabular-nums">{formatTRY(stats.inventory.totalRevenue || 0)}</p>
-                            </div>
-                            <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                                <BadgeCheck className="w-6 h-6" />
+                                <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Potansiyel Ciro</p>
+                                <p className="text-xl font-black text-slate-800 tabular-nums">{formatTRY(stats.inventory.totalRevenue || 0)}</p>
                             </div>
                         </div>
                     </div>
@@ -282,13 +284,12 @@ export default function ReportsPage() {
 
             {/* --- ROW 2: TEAM PERFORMANCE --- */}
             <div className="mb-10 animate-in slide-in-from-bottom-6 duration-700 delay-100">
-                <div className="flex items-center gap-3 mb-6 px-1">
-                    <div className="p-2.5 bg-indigo-100 rounded-xl text-indigo-600 shadow-sm">
-                        <Users className="w-6 h-6" />
+                <div className="flex items-center gap-3 mb-2 px-1">
+                    <div className="p-1.5 bg-indigo-100 rounded-lg text-indigo-600 shadow-sm print:hidden">
+                        <Users className="w-5 h-5" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Personel Karneleri</h2>
-                        <p className="text-xs font-bold text-gray-500 hidden md:block">Bireysel Performans ve Hedef Takibi</p>
+                        <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">Personel Karneleri</h2>
                     </div>
                 </div>
 
