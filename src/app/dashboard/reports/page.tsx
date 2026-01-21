@@ -135,38 +135,49 @@ export default function ReportsPage() {
                 @media print {
                     @page {
                         size: A4;
-                        margin: 10mm;
+                        margin: 5mm;
                     }
                     body {
                         background: white !important;
                         color: black !important;
                         -webkit-print-color-adjust: exact;
-                        font-size: 10pt;
+                        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+                        font-size: 9pt;
                     }
                     .chart-container {
                         page-break-inside: avoid;
-                        height: 280px !important;
+                        height: 250px !important;
                     }
+                    /* Compact Sections */
                     .print-section {
                         page-break-inside: avoid;
-                        margin-bottom: 0.5rem !important;
+                        margin-bottom: 0.25rem !important;
+                        padding-bottom: 0.25rem !important;
                     }
-                    .no-print {
-                        display: none !important;
-                    }
-                    h1, h2, h3 {
-                        margin-bottom: 0.5rem !important;
-                        margin-top: 0.5rem !important;
-                    }
-                    .p-8, .p-6, .p-4 {
-                        padding: 0.5rem !important;
-                    }
-                    .mb-8, .mb-10, .mb-6 {
-                        margin-bottom: 0.5rem !important;
-                    }
-                    .gap-8, .gap-6, .gap-4 {
-                        gap: 0.25rem !important;
-                    }
+                    .no-print { display: none !important; }
+                    
+                    /* Reset margins/paddings */
+                    .p-8, .p-6, .p-4, .p-3, .p-2 { padding: 4px !important; }
+                    .mb-10, .mb-8, .mb-6, .mb-4 { margin-bottom: 4px !important; }
+                    .gap-8, .gap-6, .gap-4, .gap-3 { gap: 4px !important; }
+                    
+                    /* Text sizing adjustments */
+                    h1 { font-size: 16pt !important; margin: 0 !important; }
+                    h2 { font-size: 12pt !important; margin: 0 !important; }
+                    h3 { font-size: 11pt !important; margin: 0 !important; }
+                    p, span, div { font-size: 9pt; }
+                    
+                    /* Table specific */
+                    table { font-size: 8pt !important; }
+                    th, td { padding: 2px 4px !important; }
+                    
+                    /* Specific overrides to tighten layout */
+                    .print\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+                    .print\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+                    
+                    /* Remove shadows and borders that take space or look messy */
+                    .shadow-xl, .shadow-lg, .shadow-md, .shadow-sm { box-shadow: none !important; }
+                    .border-2 { border-width: 1px !important; }
                 }
             `}</style>
             {/* Header */}

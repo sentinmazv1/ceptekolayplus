@@ -13,6 +13,11 @@ export function UserPerformanceCard({ user, stats }: { user: string, stats: any 
         return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0, notation: 'compact' }).format(val);
     };
 
+    const formatFullCurrency = (val: number) => {
+        if (!val) return '0 ₺';
+        return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(val);
+    };
+
     return (
         <div className="group relative bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/80 overflow-hidden hover:shadow-[0_20px_50px_rgba(79,70,229,0.1)] transition-all duration-500 hover:-translate-y-1">
             {/* Top Accents */}
@@ -39,9 +44,9 @@ export function UserPerformanceCard({ user, stats }: { user: string, stats: any 
                                     {user.split('@')[0]}
                                 </h3>
                                 <div className="flex items-center gap-1.5 mt-1">
-                                    <div className="flex items-center gap-1 text-[9px] font-black text-indigo-600 bg-indigo-50/50 px-2 py-0.5 rounded-lg border border-indigo-100/50 whitespace-nowrap">
-                                        <Target className="w-3 h-3" />
-                                        <span>{stats.dailyGoal} HEDEF</span>
+                                    <div className="flex items-center gap-1 text-[8px] font-black text-indigo-600 bg-indigo-50/50 px-1.5 py-0.5 rounded-lg border border-indigo-100/50 whitespace-nowrap overflow-hidden">
+                                        <Target className="w-2.5 h-2.5 flex-shrink-0" />
+                                        <span className="truncate">{stats.dailyGoal} HEDEF</span>
                                     </div>
                                 </div>
                             </div>
@@ -111,10 +116,10 @@ export function UserPerformanceCard({ user, stats }: { user: string, stats: any 
                             <div className="bg-emerald-600 rounded-2xl p-3 text-white shadow-lg shadow-emerald-200 border border-emerald-700 relative overflow-hidden">
                                 <span className="block text-[9px] font-bold opacity-80 uppercase leading-none mb-1">Satış (Kümülatif)</span>
                                 <div className="flex flex-col">
-                                    <div className="flex items-end justify-between">
-                                        <span className="text-xl font-black">{stats.sales || 0}</span>
-                                        <div className="text-[10px] bg-emerald-500/50 px-1.5 py-0.5 rounded font-medium border border-emerald-400/30 backdrop-blur-sm">
-                                            {formatShortCurrency(stats.salesVolume || 0)}
+                                    <div className="flex items-end justify-between gap-1">
+                                        <span className="text-lg xl:text-xl font-black truncate">{stats.sales || 0}</span>
+                                        <div className="text-[9px] xl:text-[10px] bg-emerald-500/50 px-1.5 py-0.5 rounded font-medium border border-emerald-400/30 backdrop-blur-sm whitespace-nowrap">
+                                            {formatFullCurrency(stats.salesVolume || 0)}
                                         </div>
                                     </div>
                                     {/* Mini visual indicator for Volume */}
