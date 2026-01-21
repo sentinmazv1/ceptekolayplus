@@ -14,83 +14,63 @@ export async function GET() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const timestamp = new Date().toISOString().split('T')[0];
         const backup: any = {
             metadata: {
                 backup_date: new Date().toISOString(),
-                version: '1.1',
-                app: 'CEPTEKOLAY Plus'
+                version: '1.2',
+                app: 'CEPTEKOLAY Plus',
+                environment: process.env.NODE_ENV
             },
-            data: {}
+            data: {},
+            errors: [] // Track missing tables or errors
         };
 
-        // 1. LEADS (Müşteriler)
-        const { data: leads, error: leadsError } = await supabaseAdmin
-            .from('leads')
-            .select('*')
-            .order('created_at', { ascending: false });
+        // Helper for safe table fetching
+        const fetchTable = async (tableName: string, queryBuilder?: (q: any) => any) => {
+            try {
+                let query = supabaseAdmin.from(tableName).select('*');
+                if (queryBuilder) query = queryBuilder(query);
 
-        if (leadsError) throw leadsError;
-        backup.data.leads = leads;
+                const { data, error } = await query;
+                if (error) {
+                    console.warn(`[Backup] Table ${tableName} fetch error:`, error.message);
+                    backup.errors.push({ table: tableName, error: error.message });
+                    return null;
+                }
+                return data;
+            } catch (err: any) {
+                console.error(`[Backup] Critical error fetching ${tableName}:`, err);
+                backup.errors.push({ table: tableName, error: err.message });
+                return null;
+            }
+        };
 
-        // 2. INVENTORY (Stok)
-        const { data: inventory, error: invError } = await supabaseAdmin
-            .from('inventory')
-            .select('*')
-            .order('giris_tarihi', { ascending: false });
+        // Parallel fetch for speed
+        const [
+            leads, inventory, logs, templates,
+            users, statuses, products, quickNotes
+        ] = await Promise.all([
+            fetchTable('leads', q => q.order('created_at', { ascending: false })),
+            fetchTable('inventory', q => q.order('giris_tarihi', { ascending: false })),
+            fetchTable('activity_logs', q => q.order('created_at', { ascending: false }).limit(10000)),
+            fetchTable('sms_templates'),
+            fetchTable('users'),
+            fetchTable('statuses'),
+            fetchTable('products'),
+            fetchTable('quick_notes')
+        ]);
 
-        if (invError) throw invError;
-        backup.data.inventory = inventory;
-
-        // 3. ACTIVITY LOGS (İşlem Kayıtları) - Fetch last 10000 to avoid timeout/memory issues
-        const { data: logs, error: logsError } = await supabaseAdmin
-            .from('activity_logs')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(10000);
-
-        if (logsError) throw logsError;
-        backup.data.logs = logs;
-
-        // 4. SMS TEMPLATES (Şablonlar)
-        const { data: templates, error: templatesError } = await supabaseAdmin
-            .from('sms_templates')
-            .select('*');
-
-        if (templatesError) throw templatesError;
-        backup.data.sms_templates = templates;
-
-        // 5. USERS (Kullanıcılar)
-        const { data: users, error: usersError } = await supabaseAdmin
-            .from('users')
-            .select('*');
-
-        if (usersError) throw usersError;
-        backup.data.users = users;
-
-        // 6. STATUSES (Durumlar)
-        const { data: statuses, error: statusError } = await supabaseAdmin
-            .from('statuses')
-            .select('*');
-
-        if (statusError) throw statusError;
-        backup.data.statuses = statuses;
-
-        // 7. PRODUCTS (Ürünler)
-        const { data: products, error: productsError } = await supabaseAdmin
-            .from('products')
-            .select('*');
-
-        if (productsError) throw productsError;
-        backup.data.products = products;
-
-        // 8. QUICK NOTES
-        const { data: quickNotes, error: notesError } = await supabaseAdmin
-            .from('quick_notes')
-            .select('*');
-
-        if (notesError) throw notesError;
-        backup.data.quick_notes = quickNotes;
+        backup.data = {
+            leads: leads || [],
+            inventory: inventory || [],
+            activity_logs: logs || [],
+            sms_templates: templates || [],
+            users: users || [],
+            statuses: statuses || [],
+            products: products || [],
+            quick_notes: quickNotes || []
+        };
 
         // Return JSON file
         return new NextResponse(JSON.stringify(backup, null, 2), {
@@ -102,7 +82,7 @@ export async function GET() {
         });
 
     } catch (error: any) {
-        console.error('Backup error:', error);
+        console.error('Final Backup Error:', error);
         return NextResponse.json({
             success: false,
             error: error.message
