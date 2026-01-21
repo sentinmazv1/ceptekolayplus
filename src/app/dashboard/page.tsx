@@ -8,7 +8,7 @@ import ActivityFeed from '@/components/ActivityFeed';
 import { CustomerCard } from '@/components/CustomerCard';
 import { DashboardStats } from '@/components/DashboardStats';
 import { Customer } from '@/lib/types';
-import { Loader2, LogOut, RefreshCcw, Phone, Users, Activity, Sparkles, Search } from 'lucide-react';
+import { Loader2, LogOut, RefreshCcw, Phone, Users, Activity, Sparkles, Search, Clock } from 'lucide-react';
 import { UserPerformanceCard } from '@/components/UserPerformanceCard';
 
 export default function Dashboard() {
@@ -189,18 +189,35 @@ export default function Dashboard() {
                                 </div>
 
                                 {stats && (
-                                    <div className="grid grid-cols-3 gap-4 mb-10 w-full max-w-xl">
-                                        <div className="p-4 bg-blue-50/80 backdrop-blur-sm rounded-2xl border border-blue-100 flex flex-col items-center hover:bg-blue-100/80 transition-colors">
-                                            <span className="font-black text-3xl text-blue-600 leading-none mb-1">{stats.waiting_new}</span>
-                                            <span className="text-[10px] uppercase font-extrabold text-blue-400 tracking-wider">YENİ</span>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 w-full max-w-2xl mx-auto mb-10 px-4">
+                                        {/* YENİ */}
+                                        <div className="relative group/kpi p-5 bg-white rounded-2xl border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex flex-col items-center hover:shadow-blue-100 transition-all active:scale-95 overflow-hidden">
+                                            <div className="absolute top-0 left-0 w-full h-1 bg-blue-500 opacity-20 group-hover/kpi:opacity-100 transition-opacity"></div>
+                                            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 mb-3 group-hover/kpi:scale-110 transition-transform">
+                                                <Activity className="w-5 h-5" />
+                                            </div>
+                                            <span className="font-black text-3xl text-gray-900 leading-none mb-1 tabular-nums">{stats.waiting_new || 0}</span>
+                                            <span className="text-[10px] uppercase font-black text-blue-500 tracking-widest">YENİ</span>
                                         </div>
-                                        <div className="p-4 bg-purple-50/80 backdrop-blur-sm rounded-2xl border border-purple-100 flex flex-col items-center hover:bg-purple-100/80 transition-colors">
-                                            <span className="font-black text-3xl text-purple-600 leading-none mb-1">{stats.waiting_scheduled}</span>
-                                            <span className="text-[10px] uppercase font-extrabold text-purple-400 tracking-wider">RANDEVU</span>
+
+                                        {/* RANDEVU */}
+                                        <div className="relative group/kpi p-5 bg-white rounded-2xl border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex flex-col items-center hover:shadow-purple-100 transition-all active:scale-95 overflow-hidden">
+                                            <div className="absolute top-0 left-0 w-full h-1 bg-purple-500 opacity-20 group-hover/kpi:opacity-100 transition-opacity"></div>
+                                            <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 mb-3 group-hover/kpi:scale-110 transition-transform">
+                                                <Clock className="w-5 h-5" />
+                                            </div>
+                                            <span className="font-black text-3xl text-gray-900 leading-none mb-1 tabular-nums">{stats.waiting_scheduled || 0}</span>
+                                            <span className="text-[10px] uppercase font-black text-purple-500 tracking-widest">RANDEVU</span>
                                         </div>
-                                        <div className="p-4 bg-orange-50/80 backdrop-blur-sm rounded-2xl border border-orange-100 flex flex-col items-center hover:bg-orange-100/80 transition-colors">
-                                            <span className="font-black text-3xl text-orange-600 leading-none mb-1">{stats.waiting_retry}</span>
-                                            <span className="text-[10px] uppercase font-extrabold text-orange-400 tracking-wider">TEKRAR</span>
+
+                                        {/* TEKRAR */}
+                                        <div className="relative group/kpi p-5 bg-white rounded-2xl border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex flex-col items-center hover:shadow-orange-100 transition-all active:scale-95 overflow-hidden">
+                                            <div className="absolute top-0 left-0 w-full h-1 bg-orange-500 opacity-20 group-hover/kpi:opacity-100 transition-opacity"></div>
+                                            <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 mb-3 group-hover/kpi:scale-110 transition-transform">
+                                                <RefreshCcw className="w-5 h-5" />
+                                            </div>
+                                            <span className="font-black text-3xl text-gray-900 leading-none mb-1 tabular-nums">{stats.waiting_retry || 0}</span>
+                                            <span className="text-[10px] uppercase font-black text-orange-500 tracking-widest">TEKRAR</span>
                                         </div>
                                     </div>
                                 )}
@@ -277,7 +294,7 @@ export default function Dashboard() {
                         </div>
 
                         {performanceStats ? (
-                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                            <div className="flex flex-col gap-6">
                                 {Object.entries(performanceStats)
                                     .sort((a: any, b: any) => b[1].calls - a[1].calls)
                                     .map(([user, pStats]: any) => (

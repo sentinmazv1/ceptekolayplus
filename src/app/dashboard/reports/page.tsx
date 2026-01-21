@@ -265,7 +265,7 @@ export default function ReportsPage() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                <div className="flex flex-col gap-8">
                     {Object.entries(stats.performance)
                         .sort((a, b) => b[1].calls - a[1].calls)
                         .map(([user, pStats]) => (
@@ -394,7 +394,7 @@ function SalesFunnel({ stats }: { stats: any }) {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-8 relative px-4">
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-6 md:gap-8 relative px-4">
                     {/* Arrow connectors (Desktop) */}
                     <div className="hidden md:block absolute top-[40%] left-0 w-full h-1 bg-gray-100 -z-10 rounded-full"></div>
 
