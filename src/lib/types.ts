@@ -143,6 +143,8 @@ export interface Customer {
   kargo_takip_no?: string;
   gorsel_1?: string;
   gorsel_2?: string;
+  is_yeri_bilgisi?: string;
+  meslek?: string;
 }
 
 export interface SoldItem {

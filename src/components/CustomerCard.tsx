@@ -332,7 +332,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     customerId: data.id,
-                    phone: data.telefon,
+                    phone: data.telefon?.startsWith('0') ? data.telefon : '0' + data.telefon,
                     message: smsMessage
                 })
             });
@@ -359,8 +359,8 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
         setWhatsAppLoading(true);
 
         try {
-            // 1. Format phone number (remove headers, ensure 90 prefix)
-            let phone = data.telefon.replace(/\D/g, '');
+            // 1. Format phone number (ensure 90 prefix, handling leading 0)
+            let phone = (data.telefon || '').replace(/\D/g, '');
             if (phone.startsWith('0')) phone = phone.substring(1);
             if (!phone.startsWith('90')) phone = '90' + phone;
 
@@ -578,8 +578,9 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                 </div>
                             )}
                             <span className='flex items-center gap-1 hover:text-white transition-colors cursor-pointer' onClick={() => {
+                                const tel = data.telefon?.startsWith('0') ? data.telefon : '0' + data.telefon;
                                 logUserAction('CLICK_CALL', 'Header Call Click');
-                                window.open(`tel:${data.telefon?.startsWith('0') ? data.telefon : '0' + data.telefon}`);
+                                window.open(`tel:${tel}`);
                             }}><Phone className="w-3 h-3" /> {data.telefon}</span>
                             <span className='hidden md:flex items-center gap-1 text-slate-400'> <Calendar className="w-3 h-3" /> {new Date(data.created_at || new Date()).toLocaleDateString('tr-TR')}</span>
                         </div>
@@ -718,7 +719,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                             </div>
                                             <div className="flex gap-1 mb-1">
                                                 <a
-                                                    href={`tel:${data.telefon}`}
+                                                    href={`tel:${data.telefon?.startsWith('0') ? data.telefon : '0' + data.telefon}`}
                                                     onClick={() => logUserAction('CLICK_CALL', 'Communication Tab Call Click')}
                                                     className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 border border-green-200 transition-colors"
                                                     title="Ara"
@@ -727,6 +728,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                                 </a>
                                                 <button
                                                     onClick={() => {
+                                                        const tel = data.telefon?.startsWith('0') ? data.telefon : '0' + data.telefon;
                                                         logUserAction('CLICK_WHATSAPP', 'Communication Tab WA Modal Open');
                                                         setIsWhatsAppModalOpen(true);
                                                     }}
@@ -737,6 +739,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                                 </button>
                                                 <button
                                                     onClick={() => {
+                                                        const tel = data.telefon?.startsWith('0') ? data.telefon : '0' + data.telefon;
                                                         logUserAction('CLICK_SMS', 'Communication Tab SMS Modal Open');
                                                         setIsSmsModalOpen(true);
                                                     }}
@@ -909,10 +912,22 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                         onChange={(e) => handleChange('meslek_is', e.target.value)}
                                     />
                                     <Input
+                                        label="Genel Meslek"
+                                        value={data.meslek || ''}
+                                        onChange={(e) => handleChange('meslek', e.target.value)}
+                                        placeholder="Ana meslek dalı"
+                                    />
+                                    <Input
                                         label="İş Yeri Ünvanı"
                                         value={data.is_yeri_unvani || ''}
                                         onChange={(e) => handleChange('is_yeri_unvani', e.target.value)}
                                         placeholder="Sözleşme için"
+                                    />
+                                    <Input
+                                        label="İş Yeri Bilgisi"
+                                        value={data.is_yeri_bilgisi || ''}
+                                        onChange={(e) => handleChange('is_yeri_bilgisi', e.target.value)}
+                                        placeholder="Ek iş yeri bilgileri"
                                     />
                                     <Input
                                         label="İş Adresi"

@@ -450,6 +450,11 @@ export async function updateLead(customer: Customer, userEmail: string): Promise
         // Attorney Check
         avukat_sorgu_durumu: customer.avukat_sorgu_durumu,
         avukat_sorgu_sonuc: customer.avukat_sorgu_sonuc,
+        ev_adresi: customer.ev_adresi,
+        is_adresi: customer.is_adresi,
+        is_yeri_unvani: customer.is_yeri_unvani,
+        is_yeri_bilgisi: customer.is_yeri_bilgisi,
+        meslek: customer.meslek,
 
         // Main Extras
         winner_musteri_no: customer.winner_musteri_no,
@@ -632,6 +637,11 @@ function mapRowToCustomer(row: any): Customer {
         kefil_avukat_sorgu_durumu: row.kefil_avukat_sorgu_durumu,
         kefil_avukat_sorgu_sonuc: row.kefil_avukat_sorgu_sonuc,
         kefil_notlar: row.kefil_notlar,
+        ev_adresi: row.ev_adresi,
+        is_adresi: row.is_adresi,
+        is_yeri_unvani: row.is_yeri_unvani,
+        is_yeri_bilgisi: row.is_yeri_bilgisi,
+        meslek: row.meslek,
 
         ...row
     };
