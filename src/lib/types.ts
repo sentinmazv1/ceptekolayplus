@@ -60,6 +60,13 @@ export interface Customer {
   hizmet_dokumu_varmi?: 'Evet' | 'Hayır';
   ayni_isyerinde_sure_ay?: string;
   son_yatan_maas?: string;
+  maas_1?: string;
+  maas_2?: string;
+  maas_3?: string;
+  maas_4?: string;
+  maas_5?: string;
+  maas_6?: string;
+  maas_ortalama?: string;
   dava_dosyasi_varmi?: 'Evet' | 'Hayır';
   acik_icra_varmi?: 'Evet' | 'Hayır';
   kapali_icra_varmi?: 'Evet' | 'Hayır';

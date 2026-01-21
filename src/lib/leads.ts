@@ -407,6 +407,13 @@ export async function updateLead(customer: Customer, userEmail: string): Promise
         ilce: customer.ilce,
         meslek_is: customer.meslek_is,
         maas_bilgisi: customer.son_yatan_maas,
+        maas_1: customer.maas_1,
+        maas_2: customer.maas_2,
+        maas_3: customer.maas_3,
+        maas_4: customer.maas_4,
+        maas_5: customer.maas_5,
+        maas_6: customer.maas_6,
+        maas_ortalama: customer.maas_ortalama,
         kredi_limiti: customer.kredi_limiti,
         admin_notu: customer.admin_notu,
         arama_notu: customer.arama_not_kisa,
@@ -586,9 +593,17 @@ export async function getInventoryStats() {
 
 function mapRowToCustomer(row: any): Customer {
     return {
-        id: row.id, created_at: row.created_at, created_by: row.created_by, ad_soyad: row.ad_soyad, telefon: row.telefon, tc_kimlik: row.tc_kimlik, email: row.email, dogum_tarihi: row.dogum_tarihi, durum: row.durum, sahip: row.sahip_email, sehir: row.sehir, ilce: row.ilce, meslek_is: row.meslek_is, son_yatan_maas: row.maas_bilgisi,
+        id: row.id, created_at: row.created_at, created_by: row.created_by, ad_soyad: row.ad_soyad, telefon: row.telefon, tc_kimlik: row.tc_kimlik, email: row.email, dogum_tarihi: row.dogum_tarihi, durum: row.durum, sahip: row.sahip_email, sehir: row.sehir, ilce: row.ilce, meslek_is: row.meslek_is,
 
         // JSONB Fields (Legacy support + new structure)
+        son_yatan_maas: row.maas_bilgisi,
+        maas_1: row.maas_1,
+        maas_2: row.maas_2,
+        maas_3: row.maas_3,
+        maas_4: row.maas_4,
+        maas_5: row.maas_5,
+        maas_6: row.maas_6,
+        maas_ortalama: row.maas_ortalama,
         acik_icra_varmi: row.icra_durumu?.acik_icra,
         kapali_icra_varmi: row.icra_durumu?.kapali_icra,
         acik_icra_detay: row.icra_durumu?.detay,

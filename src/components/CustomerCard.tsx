@@ -185,6 +185,27 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
 
     }, []);
 
+    // Automated 6-Month Salary Average Calculation
+    useEffect(() => {
+        const salaries = [
+            data.maas_1, data.maas_2, data.maas_3,
+            data.maas_4, data.maas_5, data.maas_6
+        ].map(s => parseFloat(s || '0') || 0);
+
+        const count = salaries.filter(s => s > 0).length;
+        if (count > 0) {
+            const sum = salaries.reduce((a, b) => a + b, 0);
+            const avg = Math.round(sum / count);
+            if (data.maas_ortalama !== String(avg)) {
+                setData(prev => ({ ...prev, maas_ortalama: String(avg) }));
+            }
+        } else {
+            if (data.maas_ortalama !== '0' && data.maas_ortalama !== '') {
+                setData(prev => ({ ...prev, maas_ortalama: '0' }));
+            }
+        }
+    }, [data.maas_1, data.maas_2, data.maas_3, data.maas_4, data.maas_5, data.maas_6]);
+
     // SMS Modal State
     const [isSmsModalOpen, setIsSmsModalOpen] = useState(false);
     const [smsMessage, setSmsMessage] = useState('');
@@ -935,12 +956,27 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                         onChange={(e) => handleChange('is_adresi', e.target.value)}
                                         placeholder="Tam iş adresi"
                                     />
-                                    <Input
-                                        label="Son Maaş (TL)"
-                                        type="number"
-                                        value={data.son_yatan_maas || ''}
-                                        onChange={(e) => handleChange('son_yatan_maas', e.target.value)}
-                                    />
+                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">Son 6 Aylık Maaş Bilgisi</label>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {[1, 2, 3, 4, 5, 6].map(num => (
+                                                <div key={num} className="space-y-1">
+                                                    <label className="text-[10px] font-semibold text-slate-500">{num}. Ay</label>
+                                                    <input
+                                                        type="number"
+                                                        value={(data as any)[`maas_${num}`] || ''}
+                                                        onChange={(e) => handleChange(`maas_${num}` as any, e.target.value)}
+                                                        placeholder="0"
+                                                        className="w-full p-2 text-sm border rounded bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="pt-2 border-t border-slate-200 mt-2 flex justify-between items-center">
+                                            <span className="text-xs font-bold text-slate-600">6 AYLIK ORTALAMA:</span>
+                                            <span className="text-lg font-black text-indigo-700">{data.maas_ortalama || '0'} TL</span>
+                                        </div>
+                                    </div>
                                     <Input
                                         label="Aynı İşyerinde Çalışma Süresi"
                                         value={data.ayni_isyerinde_sure_ay || ''}
@@ -1886,7 +1922,8 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
 
         summary += `💼 *İş & Finans*\n`;
         summary += `Meslek: ${customer.meslek_is || '-'}\n`;
-        summary += `Maaş: ${customer.son_yatan_maas || '-'} TL\n`;
+        summary += `Maaşlar (Son 6 Ay): ${customer.maas_1 || 0}, ${customer.maas_2 || 0}, ${customer.maas_3 || 0}, ${customer.maas_4 || 0}, ${customer.maas_5 || 0}, ${customer.maas_6 || 0} TL\n`;
+        summary += `Ortalama Maaş: *${customer.maas_ortalama || '-'} TL*\n`;
         summary += `Çalışma Süresi: ${customer.ayni_isyerinde_sure_ay || '-'}\n\n`;
 
         summary += `⚖️ *Yasal & Varlık*\n`;
@@ -2016,7 +2053,11 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                                 <div class="field-group">
                                     <div class="field"><span class="label">Meslek / Ünvan</span> <span class="value">${customer.meslek_is || '-'}</span></div>
                                     <div class="field"><span class="label">Çalışma Şekli</span> <span class="value">${customer.calisma_sekli || '-'}</span></div>
-                                    <div class="field"><span class="label">Aylık Gelir</span> <span class="value font-bold">${customer.son_yatan_maas || '-'} TL</span></div>
+                                    <div class="field"><span class="label">Ortalama Maaş (6 Ay)</span> <span class="value font-bold text-lg">${customer.maas_ortalama || '-'} TL</span></div>
+                                    <div class="field" style="border-top:none; padding-top:2px;">
+                                        <span class="label" style="font-size:9px; font-weight:normal;">Maaş Geçmişi:</span>
+                                        <span class="value" style="font-size:9px;">${customer.maas_1 || 0}, ${customer.maas_2 || 0}, ${customer.maas_3 || 0}, ${customer.maas_4 || 0}, ${customer.maas_5 || 0}, ${customer.maas_6 || 0} TL</span>
+                                    </div>
                                     <div class="field"><span class="label">Kıdem (Ay)</span> <span class="value">${customer.ayni_isyerinde_sure_ay || '-'}</span></div>
                                     <div class="field"><span class="label">Ek Gelir</span> <span class="value">${customer.ek_gelir || '-'}</span></div>
                                     <div class="field"><span class="label">Kredi Notu</span> <span class="value">${customer.findeks_risk_durumu || '-'}</span></div>
