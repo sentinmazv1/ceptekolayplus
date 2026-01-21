@@ -101,6 +101,22 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
         setData(prev => ({ ...prev, sehir: cityName, ilce: '' }));
     };
 
+    const logUserAction = async (action: string, note?: string) => {
+        try {
+            await fetch('/api/logs/action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    customer_id: data.id,
+                    action,
+                    note: note || ''
+                })
+            });
+        } catch (err) {
+            console.error('Failed to log action:', action, err);
+        }
+    };
+
     // Inventory State
     const [isStockModalOpen, setIsStockModalOpen] = useState(false);
     const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
@@ -561,7 +577,10 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                     <span className="text-white">{data.sahip === session?.user.email ? 'Siz' : data.sahip.split('@')[0]}</span>
                                 </div>
                             )}
-                            <span className='flex items-center gap-1 hover:text-white transition-colors cursor-pointer' onClick={() => window.open(`tel:${data.telefon?.startsWith('0') ? data.telefon : '0' + data.telefon}`)}><Phone className="w-3 h-3" /> {data.telefon}</span>
+                            <span className='flex items-center gap-1 hover:text-white transition-colors cursor-pointer' onClick={() => {
+                                logUserAction('CLICK_CALL', 'Header Call Click');
+                                window.open(`tel:${data.telefon?.startsWith('0') ? data.telefon : '0' + data.telefon}`);
+                            }}><Phone className="w-3 h-3" /> {data.telefon}</span>
                             <span className='hidden md:flex items-center gap-1 text-slate-400'> <Calendar className="w-3 h-3" /> {new Date(data.created_at || new Date()).toLocaleDateString('tr-TR')}</span>
                         </div>
                     </div>
@@ -698,13 +717,32 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                                 />
                                             </div>
                                             <div className="flex gap-1 mb-1">
-                                                <a href={`tel:${data.telefon}`} className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 border border-green-200 transition-colors" title="Ara">
+                                                <a
+                                                    href={`tel:${data.telefon}`}
+                                                    onClick={() => logUserAction('CLICK_CALL', 'Communication Tab Call Click')}
+                                                    className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 border border-green-200 transition-colors"
+                                                    title="Ara"
+                                                >
                                                     <Phone className="w-5 h-5" />
                                                 </a>
-                                                <button onClick={() => setIsWhatsAppModalOpen(true)} className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 border border-green-200 transition-colors" title="WhatsApp">
+                                                <button
+                                                    onClick={() => {
+                                                        logUserAction('CLICK_WHATSAPP', 'Communication Tab WA Modal Open');
+                                                        setIsWhatsAppModalOpen(true);
+                                                    }}
+                                                    className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 border border-green-200 transition-colors"
+                                                    title="WhatsApp"
+                                                >
                                                     <MessageSquare className="w-5 h-5" />
                                                 </button>
-                                                <button onClick={() => setIsSmsModalOpen(true)} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 border border-blue-200 transition-colors" title="SMS">
+                                                <button
+                                                    onClick={() => {
+                                                        logUserAction('CLICK_SMS', 'Communication Tab SMS Modal Open');
+                                                        setIsSmsModalOpen(true);
+                                                    }}
+                                                    className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 border border-blue-200 transition-colors"
+                                                    title="SMS"
+                                                >
                                                     <Smartphone className="w-5 h-5" />
                                                 </button>
                                             </div>

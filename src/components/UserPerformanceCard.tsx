@@ -41,83 +41,94 @@ export function UserPerformanceCard({ user, stats }: { user: string, stats: any 
                 </div>
             </div>
 
-            <div className="p-4 grid grid-cols-2 gap-4 divide-x divide-gray-100">
-                {/* Left: Activity */}
-                <div className="pr-2 space-y-4">
+            <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6 divide-y md:divide-y-0 md:divide-x divide-gray-100">
+                {/* Left: Input Activity (Funnel Start) */}
+                <div className="space-y-4">
                     <h4 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                        <Target className="w-3 h-3" />
-                        İLETİŞİM
+                        <Target className="w-3 h-3 text-indigo-500" />
+                        GİRİŞ / AKTİVİTE
                     </h4>
-                    <div className="flex justify-between items-center">
+
+                    <div className="flex justify-between items-center group/item hover:bg-gray-50 p-1.5 rounded-lg transition-colors">
                         <div className="flex items-center gap-2 text-gray-600">
-                            <Phone className="w-4 h-4" />
+                            <Clock className="w-4 h-4 text-blue-500" />
+                            <span className="text-xs font-bold">Müşteri Çekme</span>
+                        </div>
+                        <span className="text-lg font-black text-gray-900">{stats.pulled || 0}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center group/item hover:bg-gray-50 p-1.5 rounded-lg transition-colors">
+                        <div className="flex items-center gap-2 text-gray-600">
+                            <Phone className="w-4 h-4 text-indigo-600" />
                             <span className="text-xs font-bold">Arama</span>
                         </div>
-                        <span className="text-xl font-black text-gray-900">{stats.calls}</span>
+                        <span className="text-lg font-black text-gray-900">{stats.calls}</span>
                     </div>
-                    <div className="flex justify-between items-center">
+
+                    <div className="flex justify-between items-center group/item hover:bg-gray-50 p-1.5 rounded-lg transition-colors">
                         <div className="flex items-center gap-2 text-gray-600">
-                            <MessageSquare className="w-4 h-4" />
-                            <span className="text-xs font-bold">SMS</span>
+                            <MessageSquare className="w-4 h-4 text-emerald-500" />
+                            <span className="text-xs font-bold">SMS / WA</span>
                         </div>
-                        <span className="text-base font-bold text-gray-700">{stats.sms || 0}</span>
+                        <span className="text-base font-bold text-gray-700">{(stats.sms || 0) + (stats.whatsapp || 0)}</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2 text-gray-600">
-                            <MessageCircle className="w-4 h-4" />
-                            <span className="text-xs font-bold">WP</span>
+
+                    <div className="pt-2 border-t border-gray-50">
+                        <div className="flex justify-between items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100 shadow-inner">
+                            <div className="flex flex-col">
+                                <span className="text-[9px] font-black text-gray-400 uppercase">Back Office</span>
+                                <span className="text-[8px] text-gray-400 font-bold tracking-tighter">DİĞER İŞLEMLER</span>
+                            </div>
+                            <span className="text-xl font-black text-gray-800 tabular-nums">
+                                {stats.backoffice || 0}
+                            </span>
                         </div>
-                        <span className="text-base font-bold text-gray-700">{stats.whatsapp || 0}</span>
                     </div>
                 </div>
 
-                <div className="space-y-4 pt-2 border-t border-gray-100 col-span-2">
-                    <div className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
-                        <div className="flex items-center gap-2 text-gray-500">
-                            <Target className="w-4 h-4 text-orange-500" />
-                            <span className="text-[10px] font-black uppercase tracking-wider">Back Office / İşlem</span>
-                        </div>
-                        <span className="text-lg font-black text-gray-800">
-                            {/* Back Office = Now pre-calculated in API as unique non-call touchpoints */}
-                            {stats.totalLogs || 0}
-                        </span>
-                    </div>
-                </div>
-
-                {/* Right: Funnel & Results */}
-                <div className="pl-4 space-y-4">
+                {/* Right: Output Results (Funnel End) */}
+                <div className="pt-6 md:pt-0 md:pl-6 space-y-3">
                     <h4 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                        <TrendingUp className="w-3 h-3" />
-                        SONUÇ
+                        <TrendingUp className="w-3 h-3 text-emerald-500" />
+                        ÇIKTI / SONUÇ
                     </h4>
 
-                    <div className="flex justify-between items-center bg-blue-50/50 p-2 rounded-lg border border-blue-50">
+                    <div className="flex justify-between items-center bg-blue-50/50 p-2.5 rounded-xl border border-blue-100 shadow-sm">
                         <div className="flex flex-col">
-                            <span className="text-[10px] font-bold text-blue-800">Başvuru</span>
-                            <span className="text-[9px] text-blue-400 font-bold">%{appRate} Dönüşüm</span>
+                            <span className="text-[10px] font-black text-blue-800 uppercase tracking-wide">Başvuru</span>
+                            <span className="text-[9px] text-blue-500 font-bold">%{appRate} Dönüşüm</span>
                         </div>
-                        <span className="text-xl font-black text-blue-700">{stats.applications || 0}</span>
+                        <span className="text-2xl font-black text-blue-700">{stats.applications || 0}</span>
                     </div>
 
-                    <div className="flex justify-between items-center bg-emerald-50/50 p-2 rounded-lg border border-emerald-50">
+                    <div className="flex justify-between items-center bg-purple-50/50 p-2.5 rounded-xl border border-purple-100 shadow-sm">
                         <div className="flex flex-col">
-                            <span className="text-[10px] font-bold text-emerald-800">Onay</span>
-                            <span className="text-[9px] text-emerald-600 font-bold">{formatShortCurrency(stats.approvedLimit)}</span>
+                            <span className="text-[10px] font-black text-purple-800 uppercase tracking-wide">Onay</span>
+                            <span className="text-[9px] text-purple-500 font-bold">{formatShortCurrency(stats.approvedLimit || 0)}</span>
                         </div>
-                        <div className="text-right">
-                            <span className="block text-xl font-black text-emerald-700">{stats.approvals}</span>
+                        <span className="text-2xl font-black text-purple-700 text-right">{stats.approvals || 0}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center bg-emerald-500 p-2.5 rounded-xl border border-emerald-600 shadow-md text-white">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black uppercase tracking-tight">Teslimat / Satış</span>
+                            <span className="text-[9px] font-bold opacity-80">TAMAMLANDI</span>
                         </div>
+                        <span className="text-2xl font-black">{stats.sales || 0}</span>
                     </div>
                 </div>
             </div>
+
             {/* Footer: Pace */}
-            <div className="bg-gray-50 p-2 flex justify-between items-center border-t border-gray-100">
-                <div className="flex items-center gap-1 text-[10px] font-bold text-gray-500 uppercase">
-                    <Clock className="w-3 h-3" /> ORT. ARAMA HIZI
+            <div className="bg-gray-50/80 p-3 flex justify-between items-center border-t border-gray-100">
+                <div className="flex items-center gap-1.5 text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                    <Clock className="w-3.5 h-3.5" /> TEMP (HIZ)
                 </div>
-                <span className={`text-xs font-black ${stats.paceMinutes > 8 ? 'text-red-500' : 'text-emerald-600'} bg-white px-2 py-0.5 rounded shadow-sm`}>
-                    {stats.paceMinutes > 0 ? `${stats.paceMinutes} dk/çağrı` : '-'}
-                </span>
+                <div className="flex items-center gap-2">
+                    <span className={`text-[11px] font-black ${stats.paceMinutes > 8 ? 'text-red-600 bg-red-50' : 'text-emerald-700 bg-green-50'} px-2.5 py-1 rounded-lg border border-current/10 shadow-sm`}>
+                        {stats.paceMinutes > 0 ? `${stats.paceMinutes} dk / işlem` : '-'}
+                    </span>
+                </div>
             </div>
         </div>
     );

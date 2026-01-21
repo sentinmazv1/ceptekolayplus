@@ -66,6 +66,7 @@ export async function GET(req: NextRequest) {
                 sale: 0,
             },
             performance: {} as Record<string, {
+                pulled: number,
                 calls: number,
                 approvals: number,
                 approvedLimit: number,
@@ -73,9 +74,10 @@ export async function GET(req: NextRequest) {
                 paceMinutes: number,
                 sms: number,
                 whatsapp: number,
+                sales: number,
+                backoffice: number,
                 dailyGoal: number,
-                image: string,
-                totalLogs: number
+                image: string
             }>,
             hourly: {} as Record<string, Record<string, Record<number, number>>>,
             inventory: inventoryStats,
@@ -116,27 +118,27 @@ export async function GET(req: NextRequest) {
 
             if (ts >= start && ts <= end) {
                 // Init Perf
-                if (!stats.performance[user]) stats.performance[user] = { calls: 0, approvals: 0, approvedLimit: 0, applications: 0, paceMinutes: 0, sms: 0, whatsapp: 0, dailyGoal: 0, image: '', totalLogs: 0 };
+                if (!stats.performance[user]) stats.performance[user] = { pulled: 0, calls: 0, approvals: 0, approvedLimit: 0, applications: 0, paceMinutes: 0, sms: 0, whatsapp: 0, sales: 0, backoffice: 0, dailyGoal: 0, image: '' };
                 if (!userAppIds[user]) userAppIds[user] = new Set();
                 if (!userBackOfficeIds[user]) userBackOfficeIds[user] = new Set();
 
-                // Increment Total Activity (Raw Count)
-                stats.performance[user].totalLogs++;
-
-                // Calls
-                if (action === 'PULL_LEAD') stats.performance[user].calls++;
-                else if (action === 'SEND_SMS') stats.performance[user].sms++;
-                else if (action === 'SEND_WHATSAPP') stats.performance[user].whatsapp++;
-                else {
-                    // Back Office: Count UNIQUE LEADS touched by valid back-office actions
-                    // Actions: UPDATE_STATUS, UPDATE_FIELDS, ADD_NOTE
-                    userBackOfficeIds[user].add(l.customer_id);
-                }
-
-                // Applications (Log Source - The most accurate "Flow" metric)
-                if (action === 'UPDATE_STATUS' && l.new_value === 'Başvuru alındı') {
+                // 1. Funnel Actions
+                if (action === 'PULL_LEAD') {
+                    stats.performance[user].pulled++;
+                } else if (action === 'CLICK_CALL') {
+                    stats.performance[user].calls++;
+                } else if (action === 'SEND_SMS' || action === 'CLICK_SMS') {
+                    stats.performance[user].sms++;
+                } else if (action === 'SEND_WHATSAPP' || action === 'CLICK_WHATSAPP') {
+                    stats.performance[user].whatsapp++;
+                } else if (action === 'UPDATE_STATUS' && l.new_value === 'Başvuru alındı') {
                     applicationIds.add(l.customer_id);
                     userAppIds[user].add(l.customer_id);
+                } else {
+                    // 2. Backoffice Actions (Any other meaningful change like notes or field updates)
+                    if (['UPDATE_STATUS', 'UPDATE_FIELDS', 'ADD_NOTE'].includes(action)) {
+                        userBackOfficeIds[user].add(l.customer_id);
+                    }
                 }
 
                 // Attorney Queries (Log Source)
@@ -278,6 +280,10 @@ export async function GET(req: NextRequest) {
                 stats.funnel.deliveredVolume += itemRevenue;
                 stats.funnel.sale += itemSaleCount;
                 deliveredIds.add(row.id); // Still track unique customers for reference if needed
+
+                if (isTrackedUser && stats.performance[owner]) {
+                    stats.performance[owner].sales += itemSaleCount;
+                }
             }
 
             // F. Standard Aggregates
@@ -329,7 +335,7 @@ export async function GET(req: NextRequest) {
                 stats.performance[u].applications = userAppIds[u].size;
                 // Override totalLogs with calculated Unique BackOffice keys
                 if (userBackOfficeIds[u]) {
-                    stats.performance[u].totalLogs = userBackOfficeIds[u].size;
+                    stats.performance[u].backoffice = userBackOfficeIds[u].size;
                 }
             }
         });
