@@ -56,26 +56,49 @@ export default function TickerFeed() {
                         let icon = <Activity className="w-3 h-3 text-gray-500" />;
                         let text = `${user} işlem yaptı`;
                         let color = "text-gray-400";
+                        let details = "";
 
+                        // Rich Text Logic
                         if (log.action === 'PULL_LEAD') {
                             icon = <Phone className="w-3 h-3 text-blue-400" />;
-                            text = `${user} arama başlattı`;
+                            text = `${user} yeni bir görüşme başlattı`;
                             color = "text-blue-300";
-                        } else if (log.action === 'SEND_SMS' || log.action === 'SEND_WHATSAPP') {
+                            if (log.note) details = `(${log.note})`;
+                        } else if (log.action === 'SEND_SMS') {
                             icon = <MessageCircle className="w-3 h-3 text-purple-400" />;
-                            text = `${user} mesaj attı`;
+                            text = `${user} SMS gönderdi`;
                             color = "text-purple-300";
-                        } else if (isSale) {
-                            icon = <CheckCircle2 className="w-3 h-3 text-emerald-400" />;
-                            text = `${user} SATIŞ YAPTI! (₺)`;
-                            color = "text-emerald-300 font-bold";
+                        } else if (log.action === 'SEND_WHATSAPP') {
+                            icon = <MessageCircle className="w-3 h-3 text-green-400" />;
+                            text = `${user} WhatsApp mesajı attı`;
+                            color = "text-green-300";
+                        } else if (log.action === 'UPDATE_STATUS') {
+                            if (isSale) {
+                                icon = <CheckCircle2 className="w-3 h-3 text-emerald-400" />;
+                                text = `${user} BİR SATIŞ GERÇEKLEŞTİRDİ! 🚀`;
+                                color = "text-emerald-300 font-bold";
+                                details = `Durum: ${log.new_value}`;
+                            } else {
+                                icon = <Activity className="w-3 h-3 text-amber-400" />;
+                                text = `${user} müşteri durumunu güncelledi`;
+                                color = "text-amber-300";
+                                details = `Yeni Durum: ${log.new_value}`;
+                            }
+                        } else if (log.action === 'ADD_NOTE') {
+                            icon = <FileText className="w-3 h-3 text-gray-400" />;
+                            text = `${user} karta not ekledi`;
+                            color = "text-gray-500";
+                            details = log.note ? `"${log.note}"` : "";
                         }
 
                         return (
                             <div key={`${log.log_id}-${idx}`} className="flex items-center gap-2 text-xs font-medium opacity-80 hover:opacity-100 transition-opacity">
                                 {icon}
-                                <span className={color}>{text}</span>
-                                <span className="text-gray-600">•</span>
+                                <div className="flex items-baseline gap-1">
+                                    <span className={color}>{text}</span>
+                                    {details && <span className="text-gray-600 font-normal opacity-75">{details}</span>}
+                                </div>
+                                <span className="text-gray-800 mx-2">•</span>
                             </div>
                         );
                     })}

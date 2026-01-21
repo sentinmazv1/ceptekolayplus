@@ -182,12 +182,12 @@ export default function Dashboard() {
                             </div>
 
                             {performanceStats ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+                                <div className="grid grid-cols-1 gap-4">
                                     {Object.entries(performanceStats)
                                         .sort((a: any, b: any) => b[1].calls - a[1].calls) // Sort by Calls
                                         .map(([user, pStats]: any, idx) => (
-                                            <div key={user} className="h-full">
-                                                <UserPerformanceCard user={user} stats={pStats} />
+                                            <div key={user} className="w-full">
+                                                <UserPerformanceCard user={user} stats={pStats} variant="wide" />
                                             </div>
                                         ))}
                                 </div>
