@@ -28,17 +28,17 @@ export function ActionCenter({ onPullLead, loading, myStats, newLeadCount = 0 }:
             {/* Background Decorative Elements */}
             <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-indigo-50/50 to-transparent rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
 
-            <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 justify-between">
+            <div className="relative z-10 flex flex-col md:flex-row items-center gap-4 md:gap-8 justify-between">
 
                 {/* 1. Primary Action: CALL BUTTON */}
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 w-full md:w-auto">
                     <Button
                         onClick={onPullLead}
                         disabled={loading}
-                        className="relative h-16 pl-8 pr-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-200 hover:shadow-2xl hover:shadow-indigo-300 transition-all duration-300 hover:-translate-y-1 active:scale-95 group/btn overflow-hidden"
+                        className="relative w-full md:w-auto h-20 md:h-16 pl-4 md:pl-8 pr-4 md:pr-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-200 hover:shadow-2xl hover:shadow-indigo-300 transition-all duration-300 hover:-translate-y-1 active:scale-95 group/btn overflow-hidden"
                     >
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover/btn:translate-x-[200%] transition-transform duration-1000"></div>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center justify-center md:justify-start gap-4">
                             <div className="bg-white/20 p-2.5 rounded-xl backdrop-blur-sm relative">
                                 {loading ? (
                                     <Loader2 className="w-6 h-6 animate-spin" />
