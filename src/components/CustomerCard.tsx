@@ -1921,7 +1921,9 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
         summary += `Tel: ${customer.telefon}\n\n`;
 
         summary += `💼 *İş & Finans*\n`;
-        summary += `Meslek: ${customer.meslek_is || '-'}\n`;
+        summary += `Unvan: ${customer.is_yeri_unvani || '-'}\n`;
+        summary += `Meslek: ${customer.meslek_is || customer.meslek || '-'}\n`;
+        summary += `İş Yeri: ${customer.is_yeri_bilgisi || '-'}\n`;
         summary += `Maaşlar (Son 6 Ay): ${customer.maas_1 || 0}, ${customer.maas_2 || 0}, ${customer.maas_3 || 0}, ${customer.maas_4 || 0}, ${customer.maas_5 || 0}, ${customer.maas_6 || 0} TL\n`;
         summary += `Ortalama Maaş: *${customer.maas_ortalama || '-'} TL*\n`;
         summary += `Çalışma Süresi: ${customer.ayni_isyerinde_sure_ay || '-'}\n\n`;
@@ -2051,7 +2053,9 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                             <div class="col-6">
                                 <h2>💼 İş & Finansal Durum</h2>
                                 <div class="field-group">
-                                    <div class="field"><span class="label">Meslek / Ünvan</span> <span class="value">${customer.meslek_is || '-'}</span></div>
+                                    <div class="field"><span class="label">İş Yeri Ünvanı</span> <span class="value">${customer.is_yeri_unvani || '-'}</span></div>
+                                    <div class="field"><span class="label">Meslek / Branş</span> <span class="value">${customer.meslek_is || customer.meslek || '-'}</span></div>
+                                    <div class="field"><span class="label">İş Yeri Bilgisi</span> <span class="value">${customer.is_yeri_bilgisi || '-'}</span></div>
                                     <div class="field"><span class="label">Çalışma Şekli</span> <span class="value">${customer.calisma_sekli || '-'}</span></div>
                                     <div class="field"><span class="label">Ortalama Maaş (6 Ay)</span> <span class="value font-bold text-lg">${customer.maas_ortalama || '-'} TL</span></div>
                                     <div class="field" style="border-top:none; padding-top:2px;">
