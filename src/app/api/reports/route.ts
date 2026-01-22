@@ -133,7 +133,7 @@ export async function GET(req: NextRequest) {
                     stats.performance[user].sms++;
                 } else if (action === 'SEND_WHATSAPP' || action === 'CLICK_WHATSAPP') {
                     stats.performance[user].whatsapp++;
-                } else if ((action === 'UPDATE_STATUS' && l.new_value === 'Başvuru alındı') || (action === 'CREATED' && l.new_value === 'Başvuru alındı')) {
+                } else if ((action === 'UPDATE_STATUS' && l.new_value?.toLowerCase() === 'başvuru alındı') || (action === 'CREATED' && l.new_value?.toLowerCase() === 'başvuru alındı')) {
                     // Count if status changed TO 'Başvuru alındı' OR created AS 'Başvuru alındı'
                     applicationIds.add(l.customer_id);
                     userAppIds[user].add(l.customer_id);
