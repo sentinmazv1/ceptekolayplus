@@ -10,6 +10,7 @@ import { Select } from './ui/Select';
 import { Loader2, AlertCircle, CheckCircle, Info, Phone, Package, Smartphone, Search, RefreshCw, MessageSquare, Scale, Briefcase, Home, ShieldCheck, X, Shield, Printer, User, Calendar, ShieldAlert, FileText, Image as ImageIcon } from 'lucide-react';
 import { cityList, getDistrictsByCityCode } from 'turkey-neighbourhoods';
 import { replaceTemplateVariables as replaceVariables } from '@/lib/template-utils';
+import { CollectionNotes } from './CollectionNotes';
 
 
 
@@ -71,6 +72,10 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
     // City/District Logic
     const [districts, setDistricts] = useState<string[]>([]);
 
+    // Collection Configs
+    const [customerClasses, setCustomerClasses] = useState<any[]>([]);
+    const [collectionStatuses, setCollectionStatuses] = useState<any[]>([]);
+
     useEffect(() => {
         if (initialData.sehir) {
             const city = cityList.find(c => c.name === initialData.sehir);
@@ -79,6 +84,11 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                 setDistricts(districtList);
             }
         }
+
+        // Fetch Collection Configs
+        fetch('/api/admin/collection/classes').then(res => res.json()).then(res => { if (res.success) setCustomerClasses(res.data); });
+        fetch('/api/admin/collection/statuses').then(res => res.json()).then(res => { if (res.success) setCollectionStatuses(res.data); });
+
     }, []); // Run once on mount
 
     const handleCityChange = (cityName: string) => {
@@ -639,6 +649,27 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                     ⭐ VIP
                                 </span>
                             )}
+
+                            {/* CLASS SELECTOR */}
+                            <select
+                                value={data.sinif || 'Normal'}
+                                onChange={(e) => handleChange('sinif', e.target.value)}
+                                className={`text-xs font-bold rounded px-2 py-1 border outline-none cursor-pointer duration-200 ${data.sinif === 'Gecikme' ? 'bg-red-500 text-white border-red-400 focus:ring-red-300' :
+                                        data.sinif === 'VIP' ? 'bg-amber-500 text-white border-amber-400 focus:ring-amber-300' :
+                                            'bg-slate-700 text-slate-300 border-slate-600 focus:ring-slate-500'
+                                    }`}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                {customerClasses.length > 0 ? customerClasses.map(c => (
+                                    <option key={c.id} value={c.label} className="bg-slate-800 text-white">{c.label}</option>
+                                )) : (
+                                    <>
+                                        <option value="Normal" className="bg-slate-800 text-white">Normal</option>
+                                        <option value="VIP" className="bg-slate-800 text-white">VIP</option>
+                                        <option value="Gecikme" className="bg-slate-800 text-white">Gecikme</option>
+                                    </>
+                                )}
+                            </select>
                             {isChanged && <span className="text-xs bg-indigo-500/80 px-2 py-1 rounded-full animate-pulse border border-indigo-400/50">Değişiklikler var</span>}
                         </div>
                         <div className="flex flex-wrap items-center gap-4 text-xs text-slate-300 font-medium ml-1 mt-2">
