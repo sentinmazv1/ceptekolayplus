@@ -108,10 +108,7 @@ export interface Customer {
   kefil_tapu_varmi?: string;
   kefil_notlar?: string;
 
-  // Collection Module
-  sinif?: string;
-  tahsilat_durumu?: string;
-  odeme_sozu_tarihi?: string;
+
 
 
   // New Guarantor Fields (Mirroring Main Customer)
@@ -146,6 +143,7 @@ export interface Customer {
   // Collection Module
   sinif?: string; // Normal, VIP, Gecikme
   tahsilat_durumu?: string;
+  odeme_sozu_tarihi?: string;
 
   // Missing fields added for CustomerCard
   ozel_musteri_mi?: boolean;
