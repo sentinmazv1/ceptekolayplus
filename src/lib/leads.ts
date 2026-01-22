@@ -521,7 +521,11 @@ export async function updateLead(customer: Customer, userEmail: string): Promise
         marka: customer.marka,
         model: customer.model,
         satis_tarihi: customer.satis_tarihi || null,
-        kargo_takip_no: customer.kargo_takip_no
+        kargo_takip_no: customer.kargo_takip_no,
+
+        // Collection Module
+        sinif: customer.sinif,
+        tahsilat_durumu: customer.tahsilat_durumu
     };
 
     const { data, error } = await supabaseAdmin.from('leads').update(updates).eq('id', customer.id).select().single();
@@ -553,7 +557,9 @@ export async function addLead(customer: Partial<Customer>, userEmail: string): P
         created_at: new Date().toISOString(),
         ozel_musteri_mi: customer.ozel_musteri_mi || false, // Support priority flag
         e_devlet_sifre: customer.e_devlet_sifre, // Map E-Devlet password
-        aciklama_uzun: customer.aciklama_uzun
+        aciklama_uzun: customer.aciklama_uzun,
+        sinif: customer.sinif || 'Normal',
+        tahsilat_durumu: customer.tahsilat_durumu
     };
     const { data, error } = await supabaseAdmin.from('leads').insert(dbRow).select().single();
     if (error) throw error;
