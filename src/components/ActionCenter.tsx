@@ -34,24 +34,26 @@ export function ActionCenter({ onPullLead, loading, myStats, teamStats, newLeadC
             <div className="relative z-10 flex flex-col md:flex-row items-center gap-4 md:gap-8 justify-between">
 
                 {/* 1. Primary Action: CALL BUTTON */}
-                <div className="flex-shrink-0 w-full md:w-auto">
+                {/* 1. Primary Actions Group */}
+                <div className="flex-shrink-0 w-full md:w-auto flex items-center gap-2 md:gap-3">
+                    {/* A) CALL BUTTON */}
                     <Button
                         onClick={onPullLead}
                         disabled={loading}
-                        className="relative w-full md:w-auto h-20 md:h-16 pl-4 md:pl-8 pr-4 md:pr-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-200 hover:shadow-2xl hover:shadow-indigo-300 transition-all duration-300 hover:-translate-y-1 active:scale-95 group/btn overflow-hidden"
+                        className="relative flex-1 md:flex-none h-20 md:h-16 pl-4 md:pl-6 pr-4 md:pr-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-200 hover:shadow-2xl hover:shadow-indigo-300 transition-all duration-300 hover:-translate-y-1 active:scale-95 group/btn overflow-hidden"
                     >
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover/btn:translate-x-[200%] transition-transform duration-1000"></div>
-                        <div className="flex items-center justify-center md:justify-start gap-4">
-                            <div className="bg-white/20 p-2.5 rounded-xl backdrop-blur-sm relative">
+                        <div className="flex items-center justify-center md:justify-start gap-3">
+                            <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm relative">
                                 {loading ? (
-                                    <Loader2 className="w-6 h-6 animate-spin" />
+                                    <Loader2 className="w-5 h-5 animate-spin" />
                                 ) : (
-                                    <Phone className="w-6 h-6 animate-pulse" />
+                                    <Phone className="w-5 h-5 animate-pulse" />
                                 )}
                             </div>
                             <div className="text-left">
-                                <div className="text-[10px] uppercase font-bold text-indigo-100 tracking-wider flex items-center gap-2">
-                                    Otomatik Atama
+                                <div className="text-[9px] uppercase font-bold text-indigo-100 tracking-wider flex items-center gap-2">
+                                    Otomatik
                                     {newLeadCount > 0 && (
                                         <span className="bg-white text-indigo-600 px-1.5 py-0.5 rounded-full text-[9px] font-black flex items-center gap-0.5 shadow-sm">
                                             <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
@@ -59,22 +61,27 @@ export function ActionCenter({ onPullLead, loading, myStats, teamStats, newLeadC
                                         </span>
                                     )}
                                 </div>
-                                <div className="text-xl font-black tracking-tight">Müşteri Çek</div>
+                                <div className="text-lg font-black tracking-tight">Müşteri Çek</div>
                             </div>
                         </div>
                     </Button>
-                </div>
 
-                {/* 1.1 Secondary Action: ADD LEAD BUTTON */}
-                <div className="flex-shrink-0">
+                    {/* B) ADD BUTTON */}
                     <Button
                         onClick={() => router.push('/dashboard/add')}
-                        className="relative w-16 md:w-20 h-20 md:h-16 bg-white hover:bg-gray-50 text-indigo-600 border border-indigo-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 active:scale-95 group/add"
+                        className="relative w-16 md:w-20 h-20 md:h-16 bg-white hover:bg-gray-50 text-indigo-600 border border-indigo-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 active:scale-95 group/add flex flex-col items-center justify-center gap-1"
                     >
-                        <div className="flex flex-col items-center justify-center gap-1">
-                            <PlusCircle className="w-6 h-6 group-hover/add:rotate-90 transition-transform duration-300" />
-                            <span className="text-[10px] font-bold uppercase tracking-wider hidden md:block">Ekle</span>
-                        </div>
+                        <PlusCircle className="w-6 h-6 group-hover/add:rotate-90 transition-transform duration-300" />
+                        <span className="text-[9px] font-bold uppercase tracking-wider hidden md:block">Ekle</span>
+                    </Button>
+
+                    {/* C) LIST BUTTON (Icon Only) */}
+                    <Button
+                        onClick={() => router.push('/dashboard/my-leads')}
+                        className="relative w-16 md:w-20 h-20 md:h-16 bg-white hover:bg-gray-50 text-indigo-600 border border-indigo-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 active:scale-95 group/list flex flex-col items-center justify-center gap-1"
+                    >
+                        <Users className="w-6 h-6 group-hover/list:scale-110 transition-transform duration-300" />
+                        {/* Hidden label for accessibility/tooltip logic if needed, but visually hidden as requested */}
                     </Button>
                 </div>
 
