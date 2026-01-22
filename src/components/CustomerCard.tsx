@@ -619,7 +619,8 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                 </div>
                             )}
                             <span className='flex items-center gap-1 hover:text-white transition-colors cursor-pointer' onClick={() => {
-                                const tel = data.telefon?.startsWith('0') ? data.telefon : '0' + data.telefon;
+                                const clean = (data.telefon || '').replace(/\D/g, '');
+                                const tel = clean.startsWith('0') ? clean : '0' + clean;
                                 logUserAction('CLICK_CALL', 'Header Call Click');
                                 window.open(`tel:${tel}`);
                             }}><Phone className="w-3 h-3" /> {data.telefon}</span>
@@ -760,7 +761,10 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                             </div>
                                             <div className="flex gap-1 mb-1">
                                                 <a
-                                                    href={`tel:${data.telefon?.startsWith('0') ? data.telefon : '0' + data.telefon}`}
+                                                    href={`tel:${(function () {
+                                                        const clean = (data.telefon || '').replace(/\D/g, '');
+                                                        return clean.startsWith('0') ? clean : '0' + clean;
+                                                    })()}`}
                                                     onClick={() => logUserAction('CLICK_CALL', 'Communication Tab Call Click')}
                                                     className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 border border-green-200 transition-colors"
                                                     title="Ara"
