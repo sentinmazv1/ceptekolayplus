@@ -811,6 +811,19 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                     <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
                                         <p><strong>Uyarı:</strong> Bu müşteri gecikme listesindedir.</p>
                                     </div>
+
+                                    {/* PAYMENT PROMISE DATE */}
+                                    {data.tahsilat_durumu && data.tahsilat_durumu.includes('Ödeme Sözü') && (
+                                        <div className="mt-3 animate-in fade-in">
+                                            <label className="block text-xs font-bold text-red-700 mb-1 uppercase">Ödeme Sözü Tarihi</label>
+                                            <input
+                                                type="date"
+                                                value={data.odeme_sozu_tarihi ? new Date(data.odeme_sozu_tarihi).toISOString().split('T')[0] : ''}
+                                                onChange={(e) => handleChange('odeme_sozu_tarihi', e.target.value)}
+                                                className="w-full border border-red-300 rounded p-2 text-sm focus:ring-red-500 focus:border-red-500 outline-none"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             <div className="flex-[2]">

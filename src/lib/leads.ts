@@ -525,7 +525,8 @@ export async function updateLead(customer: Customer, userEmail: string): Promise
 
         // Collection Module
         sinif: customer.sinif,
-        tahsilat_durumu: customer.tahsilat_durumu
+        tahsilat_durumu: customer.tahsilat_durumu,
+        odeme_sozu_tarihi: customer.odeme_sozu_tarihi
     };
 
     const { data, error } = await supabaseAdmin.from('leads').update(updates).eq('id', customer.id).select().single();
@@ -646,6 +647,7 @@ function mapRowToCustomer(row: any): Customer {
         aciklama_uzun: row.aciklama_uzun,
         avukat_sorgu_durumu: row.avukat_sorgu_durumu,
         avukat_sorgu_sonuc: row.avukat_sorgu_sonuc,
+        odeme_sozu_tarihi: row.odeme_sozu_tarihi,
         psikoteknik_varmi: row.psikoteknik_varmi,
         psikoteknik_notu: row.psikoteknik_notu,
         ikametgah_varmi: row.ikametgah_varmi,
