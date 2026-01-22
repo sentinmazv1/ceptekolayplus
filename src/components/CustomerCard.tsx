@@ -651,7 +651,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                 <div className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded border border-white/5">
                                     <Briefcase className="w-3 h-3 text-amber-200" />
                                     <span className="text-amber-200">Sahip:</span>
-                                    {['Yönetici', 'admin', 'Admin', 'yonetici'].includes(session?.user?.role || '') ? (
+                                    {['Yönetici', 'admin', 'Admin', 'yonetici'].includes(session?.user?.role || '') || ['ibrahimsentinmaz@gmail.com'].includes(session?.user?.email || '') ? (
                                         <select
                                             value={data.sahip || ''}
                                             onChange={(e) => handleChange('sahip', e.target.value)}

@@ -253,9 +253,17 @@ export async function GET(req: NextRequest) {
                     const products = typeof row.satilan_urunler === 'string' ? JSON.parse(row.satilan_urunler) : row.satilan_urunler;
                     if (Array.isArray(products)) {
                         products.forEach((p: any) => {
-                            // Check item date
-                            const pDate = p.satis_tarihi || row.teslim_tarihi;
-                            if (pDate && isInRange(pDate)) {
+                            // Check item date OR fallback to main delivery date being in range
+                            // Fix: If the LEAD is delivered/sold in this range, count ALL its items, 
+                            // ignoring individual item dates if they are old or mismatched.
+                            // We trust 'row.teslim_tarihi' as the primary "Sale Event" time.
+                            const itemDate = p.satis_tarihi;
+                            const mainDate = row.teslim_tarihi;
+
+                            // 1. If Item has date and is in range -> Count
+                            // 2. If Item has NO date (or we want to override), and Main Date is in range -> Count
+                            // 3. (Best for "Closed Today"): If Main Delivery Date is in range, assume all items were sold now.
+                            if ((itemDate && isInRange(itemDate)) || (mainDate && isInRange(mainDate))) {
                                 itemSaleCount++;
                                 // Support both new satis_fiyati and legacy fiyat, prioritizing satis_fiyati
                                 itemRevenue += parseFloat(String(p.satis_fiyati || p.fiyat || '0'));
