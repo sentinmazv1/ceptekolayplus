@@ -528,7 +528,11 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
         }
 
         // Validate delivery fields when marking as delivered - STOCK SELECTION MANDATORY
-        if ((data.durum === 'Teslim edildi' || data.durum === 'Satış yapıldı/Tamamlandı') && (!data.urun_seri_no || !data.urun_imei)) {
+        // Only enforce if status is CHANGING TO delivered (allows editing legacy records without stock info)
+        const isBecomingDelivered = (data.durum === 'Teslim edildi' || data.durum === 'Satış yapıldı/Tamamlandı') &&
+            (initialData.durum !== 'Teslim edildi' && initialData.durum !== 'Satış yapıldı/Tamamlandı');
+
+        if (isBecomingDelivered && (!data.urun_seri_no || !data.urun_imei)) {
             setError('⚠️ Teslimat tamamlamak için STOKTAN ürün seçmelisiniz.\n\nÜrün & Teslimat sekmesinden "Stoktan Ürün Seç" butonunu kullanın.');
             setLoading(false);
             return;
