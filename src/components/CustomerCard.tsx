@@ -559,10 +559,17 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
             const updateData = { ...data };
             const now = new Date();
 
-            if ((data.durum === 'Teslim edildi' || data.durum === 'Satış yapıldı/Tamamlandı') && !data.teslim_tarihi) {
+            // Only auto-set date if status is NEWLY changing to Delivered.
+            // If already delivered and just updating (e.g. Class), do NOT touch date (leave it null or as is).
+            const isStatusChangeToDelivered = (data.durum === 'Teslim edildi' || data.durum === 'Satış yapıldı/Tamamlandı') &&
+                (initialData.durum !== 'Teslim edildi' && initialData.durum !== 'Satış yapıldı/Tamamlandı');
+
+            if (isStatusChangeToDelivered && !data.teslim_tarihi) {
                 updateData.teslim_tarihi = now.toISOString();
                 updateData.teslim_eden = data.sahip || 'Unknown';
             }
+
+            // Note: If it's a legacy record with NO date, we leave it NO date so it isn't counted in "Today" reports.
 
             // AUTO-UPDATE Call Time for "Call Activity" statuses
             // If the user marks as Unreachable/Busy/Wrong Number, it implies a call was made NOW.
