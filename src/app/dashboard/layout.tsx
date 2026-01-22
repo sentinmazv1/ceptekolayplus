@@ -146,11 +146,11 @@ export default function DashboardLayout({
 
                                         <div className="w-px h-6 bg-gray-200 mx-2" />
 
-                                        <Link href="/dashboard/settings">
+                                        <Link href="/dashboard/admin/settings">
                                             <Button
-                                                variant={isActive('/dashboard/settings') ? 'primary' : 'ghost'}
+                                                variant={isActive('/dashboard/admin/settings') ? 'primary' : 'ghost'}
                                                 size="sm"
-                                                className={isActive('/dashboard/settings') ? '' : 'text-gray-600 hover:text-gray-900'}
+                                                className={isActive('/dashboard/admin/settings') ? '' : 'text-gray-600 hover:text-gray-900'}
                                             >
                                                 <Database className="w-4 h-4 mr-2" />
                                                 Ayarlar (Yönetim)
@@ -284,9 +284,9 @@ export default function DashboardLayout({
                                             </Button>
                                         </Link>
 
-                                        <Link href="/dashboard/settings">
+                                        <Link href="/dashboard/admin/settings">
                                             <Button
-                                                variant={isActive('/dashboard/settings') ? 'primary' : 'ghost'}
+                                                variant={isActive('/dashboard/admin/settings') ? 'primary' : 'ghost'}
                                                 className="w-full justify-start text-sm"
                                             >
                                                 <Database className="w-4 h-4 mr-3" />

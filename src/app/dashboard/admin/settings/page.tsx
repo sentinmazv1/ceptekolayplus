@@ -8,7 +8,7 @@ import * as XLSX from 'xlsx';
 import { BulkSmsManager } from '@/components/BulkSmsManager';
 
 export default function SettingsPage() {
-    const [activeTab, setActiveTab] = useState<'statuses' | 'sms_templates' | 'bulk_sms' | 'users' | 'import' | 'sync_sheets' | 'migrate_deliveries' | 'duplicates' | 'quick_notes' | 'backup' | 'system_health'>('statuses');
+    const [activeTab, setActiveTab] = useState<'statuses' | 'cancellation' | 'sms_templates' | 'bulk_sms' | 'users' | 'import' | 'sync_sheets' | 'migrate_deliveries' | 'duplicates' | 'quick_notes' | 'backup' | 'system_health'>('statuses');
     const [loading, setLoading] = useState(false);
 
     // Data Holders
@@ -59,6 +59,7 @@ export default function SettingsPage() {
             title: 'Sistem Tanımları',
             items: [
                 { id: 'statuses', label: 'Durumlar & Aşamalar', icon: Loader2 },
+                { id: 'cancellation', label: 'İptal Nedenleri', icon: Scale },
                 { id: 'sms_templates', label: 'SMS Şablonları', icon: Phone },
                 { id: 'bulk_sms', label: 'Toplu Mesaj Merkezi', icon: MessageSquare },
                 { id: 'quick_notes', label: 'Hızlı Not Şablonları', icon: FileSpreadsheet },
@@ -135,6 +136,7 @@ export default function SettingsPage() {
                     ) : (
                         <div className="animate-in fade-in duration-300">
                             {activeTab === 'statuses' && <StatusManager statuses={statuses} refresh={fetchData} />}
+                            {activeTab === 'cancellation' && <CancellationReasonsManager refresh={fetchData} />}
                             {activeTab === 'sms_templates' && <SmsTemplateManager templates={templates} refresh={fetchData} />}
                             {activeTab === 'bulk_sms' && <BulkSmsManager />}
                             {activeTab === 'users' && <UserManager users={users} refresh={fetchData} />}
@@ -1396,3 +1398,123 @@ function SystemHealthDashboard() {
 }
 
 // End of file
+// --- CANCELLATION REASONS MANAGER ---
+function CancellationReasonsManager({ refresh }: { refresh: () => void }) {
+    const [reasons, setReasons] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [newReason, setNewReason] = useState('');
+    const [adding, setAdding] = useState(false);
+
+    useEffect(() => {
+        fetchReasons();
+    }, []);
+
+    const fetchReasons = async () => {
+        try {
+            const res = await fetch('/api/settings/reasons');
+            const json = await res.json();
+            if (json.success) {
+                setReasons(json.reasons || []);
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAdd = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newReason.trim()) return;
+
+        setAdding(true);
+        try {
+            const res = await fetch('/api/settings/reasons', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: newReason })
+            });
+            const json = await res.json();
+            if (json.success) {
+                setReasons([...reasons, json.reason]);
+                setNewReason('');
+                refresh(); // Optional global refresh
+            } else {
+                alert('Hata: ' + json.message);
+            }
+        } catch (error) {
+            alert('Bağlantı hatası');
+        } finally {
+            setAdding(false);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('Bu nedeni silmek istediğinize emin misiniz?')) return;
+
+        try {
+            const res = await fetch(`/api/settings/reasons?id=${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                setReasons(reasons.filter(r => r.id !== id));
+            }
+        } catch (error) {
+            alert('Silinemedi');
+        }
+    };
+
+    return (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-white p-6 rounded-xl border border-gray-200">
+                <div className="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
+                    <div className="p-2 bg-red-100 rounded-lg text-red-600">
+                        <Scale className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-900">İptal Nedenleri</h2>
+                        <p className="text-sm text-gray-500">Müşteri iptal/ret durumlarında seçilecek nedenler listesi.</p>
+                    </div>
+                </div>
+
+                {/* Add Form */}
+                <form onSubmit={handleAdd} className="flex gap-3 mb-8">
+                    <div className="flex-1">
+                        <input
+                            value={newReason}
+                            onChange={(e) => setNewReason(e.target.value)}
+                            placeholder="Yeni iptal nedeni yazınız... (Örn: Stok Yok)"
+                            className="w-full border rounded px-3 py-2"
+                        />
+                    </div>
+                    <Button type="submit" disabled={adding || !newReason.trim()} className="px-6 bg-indigo-600 hover:bg-indigo-700">
+                        {adding ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Plus className="w-5 h-5 mr-1" /> Ekle</>}
+                    </Button>
+                </form>
+
+                {/* List */}
+                {loading ? (
+                    <div className="text-center py-10 text-gray-400"><Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" /> Yükleniyor...</div>
+                ) : (
+                    <div className="space-y-2">
+                        {reasons.length === 0 && (
+                            <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-300 text-gray-400">
+                                Henüz bir neden eklenmemiş.
+                            </div>
+                        )}
+                        {reasons.map((r) => (
+                            <div key={r.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-white hover:shadow-sm transition-all group">
+                                <span className="font-bold text-gray-700">{r.reason}</span>
+                                <button
+                                    onClick={() => handleDelete(r.id)}
+                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                    title="Sil"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
