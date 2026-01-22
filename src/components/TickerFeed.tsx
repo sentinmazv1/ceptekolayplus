@@ -18,8 +18,8 @@ export default function TickerFeed() {
 
     const fetchActivity = async () => {
         try {
-            // Fetch last 30 minutes of activity to reduce load
-            const res = await fetch('/api/activity?minutes=30');
+            // Fetch last 24 hours (1440 minutes) of activity to ensure visibility
+            const res = await fetch('/api/activity?minutes=1440');
             if (res.ok) {
                 const data = await res.json();
                 if (data.success) {
