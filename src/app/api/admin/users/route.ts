@@ -8,13 +8,14 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
     const session = await getServerSession(authOptions);
-    if (!session || session.user?.role !== 'ADMIN') {
+    const role = session?.user?.role || '';
+    if (!session || !['ADMIN', 'Yönetici', 'admin', 'yonetici'].includes(role)) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { data: users, error } = await supabaseAdmin
         .from('users')
-        .select('id, email, name, role, created_at')
+        .select('*')
         .order('name');
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

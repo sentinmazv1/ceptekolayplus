@@ -208,7 +208,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
         // Fetch Users for Ownership Change
         fetch('/api/admin/users')
             .then(res => res.json())
-            .then(data => { if (data.users) setUsers(data.users.filter((u: any) => u.is_active)); })
+            .then(data => { if (data.users) setUsers(data.users); })
             .catch(err => console.error('Users fetch error:', err));
 
     }, []);
