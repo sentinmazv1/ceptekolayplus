@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Phone, Loader2, Command } from 'lucide-react';
+import { Search, Phone, Loader2, Command, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 interface ActionCenterProps {
@@ -60,6 +60,19 @@ export function ActionCenter({ onPullLead, loading, myStats, teamStats, newLeadC
                                 </div>
                                 <div className="text-xl font-black tracking-tight">Müşteri Çek</div>
                             </div>
+                        </div>
+                    </Button>
+                </div>
+
+                {/* 1.1 Secondary Action: ADD LEAD BUTTON */}
+                <div className="flex-shrink-0">
+                    <Button
+                        onClick={() => router.push('/dashboard/add')}
+                        className="relative w-16 md:w-20 h-20 md:h-16 bg-white hover:bg-gray-50 text-indigo-600 border border-indigo-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 active:scale-95 group/add"
+                    >
+                        <div className="flex flex-col items-center justify-center gap-1">
+                            <PlusCircle className="w-6 h-6 group-hover/add:rotate-90 transition-transform duration-300" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider hidden md:block">Ekle</span>
                         </div>
                     </Button>
                 </div>

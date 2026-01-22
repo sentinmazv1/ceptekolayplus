@@ -173,16 +173,7 @@ export default function DashboardLayout({
 
 
 
-                                <Link href="/dashboard/add">
-                                    <Button
-                                        variant={isActive('/dashboard/add') ? 'primary' : 'ghost'}
-                                        size="sm"
-                                        className={isActive('/dashboard/add') ? '' : 'text-gray-600 hover:text-gray-900'}
-                                    >
-                                        <PlusCircle className="w-4 h-4 mr-2" />
-                                        Ekle
-                                    </Button>
-                                </Link>
+
                             </nav>
                         </div>
 
