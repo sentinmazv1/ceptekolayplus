@@ -130,6 +130,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
     // Dynamic Templates
     const [smsTemplates, setSmsTemplates] = useState<any[]>([]);
     const [whatsappTemplates, setWhatsappTemplates] = useState<any[]>([]);
+    const [users, setUsers] = useState<any[]>([]); // New Users State
 
     // Cancellation Reasons
     const [cancellationReasons, setCancellationReasons] = useState<{ value: string; label: string }[]>([]);
@@ -199,10 +200,14 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
             .then(data => { if (data.templates) setSmsTemplates(data.templates); })
             .catch(err => console.error('SMS Template fetch error:', err));
 
-        fetch('/api/admin/sms-templates?type=WHATSAPP')
-            .then(res => res.json())
             .then(data => { if (data.templates) setWhatsappTemplates(data.templates); })
             .catch(err => console.error('WhatsApp Template fetch error:', err));
+
+        // Fetch Users for Ownership Change
+        fetch('/api/admin/users')
+            .then(res => res.json())
+            .then(data => { if (data.users) setUsers(data.users.filter((u: any) => u.is_active)); })
+            .catch(err => console.error('Users fetch error:', err));
 
     }, []);
 
@@ -644,7 +649,21 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                 <div className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded border border-white/5">
                                     <Briefcase className="w-3 h-3 text-amber-200" />
                                     <span className="text-amber-200">Sahip:</span>
-                                    <span className="text-white">{data.sahip === session?.user.email ? 'Siz' : data.sahip.split('@')[0]}</span>
+                                    {session?.user?.role === 'Yönetici' ? (
+                                        <select
+                                            value={data.sahip || ''}
+                                            onChange={(e) => handleChange('sahip', e.target.value)}
+                                            className="bg-slate-700 text-white border border-slate-600 text-xs rounded px-1 py-0.5 focus:ring-1 focus:ring-amber-500 outline-none"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <option value="">Sahipsiz</option>
+                                            {users.map(u => (
+                                                <option key={u.email} value={u.email}>{u.name || u.email}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <span className="text-white">{data.sahip === session?.user.email ? 'Siz' : (data.sahip || 'Belirsiz').split('@')[0]}</span>
+                                    )}
                                 </div>
                             )}
                             <span className='flex items-center gap-1 hover:text-white transition-colors cursor-pointer' onClick={() => {
