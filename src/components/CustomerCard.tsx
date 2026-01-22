@@ -655,8 +655,8 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                 value={data.sinif || 'Normal'}
                                 onChange={(e) => handleChange('sinif', e.target.value)}
                                 className={`text-xs font-bold rounded px-2 py-1 border outline-none cursor-pointer duration-200 ${data.sinif === 'Gecikme' ? 'bg-red-500 text-white border-red-400 focus:ring-red-300' :
-                                        data.sinif === 'VIP' ? 'bg-amber-500 text-white border-amber-400 focus:ring-amber-300' :
-                                            'bg-slate-700 text-slate-300 border-slate-600 focus:ring-slate-500'
+                                    data.sinif === 'VIP' ? 'bg-amber-500 text-white border-amber-400 focus:ring-amber-300' :
+                                        'bg-slate-700 text-slate-300 border-slate-600 focus:ring-slate-500'
                                     }`}
                                 onClick={(e) => e.stopPropagation()}
                             >
@@ -784,7 +784,41 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
             </div>
 
             {/* --- SCROLLABLE CONTENT --- */}
-            < div className="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-50/50 font-sans custom-scrollbar" >
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-50/50 font-sans custom-scrollbar" >
+
+                {/* COLLECTION PANEL - Only if Gecikme */}
+                {data.sinif === 'Gecikme' && (
+                    <div className="bg-red-50 border-b border-red-100 p-4 mb-4 rounded-xl shadow-sm animate-in slide-in-from-top-2">
+                        <div className="flex flex-col md:flex-row gap-4">
+                            <div className="flex-1">
+                                <h3 className="text-red-800 font-bold mb-2 flex items-center gap-2">
+                                    <ShieldAlert className="w-5 h-5" />
+                                    Gecikme Takibi
+                                </h3>
+                                <div className="bg-white p-3 rounded-xl border border-red-200 shadow-sm">
+                                    <label className="block text-xs font-bold text-red-700 mb-1 uppercase">Tahsilat Durumu</label>
+                                    <select
+                                        value={data.tahsilat_durumu || ''}
+                                        onChange={(e) => handleChange('tahsilat_durumu', e.target.value)}
+                                        className="w-full text-red-900 border-red-300 rounded focus:ring-red-500 mb-3"
+                                    >
+                                        <option value="">Seçiniz...</option>
+                                        {collectionStatuses.map(s => (
+                                            <option key={s.id} value={s.label}>{s.label}</option>
+                                        ))}
+                                    </select>
+
+                                    <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
+                                        <p><strong>Uyarı:</strong> Bu müşteri gecikme listesindedir.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex-[2]">
+                                <CollectionNotes leadId={data.id} />
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* ADMIN ALERTS BOARD */}
                 {(data.onay_durumu === 'Kefil İstendi' || data.onay_durumu === 'Reddedildi' || data.onay_durumu === 'Onaylandı' || (data.admin_notu && data.admin_notu.length > 2)) && (
