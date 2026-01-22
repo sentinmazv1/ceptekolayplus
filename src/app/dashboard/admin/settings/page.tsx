@@ -6,9 +6,10 @@ import { Loader2, Trash2, Edit2, Plus, GripVertical, Check, X, UserPlus, Shield,
 import { Customer } from '@/lib/types';
 import * as XLSX from 'xlsx';
 import { BulkSmsManager } from '@/components/BulkSmsManager';
+import { BulkUpdateManager } from '@/components/BulkUpdateManager';
 
 export default function SettingsPage() {
-    const [activeTab, setActiveTab] = useState<'statuses' | 'cancellation' | 'sms_templates' | 'bulk_sms' | 'users' | 'import' | 'sync_sheets' | 'migrate_deliveries' | 'duplicates' | 'quick_notes' | 'backup' | 'system_health'>('statuses');
+    const [activeTab, setActiveTab] = useState<'statuses' | 'cancellation' | 'sms_templates' | 'bulk_sms' | 'users' | 'import' | 'sync_sheets' | 'migrate_deliveries' | 'duplicates' | 'quick_notes' | 'backup' | 'system_health' | 'bulk_update'>('statuses');
     const [loading, setLoading] = useState(false);
 
     // Data Holders
@@ -76,6 +77,7 @@ export default function SettingsPage() {
             items: [
                 { id: 'import', label: 'Excel İçe Aktar', icon: Upload },
                 { id: 'sync_sheets', label: 'Google Sheets Entegrasyonu', icon: RefreshCcw },
+                { id: 'bulk_update', label: 'Toplu Durum Güncelleme', icon: RefreshCw },
                 { id: 'backup', label: 'Veritabanı Yedekleme', icon: Database },
             ]
         },
@@ -144,6 +146,7 @@ export default function SettingsPage() {
 
                             {activeTab === 'import' && <ImportManager />}
                             {activeTab === 'sync_sheets' && <SyncManager />}
+                            {activeTab === 'bulk_update' && <BulkUpdateManager statuses={statuses} refresh={fetchData} />}
                             {activeTab === 'backup' && <BackupManager />}
 
                             {activeTab === 'migrate_deliveries' && <MigrationManager />}
