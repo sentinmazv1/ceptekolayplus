@@ -352,7 +352,7 @@ export async function getAllLogs(dateFilter?: string) {
 
     // Build base query function
     const fetchPage = async (p: number) => {
-        let query = supabaseAdmin.from('activity_logs').select('id, created_at, user_email, lead_id, action');
+        let query = supabaseAdmin.from('activity_logs').select('id, created_at, user_email, lead_id, action, new_value, old_value, note');
 
         if (dateFilter) {
             query = query.ilike('created_at', `${dateFilter}%`);
@@ -383,7 +383,10 @@ export async function getAllLogs(dateFilter?: string) {
         timestamp: row.created_at,
         user_email: row.user_email,
         customer_id: row.lead_id,
-        action: row.action
+        action: row.action,
+        new_value: row.new_value,
+        old_value: row.old_value,
+        note: row.note
     }));
 }
 
