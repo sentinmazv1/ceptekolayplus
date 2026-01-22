@@ -41,20 +41,22 @@ export async function POST(req: NextRequest) {
         // Batch Update
         // Supabase/Postgrest doesn't support "UPDATE WHERE IN list" easily for complex logic, 
         // but simple "update leads set sinif = X where tc_kimlik in (...)" works.
-        const { error, count } = await supabaseAdmin
+        const { error, data: updatedRows } = await supabaseAdmin
             .from('leads')
             .update({ sinif: targetClass })
             .in('tc_kimlik', tcs)
-            .select('id', { count: 'exact' });
+            .select('id');
 
         if (error) {
             return NextResponse.json({ success: false, error: error.message });
         }
 
+        const count = updatedRows ? updatedRows.length : 0;
+
         return NextResponse.json({
             success: true,
             updatedCount: count,
-            failedCount: tcs.length - (count || 0), // Estimate
+            failedCount: tcs.length - count, // Estimate
             message: `${tcs.length} TC'den ${count} tanesi güncellendi.`
         });
 
