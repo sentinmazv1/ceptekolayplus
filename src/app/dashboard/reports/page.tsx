@@ -15,6 +15,23 @@ import {
 import { useRouter } from 'next/navigation';
 import { InventoryItem } from '@/lib/types';
 
+interface UserPerformanceStats {
+    pulled: number;
+    calls: number;
+    approvals: number;
+    approvedLimit: number;
+    applications: number;
+    paceMinutes: number;
+    sms: number;
+    whatsapp: number;
+    sales: number;
+    salesVolume: number;
+    backoffice: number;
+    dailyGoal: number;
+    image: string;
+    totalLogs: number;
+}
+
 interface ReportStats {
     city: Record<string, { total: number; delivered: number; approved: number; rejected: number; cancelled: number; kefil: number; noEdevlet: number; unreachable: number; other: number; }>;
     profession: Record<string, { count: number, totalIncome: number, avgIncome: number }>;
@@ -46,21 +63,7 @@ interface ReportStats {
         totalRevenue: number;
     };
     todayCalledByPerson: Record<string, number>;
-    performance: Record<string, {
-        pulled: number;
-        calls: number;
-        approvals: number;
-        approvedLimit: number;
-        applications: number;
-        paceMinutes: number;
-        sms: number;
-        whatsapp: number;
-        sales: number;
-        backoffice: number;
-        dailyGoal: number;
-        image: string;
-        totalLogs: number;
-    }>;
+    performance: Record<string, UserPerformanceStats>;
 }
 
 const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#6366F1'];

@@ -47,16 +47,7 @@ const YES_NO_OPTIONS = [
     { value: 'Hayır', label: 'Hayır' }
 ];
 
-const CANCELLATION_REASONS = [
-    { value: 'Fiyat Yüksek', label: 'Fiyat Yüksek' },
-    { value: 'İhtiyacı Kalmamış', label: 'İhtiyacı Kalmamış' },
-    { value: 'Yanlışlıkla Başvurmuş', label: 'Yanlışlıkla Başvurmuş' },
-    { value: 'Bilgilerini Paylaşmak İstemedi', label: 'Bilgilerini Paylaşmak İstemedi' },
-    { value: 'Başka Yerden Almış', label: 'Başka Yerden Almış' },
-    { value: 'Mağazamız Uzak Kaldı', label: 'Mağazamız Uzak Kaldı' },
-    { value: 'Ödeme Yöntemlerini Beğenmedi', label: 'Ödeme Yöntemlerini Beğenmedi' },
-    { value: 'Diğer', label: 'Diğer' }
-];
+
 
 export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCardProps) {
     const { data: session } = useSession();
@@ -139,6 +130,34 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
     // Dynamic Templates
     const [smsTemplates, setSmsTemplates] = useState<any[]>([]);
     const [whatsappTemplates, setWhatsappTemplates] = useState<any[]>([]);
+
+    // Cancellation Reasons
+    const [cancellationReasons, setCancellationReasons] = useState<{ value: string; label: string }[]>([]);
+
+    useEffect(() => {
+        const fetchReasons = async () => {
+            try {
+                const res = await fetch('/api/settings/reasons');
+                const json = await res.json();
+                if (json.success && json.reasons) {
+                    setCancellationReasons(json.reasons.map((r: any) => ({ value: r.reason, label: r.reason })));
+                } else {
+                    setCancellationReasons([
+                        { value: 'Fiyat Yüksek', label: 'Fiyat Yüksek' },
+                        { value: 'İhtiyacı Kalmamış', label: 'İhtiyacı Kalmamış' },
+                        { value: 'Diğer', label: 'Diğer' }
+                    ]);
+                }
+            } catch (error) {
+                console.error('Failed to fetch cancellation reasons', error);
+                setCancellationReasons([
+                    { value: 'Fiyat Yüksek', label: 'Fiyat Yüksek' },
+                    { value: 'Diğer', label: 'Diğer' }
+                ]);
+            }
+        };
+        fetchReasons();
+    }, []);
 
     const replaceTemplateVariables = (content: string) => {
         return replaceVariables(content, {
@@ -449,6 +468,22 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
         // Validation
         if (!data.ad_soyad || !data.telefon) {
             setError('Ad Soyad ve Telefon zorunludur.');
+            setLoading(false);
+            return;
+        }
+
+        // VALIDATION: Cancellation Reason
+        if (data.durum === 'İptal/Vazgeçti' && !data.iptal_nedeni) {
+            setError('Lütfen iptal durumuna aldığınız müşteri için bir iptal nedeni seçiniz.');
+            alert('Lütfen iptal durumuna aldığınız müşteri için bir iptal nedeni seçiniz.');
+            setLoading(false);
+            return;
+        }
+
+        // VALIDATION: Cancellation Reason
+        if (data.durum === 'İptal/Vazgeçti' && !data.iptal_nedeni) {
+            setError('Lütfen iptal durumuna aldığınız müşteri için bir iptal nedeni seçiniz.');
+            alert('Lütfen iptal durumuna aldığınız müşteri için bir iptal nedeni seçiniz.');
             setLoading(false);
             return;
         }
@@ -893,7 +928,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                                     label="İptal / Vazgeçme Nedeni"
                                                     value={data.iptal_nedeni || ''}
                                                     onChange={(e) => handleChange('iptal_nedeni', e.target.value)}
-                                                    options={CANCELLATION_REASONS}
+                                                    options={cancellationReasons}
                                                     className="border-red-200 text-red-900 focus:ring-red-500"
                                                 />
                                             </div>
