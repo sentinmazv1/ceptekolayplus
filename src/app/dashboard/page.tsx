@@ -18,10 +18,14 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [performanceStats, setPerformanceStats] = useState<any>(null);
-    const [myStats, setMyStats] = useState<any>(null); // New state for ActionCenter
-    const [newLeadCount, setNewLeadCount] = useState<number>(0); // New State
+    const [myStats, setMyStats] = useState<any>(null);
+    const [teamStats, setTeamStats] = useState<any>(null); // New Team Stats
+    const [newLeadCount, setNewLeadCount] = useState<number>(0);
 
     const [sourceNotification, setSourceNotification] = useState<string | null>(null);
+
+    // TODO: Move this to a proper role check context later
+    const isAdmin = session?.user?.email === 'ibrahimsentinmaz@gmail.com' || session?.user?.email === 'admin';
 
     useEffect(() => {
         if (status === 'unauthenticated') router.push('/');
@@ -41,21 +45,37 @@ export default function Dashboard() {
             if (res.ok) {
                 const json = await res.json();
                 if (json.success && json.stats) {
-                    if (json.stats.performance) setPerformanceStats(json.stats.performance);
-                    if (json.stats.pool) setNewLeadCount(json.stats.pool.waiting_new || 0);
+                    if (json.stats.performance) {
+                        const pStats = json.stats.performance;
+                        setPerformanceStats(pStats);
 
-                    // Extract My Stats for the Action Center
-                    if (session?.user?.email) {
-                        const myEmail = session.user.email;
-                        const myData = json.stats.performance[myEmail];
-                        if (myData) {
-                            setMyStats({
-                                calls: myData.calls || 0,
-                                sales: myData.sales || 0,
-                                salesVolume: myData.salesVolume || 0
-                            });
+                        // Calculate Team Stats
+                        const team: any = Object.values(pStats).reduce((acc: any, curr: any) => ({
+                            calls: acc.calls + (curr.calls || 0),
+                            sales: acc.sales + (curr.sales || 0),
+                            salesVolume: acc.salesVolume + (curr.salesVolume || 0),
+                        }), { calls: 0, sales: 0, salesVolume: 0 });
+
+                        // Goal is 80 * number of active users (users with data today)
+                        // Or just a fixed per-person metric? Let's use count * 80 for now.
+                        team.goal = Object.keys(pStats).length * 80;
+
+                        setTeamStats(team);
+
+                        // Extract My Stats for the Action Center
+                        if (session?.user?.email) {
+                            const myEmail = session.user.email;
+                            const myData = pStats[myEmail];
+                            if (myData) {
+                                setMyStats({
+                                    calls: myData.calls || 0,
+                                    sales: myData.sales || 0,
+                                    salesVolume: myData.salesVolume || 0
+                                });
+                            }
                         }
                     }
+                    if (json.stats.pool) setNewLeadCount(json.stats.pool.waiting_new || 0);
                 }
             }
         } catch (e) {
@@ -125,8 +145,16 @@ export default function Dashboard() {
                 )}
 
                 {/* 2. ACTION CENTER (Sticky Topish) */}
+                {/* 2. ACTION CENTER (Sticky Topish) */}
                 <div className="sticky top-2 z-40 bg-gray-50/95 backdrop-blur-sm -mx-4 px-4 pt-2 -mt-2 pb-2 transition-all">
-                    <ActionCenter onPullLead={pullLead} loading={loading} myStats={myStats} newLeadCount={newLeadCount} />
+                    <ActionCenter
+                        onPullLead={pullLead}
+                        loading={loading}
+                        myStats={myStats}
+                        teamStats={teamStats}
+                        newLeadCount={newLeadCount}
+                        mode={isAdmin ? 'admin' : 'personal'}
+                    />
                 </div>
 
                 {/* 3. MAIN STAGE */}
