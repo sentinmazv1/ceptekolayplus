@@ -161,11 +161,11 @@ export async function GET(req: NextRequest) {
                         attorneyQueryIds.add(uniqueId);
 
                         // Breakdown Statistics based on LOGGED COMPLETED STATUS
-                        const val = l.new_value;
-                        if (val === 'Temiz') stats.funnel.attorneyClean++;
-                        else if (val === 'Riskli' || val === '⚠️ Riskli/Sorunlu') stats.funnel.attorneyRisky++;
-                        else if (val === 'Onaylandı') stats.funnel.attorneyApproved++;
-                        else if (val === 'Reddedildi') stats.funnel.attorneyRejected++;
+                        const val = String(l.new_value || '');
+                        if (val.includes('Temiz')) stats.funnel.attorneyClean++;
+                        else if (val.includes('Riskli') || val.includes('Sorunlu')) stats.funnel.attorneyRisky++;
+                        else if (val.includes('Onaylan') || val === 'Onaylandı') stats.funnel.attorneyApproved++;
+                        else if (val.includes('Red') || val === 'Reddedildi') stats.funnel.attorneyRejected++;
                     }
                 }
             }
@@ -202,17 +202,18 @@ export async function GET(req: NextRequest) {
 
             // ... (Rest of logic remains mostly same, just checking ranges)
 
-            // C. Funnel: Attorney Queries (PENDING SNAPSHOT ONLY)
-            // Completed queries are now handled in Logs for accuracy.
-            // We only look at current snapshot for "Currently Pending".
+            // C. Funnel: Attorney Queries (SNAPSHOT ENHANCEMENT)
+            // Ensure Current Pending are counted in TOTAL even if logs missed them
 
             // Main
-            if (row.avukat_sorgu_durumu === 'Sorgu Bekleniyor' || row.avukat_sorgu_durumu === 'BEKLİYOR') {
+            if (['Sorgu Bekleniyor', 'BEKLİYOR'].some(s => (row.avukat_sorgu_durumu || '').includes(s))) {
                 stats.funnel.attorneyPending++;
+                attorneyQueryIds.add(row.id); // Add to TOTAL
             }
             // Kefil
-            if (row.kefil_avukat_sorgu_durumu === 'Sorgu Bekleniyor' || row.kefil_avukat_sorgu_durumu === 'BEKLİYOR') {
+            if (['Sorgu Bekleniyor', 'BEKLİYOR'].some(s => (row.kefil_avukat_sorgu_durumu || '').includes(s))) {
                 stats.funnel.attorneyPending++;
+                attorneyQueryIds.add(row.id + '_k'); // Add to TOTAL
             }
 
 

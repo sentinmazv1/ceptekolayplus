@@ -480,13 +480,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
             return;
         }
 
-        // VALIDATION: Cancellation Reason
-        if (data.durum === 'İptal/Vazgeçti' && !data.iptal_nedeni) {
-            setError('Lütfen iptal durumuna aldığınız müşteri için bir iptal nedeni seçiniz.');
-            alert('Lütfen iptal durumuna aldığınız müşteri için bir iptal nedeni seçiniz.');
-            setLoading(false);
-            return;
-        }
+
 
         // Phone Validation (Basic)
         if (data.telefon.length < 10) {

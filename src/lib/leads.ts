@@ -73,7 +73,7 @@ export async function searchCustomers(query: string): Promise<Customer[]> {
     } else {
         dbQuery = dbQuery.or(`ad_soyad.ilike.%${query}%,tc_kimlik.ilike.%${query}%,telefon.ilike.%${query}%`);
     }
-    const { data } = await dbQuery.limit(50);
+    const { data } = await dbQuery.order('created_at', { ascending: false }).limit(50);
     return (data || []).map(mapRowToCustomer);
 }
 
@@ -402,7 +402,18 @@ export async function updateLead(customer: Customer, userEmail: string): Promise
         email: customer.email,
         durum: customer.durum,
         onay_durumu: customer.onay_durumu,
-        sahip_email: riskStatus.includes(customer.durum) ? null : (customer.sahip || userEmail),
+        // OWNERSHIP LOGIC:
+        // 1. If status is 'Risk' (Dead lead), release ownership.
+        // 2. If valid status AND currently unowned (or System), assign to current user.
+        // 3. Prevent 'System' ownership unless explicitly set (which we avoid here).
+        sahip_email: riskStatus.includes(customer.durum)
+            ? null
+            : (
+                (!customer.sahip || ['sistem', 'system'].some(s => (customer.sahip || '').toLowerCase().includes(s))) &&
+                    !['Aranacak', 'Ulaşılamadı', 'Meşgul', 'Cevap Yok', 'Meşgul/Hattı kapalı'].includes(customer.durum)
+                    ? userEmail
+                    : (customer.sahip || userEmail) // Fallback to existing or claim if null
+            ),
         sehir: customer.sehir,
         ilce: customer.ilce,
         meslek_is: customer.meslek_is,

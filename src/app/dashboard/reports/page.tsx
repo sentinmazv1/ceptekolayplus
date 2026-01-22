@@ -300,47 +300,6 @@ export default function ReportsPage() {
             <div className="mb-10 animate-in slide-in-from-bottom-6 duration-700 delay-100">
                 {/* --- TEAM SUMMARY (General Work Details) --- */}
                 {/* Added as requested: "personel karnelerinin üzerinde genel toplam çalışma detaylarını da koyalım" */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-8 print:mb-4">
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">TOPLAM ARAMA</span>
-                        <div className="flex items-end justify-between">
-                            <span className="text-2xl font-black text-gray-900">{stats.funnel.totalCalled}</span>
-                            <PhoneCall className="w-5 h-5 text-indigo-200 mb-1" />
-                        </div>
-                    </div>
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">TOPLAM BAŞVURU</span>
-                        <div className="flex items-end justify-between">
-                            <span className="text-2xl font-black text-blue-900">{stats.funnel.applications}</span>
-                            <ClipboardList className="w-5 h-5 text-blue-200 mb-1" />
-                        </div>
-                    </div>
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">TOPLAM ONAY</span>
-                        <div className="flex items-end justify-between">
-                            <span className="text-2xl font-black text-green-900">{stats.funnel.approved}</span>
-                            <div className="text-right">
-                                <div className="text-[9px] text-green-600 font-bold">{new Intl.NumberFormat('tr-TR', { notation: "compact", compactDisplay: "short" }).format(stats.funnel.approvedLimit)} ₺</div>
-                                <BadgeCheck className="w-5 h-5 text-green-200 ml-auto" />
-                            </div>
-                        </div>
-                    </div>
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">TOPLAM SATIŞ</span>
-                        <div className="flex items-end justify-between">
-                            <span className="text-2xl font-black text-emerald-900">{stats.funnel.sale}</span>
-                            <Package className="w-5 h-5 text-emerald-200 mb-1" />
-                        </div>
-                    </div>
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1 col-span-2 lg:col-span-4 xl:col-span-1">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">TOPLAM CİRO</span>
-                        <div className="flex items-end justify-between">
-                            <span className="text-2xl font-black text-indigo-900">{new Intl.NumberFormat('tr-TR', { notation: "compact", compactDisplay: "short" }).format(stats.funnel.deliveredVolume)} ₺</span>
-                            <TrendingUp className="w-5 h-5 text-indigo-200 mb-1" />
-                        </div>
-                    </div>
-                </div>
-
                 {/* --- SECTION: PERSONNEL SCORECARDS --- */}
                 <div className="bg-white rounded-3xl p-6 md:p-8 shadow-xl shadow-indigo-100/50 border border-indigo-50/50 mb-10 print:shadow-none print:border-0 print:p-0">
                     <div className="flex items-center gap-3 mb-6 print:hidden">
@@ -348,17 +307,17 @@ export default function ReportsPage() {
                             <Users className="w-5 h-5" />
                         </div>
                         <div>
-                            <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">Personel Karneleri</h2>
+                            <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">Personel Performans Karnesi</h2>
                         </div>
                     </div>
 
-                    {/* Desktop/Tablet Grid - Uses identical component to Dashboard */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 print:hidden">
+                    {/* Wide Layout Grid */}
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 print:hidden">
                         {Object.entries(stats.performance)
                             .sort((a, b) => b[1].calls - a[1].calls)
-                            .map(([user, pStats]) => (
+                            .map(([user, pStats], idx) => (
                                 <div key={user} className="transform hover:-translate-y-1 transition-transform duration-300">
-                                    <UserPerformanceCard user={user} stats={pStats} />
+                                    <UserPerformanceCard user={user} stats={pStats} variant="wide" rank={idx + 1} />
                                 </div>
                             ))}
                     </div>
@@ -456,6 +415,45 @@ export default function ReportsPage() {
                                         ))}
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+
+                        {/* Cancellation Reasons Pie Chart */}
+                        <div className="bg-white p-6 rounded-3xl shadow-lg shadow-gray-200/50 border border-gray-100 flex-1 relative overflow-hidden flex flex-col min-h-[300px]">
+                            <h3 className="text-lg font-black text-gray-900 mb-4 uppercase tracking-tight relative z-10 flex items-center gap-2">
+                                <Scale className="w-5 h-5 text-red-500" />
+                                İptal & Red Nedenleri
+                            </h3>
+                            <div className="h-full w-full relative z-10 flex-1">
+                                {Object.keys(stats.rejection || {}).length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+                                        <PieChart>
+                                            <Pie
+                                                data={Object.entries(stats.rejection).map(([name, value]) => ({ name, value }))}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={60}
+                                                outerRadius={80}
+                                                paddingAngle={5}
+                                                dataKey="value"
+                                            >
+                                                {Object.entries(stats.rejection).map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <RechartsTooltip />
+                                            <Legend
+                                                layout="vertical"
+                                                verticalAlign="middle"
+                                                align="right"
+                                                iconType="circle"
+                                                wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }}
+                                            />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="flex items-center justify-center h-full text-gray-400 text-sm font-medium">Veri yok</div>
+                                )}
                             </div>
                         </div>
 
