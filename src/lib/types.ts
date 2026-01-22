@@ -137,6 +137,10 @@ export interface Customer {
   iptal_nedeni?: string;
   satilan_urunler?: string; // JSON string of SoldItem[]
 
+  // Collection Module
+  sinif?: string; // Normal, VIP, Gecikme
+  tahsilat_durumu?: string;
+
   // Missing fields added for CustomerCard
   ozel_musteri_mi?: boolean;
   calisma_sekli?: string;
@@ -175,6 +179,14 @@ export interface LogEntry {
   old_value?: string;
   new_value?: string;
   note?: string;
+}
+
+export interface CollectionNote {
+  id: number;
+  lead_id: string;
+  user_email: string;
+  note: string;
+  created_at: string;
 }
 
 export type InventoryStatus = 'STOKTA' | 'SATILDI';
