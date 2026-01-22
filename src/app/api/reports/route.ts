@@ -278,8 +278,8 @@ export async function GET(req: NextRequest) {
             // 2. Legacy Fallback
             const sLower = (status || '').toLowerCase();
             if (itemSaleCount === 0 && (sLower === 'teslim edildi' || sLower === 'satış yapıldı/tamamlandı')) {
-                const dDate = row.teslim_tarihi || row.updated_at;
-                if (isInRange(dDate)) {
+                const dDate = row.teslim_tarihi;
+                if (dDate && isInRange(dDate)) {
                     itemSaleCount = 1;
                     // Limit as proxy
                     let limitStr = String(row.kredi_limiti || '0').replace(/[^0-9,.-]/g, '');
