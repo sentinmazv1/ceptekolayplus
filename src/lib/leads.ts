@@ -73,7 +73,7 @@ export async function searchCustomers(query: string): Promise<Customer[]> {
     } else {
         dbQuery = dbQuery.or(`ad_soyad.ilike.%${query}%,tc_kimlik.ilike.%${query}%,telefon.ilike.%${query}%`);
     }
-    const { data } = await dbQuery.order('created_at', { ascending: false }).limit(50);
+    const { data } = await dbQuery.order('created_at', { ascending: false }).limit(500);
     return (data || []).map(mapRowToCustomer);
 }
 

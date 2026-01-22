@@ -22,35 +22,34 @@ export async function POST(req: NextRequest) {
         }
 
         // Add Defaults
-        const leadData: Partial<Customer> = {
             ...body,
             id: randomUUID(),
-            durum: 'Yeni',
-            sahip: session.user.email,
+                durum: body.durum || 'Yeni', // Fix: Respect provided status (e.g. Başvuru alındı)
+                    sahip: session.user.email,
         };
 
-        const newLead = await addLead(leadData, session.user.email);
+    const newLead = await addLead(leadData, session.user.email);
 
-        // Explicit Log (though addLead might not log creation automatically yet? Checked leads.ts, addLead does NOT log. So we log here.)
-        await logAction({
-            log_id: randomUUID(),
-            timestamp: new Date().toISOString(),
-            user_email: session.user.email,
-            customer_id: newLead.id,
-            action: 'CREATED',
-            old_value: '',
-            new_value: 'Yeni',
-            note: `Müşteri manuel oluşturuldu. Kanal: ${body.basvuru_kanali || 'Panel'}`
-        });
+    // Explicit Log
+    await logAction({
+        log_id: randomUUID(),
+        timestamp: new Date().toISOString(),
+        user_email: session.user.email,
+        customer_id: newLead.id,
+        action: 'CREATED',
+        old_value: '',
+        new_value: leadData.durum || 'Yeni', // Log actual status
+        note: `Müşteri manuel oluşturuldu. Kanal: ${body.basvuru_kanali || 'Panel'}`
+    });
 
-        return NextResponse.json({
-            success: true,
-            message: 'Müşteri başarıyla oluşturuldu.',
-            lead: newLead
-        });
+    return NextResponse.json({
+        success: true,
+        message: 'Müşteri başarıyla oluşturuldu.',
+        lead: newLead
+    });
 
-    } catch (error: any) {
-        console.error('Create Lead API Error:', error);
-        return NextResponse.json({ success: false, message: error.message }, { status: 500 });
-    }
+} catch (error: any) {
+    console.error('Create Lead API Error:', error);
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+}
 }

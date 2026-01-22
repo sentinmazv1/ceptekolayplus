@@ -461,247 +461,216 @@ export default function ReportsPage() {
                 </div>
             </div>
 
-            {/* --- ROW 4: MINI TABLES --- */}
-            <div className="mb-8 break-inside-avoid">
-                <div className="flex items-center gap-3 mb-6 px-1">
-                    <div className="p-2.5 bg-emerald-100 rounded-xl text-emerald-600 shadow-sm">
-                        <TrendingUp className="w-6 h-6" />
-                    </div>
-                    <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">
-                        İl Bazlı Performans Analizi
-                        <span className="ml-2 text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-md font-bold align-middle">TOP 10</span>
-                    </h2>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 print:grid-cols-2">
-                    <CityMiniTable title="En Çok Arama" data={stats.city} sortKey="total" color="blue" />
-                    <CityMiniTable title="En Çok Teslimat" data={stats.city} sortKey="delivered" color="emerald" showPercent />
-                    <CityMiniTable title="En Çok Red" data={stats.city} sortKey="rejected" color="red" showPercent />
-                    <CityMiniTable title="En Çok Kefil" data={stats.city} sortKey="kefil" color="purple" showPercent />
-                    <CityMiniTable title="En Çok Ulaşılamayan" data={stats.city} sortKey="unreachable" color="gray" showPercent />
-                </div>
-            </div>
-
-            <div className="mt-16 pt-8 border-t border-gray-200 flex flex-col items-center justify-center text-center gap-2 print:flex opacity-60">
-                <div className="flex items-center gap-2 font-black text-gray-400 text-sm uppercase tracking-widest">
-                    <Package className="w-4 h-4" /> CepteKolay+
-                </div>
-                <div className="text-xs font-bold text-gray-400">
-                    Sistem Raporu • {new Date().toLocaleString('tr-TR')}
-                </div>
-            </div>
-        </div>
-    );
-}
 
 // --- SUB COMPONENTS ---
 
-function SalesFunnel({ stats }: { stats: any }) {
+            function SalesFunnel({stats}: {stats: any }) {
     const f = stats.funnel;
-    const formatCurrency = (val: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(val);
+    const formatCurrency = (val: number) => new Intl.NumberFormat('tr-TR', {style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(val);
 
-    return (
-        <div className="bg-white rounded-[2rem] shadow-xl shadow-indigo-100 border border-indigo-50 relative overflow-hidden ring-1 ring-gray-100 group print:border-2 print:border-gray-900 print:rounded-xl print:shadow-none">
-            {/* Decorative Background */}
-            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-gradient-to-bl from-indigo-50/50 to-transparent rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none print:hidden"></div>
-            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-gradient-to-tr from-purple-50/50 to-transparent rounded-full blur-3xl -ml-24 -mb-24 pointer-events-none print:hidden"></div>
+            return (
+            <div className="bg-white rounded-[2rem] shadow-xl shadow-indigo-100 border border-indigo-50 relative overflow-hidden ring-1 ring-gray-100 group print:border-2 print:border-gray-900 print:rounded-xl print:shadow-none">
+                {/* Decorative Background */}
+                <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-gradient-to-bl from-indigo-50/50 to-transparent rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none print:hidden"></div>
+                <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-gradient-to-tr from-purple-50/50 to-transparent rounded-full blur-3xl -ml-24 -mb-24 pointer-events-none print:hidden"></div>
 
-            <div className="relative z-10 p-8 print:p-4">
-                <div className="flex items-center gap-3 mb-10 print:mb-4">
-                    <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg shadow-indigo-200 print:bg-none print:p-0 print:shadow-none print:text-black">
-                        <TrendingUp className="w-6 h-6 text-white print:text-black" />
+                <div className="relative z-10 p-8 print:p-4">
+                    <div className="flex items-center gap-3 mb-10 print:mb-4">
+                        <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg shadow-indigo-200 print:bg-none print:p-0 print:shadow-none print:text-black">
+                            <TrendingUp className="w-6 h-6 text-white print:text-black" />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-black text-gray-900 tracking-tight print:text-lg">GÜNLÜK SATIŞ HUNİSİ</h2>
+                            <p className="text-sm font-bold text-gray-500 print:text-xs">Operasyonel Dönüşüm Oranları</p>
+                        </div>
                     </div>
-                    <div>
-                        <h2 className="text-2xl font-black text-gray-900 tracking-tight print:text-lg">GÜNLÜK SATIŞ HUNİSİ</h2>
-                        <p className="text-sm font-bold text-gray-500 print:text-xs">Operasyonel Dönüşüm Oranları</p>
+
+                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-6 md:gap-8 relative px-4 print:grid-cols-5 print:gap-2 print:px-0">
+                        {/* Arrow connectors (Desktop) */}
+                        <div className="hidden md:block absolute top-[40%] left-0 w-full h-1 bg-gray-100 -z-10 rounded-full print:hidden"></div>
+
+                        <FunnelStep
+                            title="YAPILAN ARAMA"
+                            value={f.totalCalled}
+                            icon={PhoneCall}
+                            color="text-indigo-600"
+                            bg="bg-indigo-50"
+                            desc="Toplam Çağrı"
+                        />
+
+                        <FunnelStep
+                            title="BAŞVURU ALINAN"
+                            value={f.applications}
+                            icon={ClipboardList}
+                            color="text-blue-600"
+                            bg="bg-blue-50"
+                            desc="Formu Doldurulan"
+                        />
+
+                        <FunnelStep
+                            title="AVUKAT SORGUSU"
+                            value={f.attorneyQueries}
+                            subValue={
+                                <div className="flex flex-col gap-1 mt-1 w-full">
+                                    <div className="flex items-center justify-between px-2 w-full">
+                                        <span className="text-[9px] font-bold text-emerald-600 flex items-center gap-0.5" title="Temiz">
+                                            ✅ {f.attorneyClean || 0}
+                                        </span>
+                                        <span className="text-[9px] font-bold text-amber-600 flex items-center gap-0.5" title="Riskli">
+                                            ⚠️ {f.attorneyRisky || 0}
+                                        </span>
+                                    </div>
+                                    {(f.attorneyPending || 0) > 0 && (
+                                        <span className="text-[8px] font-medium text-gray-400 bg-gray-50 rounded px-1 w-fit mx-auto">
+                                            {f.attorneyPending} Bekleyen
+                                        </span>
+                                    )}
+                                </div>
+                            }
+                            icon={Scale}
+                            color="text-purple-600"
+                            bg="bg-purple-50"
+                            desc="Sorgulanan"
+                        />
+
+                        <FunnelStep
+                            title="ONAYLANAN KREDİ"
+                            value={f.approved}
+                            subValue={f.approvedLimit > 0 ? formatCurrency(f.approvedLimit) : "0 ₺"}
+                            icon={BadgeCheck}
+                            color="text-emerald-600"
+                            bg="bg-emerald-50"
+                            desc="Onaylanan Toplam Limit"
+                        />
+
+                        <FunnelStep
+                            title="TESLİM EDİLEN"
+                            value={f.delivered}
+                            subValue={f.deliveredVolume > 0 ? formatCurrency(f.deliveredVolume) : "0 ₺"}
+                            icon={Package}
+                            color="text-green-700"
+                            bg="bg-gradient-to-br from-green-100 to-emerald-100"
+                            desc="Teslimat & Günün Cirosu"
+                            isFinal
+                        />
+                    </div>
+                </div>
+            </div>
+            );
+}
+
+            function FunnelStep({title, value, icon: Icon, color, bg, desc, subValue, isFinal, step }: any) {
+    return (
+            <div className={`relative flex flex-col items-center text-center group/card`}>
+                {/* Step Badge Removed */}
+
+                <div className={`w-full p-6 rounded-3xl border-2 transition-all duration-300 print:p-2 print:rounded-lg print:border-gray-200 ${bg} ${isFinal ? 'border-green-300 shadow-xl shadow-green-100 scale-105 print:scale-100 print:border-gray-900 print:shadow-none' : 'border-transparent shadow-sm hover:shadow-xl hover:-translate-y-2 hover:bg-white hover:border-indigo-100'}`}>
+                    <div className={`mx-auto w-14 h-14 rounded-2xl bg-white shadow-md flex items-center justify-center mb-4 transition-all print:w-8 print:h-8 print:mb-1 print:shadow-none ${color}`}>
+                        <Icon className="w-7 h-7 print:w-4 print:h-4" />
+                    </div>
+
+                    <div className="text-[10px] uppercase font-extrabold text-gray-500 tracking-widest mb-2 print:mb-0 print:text-[8px]">{title}</div>
+
+                    <div className={`text-4xl font-black ${color} mb-1 tracking-tighter tabular-nums print:text-xl print:text-black print:mb-0`}>
+                        {value}
+                    </div>
+
+                    {subValue && (
+                        <div className="inline-block px-2 py-0.5 rounded-md bg-white/60 text-[10px] font-bold text-gray-500 uppercase tracking-tight mb-2 border border-black/5 print:text-[7px] print:mb-0 print:bg-transparent print:border-none print:text-black">
+                            {subValue}
+                        </div>
+                    )}
+
+                    <div className="text-xs font-bold text-gray-600 border-t border-black/5 pt-2 mt-1 w-full print:hidden">
+                        {desc}
+                    </div>
+                </div>
+            </div>
+            );
+}
+
+            function ChartCard({title, children, className}: {title: string, children: React.ReactNode, className?: string }) {
+    return (
+            <div className={`bg-white p-8 rounded-3xl shadow-lg shadow-gray-200/50 border border-gray-100 flex flex-col ${className}`}>
+                <h3 className="text-lg font-black text-gray-900 mb-2 uppercase tracking-tight">{title}</h3>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6">Canlı Veri Analizi</p>
+                <div className="flex-1 min-h-0 relative z-10">
+                    {children}
+                </div>
+            </div>
+            );
+}
+
+            function CityMiniTable({title, data, sortKey, color, showPercent}: {title: string; data: any; sortKey: string; color: string; showPercent?: boolean; }) {
+    if (!data) return null;
+            const sorted = Object.entries(data)
+        .map(([name, stats]: [string, any]) => ({name, ...stats }))
+        .filter(c => c[sortKey] > 0)
+        .sort((a, b) => b[sortKey] - a[sortKey])
+            .slice(0, 10);
+
+            const colorClasses: any = {
+                blue: 'from-blue-500 to-blue-600',
+            emerald: 'from-emerald-500 to-emerald-600',
+            red: 'from-red-500 to-red-600',
+            purple: 'from-purple-500 to-purple-600',
+            gray: 'from-gray-500 to-gray-600',
+    };
+
+            // Light backgrounds for items
+            const bgClasses: any = {
+                blue: 'hover:bg-blue-50',
+            emerald: 'hover:bg-emerald-50',
+            red: 'hover:bg-red-50',
+            purple: 'hover:bg-purple-50',
+            gray: 'hover:bg-gray-50',
+    };
+
+            // Text colors
+            const textClasses: any = {
+                blue: 'text-blue-600',
+            emerald: 'text-emerald-600',
+            red: 'text-red-600',
+            purple: 'text-purple-600',
+            gray: 'text-gray-600',
+    }
+
+            return (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col h-full hover:shadow-lg transition-shadow duration-300">
+                <div className={`px-4 py-3 bg-gradient-to-r ${colorClasses[color]} text-white`}>
+                    <div className="font-bold text-xs uppercase tracking-wider flex justify-between items-center">
+                        {title}
+                        <span className="opacity-80 text-[10px]">İLK 10</span>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 lg:grid-cols-5 gap-6 md:gap-8 relative px-4 print:grid-cols-5 print:gap-2 print:px-0">
-                    {/* Arrow connectors (Desktop) */}
-                    <div className="hidden md:block absolute top-[40%] left-0 w-full h-1 bg-gray-100 -z-10 rounded-full print:hidden"></div>
-
-                    <FunnelStep
-                        title="YAPILAN ARAMA"
-                        value={f.totalCalled}
-                        icon={PhoneCall}
-                        color="text-indigo-600"
-                        bg="bg-indigo-50"
-                        desc="Toplam Çağrı"
-                    />
-
-                    <FunnelStep
-                        title="BAŞVURU ALINAN"
-                        value={f.applications}
-                        icon={ClipboardList}
-                        color="text-blue-600"
-                        bg="bg-blue-50"
-                        desc="Formu Doldurulan"
-                    />
-
-                    <FunnelStep
-                        title="AVUKAT SORGUSU"
-                        value={f.attorneyQueries}
-                        subValue={
-                            <div className="flex flex-col gap-1 mt-1 w-full">
-                                <div className="flex items-center justify-between px-2 w-full">
-                                    <span className="text-[9px] font-bold text-emerald-600 flex items-center gap-0.5" title="Temiz">
-                                        ✅ {f.attorneyClean || 0}
-                                    </span>
-                                    <span className="text-[9px] font-bold text-amber-600 flex items-center gap-0.5" title="Riskli">
-                                        ⚠️ {f.attorneyRisky || 0}
-                                    </span>
-                                </div>
-                                {(f.attorneyPending || 0) > 0 && (
-                                    <span className="text-[8px] font-medium text-gray-400 bg-gray-50 rounded px-1 w-fit mx-auto">
-                                        {f.attorneyPending} Bekleyen
+                <div className="divide-y divide-gray-50 p-2 flex-1">
+                    {sorted.length === 0 ? (
+                        <div className="h-full flex items-center justify-center p-4 text-center text-gray-300 text-xs font-bold uppercase tracking-wider">
+                            Veri Yok
+                        </div>
+                    ) : sorted.map((city, idx) => (
+                        <div key={city.name} className={`px-3 py-2 flex justify-between items-center rounded-lg transition-colors ${bgClasses[color]}`}>
+                            <div className="flex items-center gap-2 overflow-hidden">
+                                <span className={`flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-gray-100 text-[10px] font-black text-gray-500`}>
+                                    {idx + 1}
+                                </span>
+                                <span className="truncate flex-1 text-gray-700 font-bold text-xs">
+                                    {city.name}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2 pl-2">
+                                <span className={`font-black text-sm tabular-nums ${textClasses[color]}`}>{city[sortKey]}</span>
+                                {showPercent && (
+                                    <span className="text-[9px] text-gray-400 font-bold w-7 text-right bg-gray-50 px-1 py-0.5 rounded tabular-nums">
+                                        {city.total > 0 ? '%' + Math.round((city[sortKey] / city.total) * 100) : '-'}
                                     </span>
                                 )}
                             </div>
-                        }
-                        icon={Scale}
-                        color="text-purple-600"
-                        bg="bg-purple-50"
-                        desc="Sorgulanan"
-                    />
-
-                    <FunnelStep
-                        title="ONAYLANAN KREDİ"
-                        value={f.approved}
-                        subValue={f.approvedLimit > 0 ? formatCurrency(f.approvedLimit) : "0 ₺"}
-                        icon={BadgeCheck}
-                        color="text-emerald-600"
-                        bg="bg-emerald-50"
-                        desc="Onaylanan Toplam Limit"
-                    />
-
-                    <FunnelStep
-                        title="TESLİM EDİLEN"
-                        value={f.delivered}
-                        subValue={f.deliveredVolume > 0 ? formatCurrency(f.deliveredVolume) : "0 ₺"}
-                        icon={Package}
-                        color="text-green-700"
-                        bg="bg-gradient-to-br from-green-100 to-emerald-100"
-                        desc="Teslimat & Günün Cirosu"
-                        isFinal
-                    />
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function FunnelStep({ title, value, icon: Icon, color, bg, desc, subValue, isFinal, step }: any) {
-    return (
-        <div className={`relative flex flex-col items-center text-center group/card`}>
-            {/* Step Badge Removed */}
-
-            <div className={`w-full p-6 rounded-3xl border-2 transition-all duration-300 print:p-2 print:rounded-lg print:border-gray-200 ${bg} ${isFinal ? 'border-green-300 shadow-xl shadow-green-100 scale-105 print:scale-100 print:border-gray-900 print:shadow-none' : 'border-transparent shadow-sm hover:shadow-xl hover:-translate-y-2 hover:bg-white hover:border-indigo-100'}`}>
-                <div className={`mx-auto w-14 h-14 rounded-2xl bg-white shadow-md flex items-center justify-center mb-4 transition-all print:w-8 print:h-8 print:mb-1 print:shadow-none ${color}`}>
-                    <Icon className="w-7 h-7 print:w-4 print:h-4" />
-                </div>
-
-                <div className="text-[10px] uppercase font-extrabold text-gray-500 tracking-widest mb-2 print:mb-0 print:text-[8px]">{title}</div>
-
-                <div className={`text-4xl font-black ${color} mb-1 tracking-tighter tabular-nums print:text-xl print:text-black print:mb-0`}>
-                    {value}
-                </div>
-
-                {subValue && (
-                    <div className="inline-block px-2 py-0.5 rounded-md bg-white/60 text-[10px] font-bold text-gray-500 uppercase tracking-tight mb-2 border border-black/5 print:text-[7px] print:mb-0 print:bg-transparent print:border-none print:text-black">
-                        {subValue}
-                    </div>
-                )}
-
-                <div className="text-xs font-bold text-gray-600 border-t border-black/5 pt-2 mt-1 w-full print:hidden">
-                    {desc}
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function ChartCard({ title, children, className }: { title: string, children: React.ReactNode, className?: string }) {
-    return (
-        <div className={`bg-white p-8 rounded-3xl shadow-lg shadow-gray-200/50 border border-gray-100 flex flex-col ${className}`}>
-            <h3 className="text-lg font-black text-gray-900 mb-2 uppercase tracking-tight">{title}</h3>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6">Canlı Veri Analizi</p>
-            <div className="flex-1 min-h-0 relative z-10">
-                {children}
-            </div>
-        </div>
-    );
-}
-
-function CityMiniTable({ title, data, sortKey, color, showPercent }: { title: string; data: any; sortKey: string; color: string; showPercent?: boolean; }) {
-    if (!data) return null;
-    const sorted = Object.entries(data)
-        .map(([name, stats]: [string, any]) => ({ name, ...stats }))
-        .filter(c => c[sortKey] > 0)
-        .sort((a, b) => b[sortKey] - a[sortKey])
-        .slice(0, 10);
-
-    const colorClasses: any = {
-        blue: 'from-blue-500 to-blue-600',
-        emerald: 'from-emerald-500 to-emerald-600',
-        red: 'from-red-500 to-red-600',
-        purple: 'from-purple-500 to-purple-600',
-        gray: 'from-gray-500 to-gray-600',
-    };
-
-    // Light backgrounds for items
-    const bgClasses: any = {
-        blue: 'hover:bg-blue-50',
-        emerald: 'hover:bg-emerald-50',
-        red: 'hover:bg-red-50',
-        purple: 'hover:bg-purple-50',
-        gray: 'hover:bg-gray-50',
-    };
-
-    // Text colors
-    const textClasses: any = {
-        blue: 'text-blue-600',
-        emerald: 'text-emerald-600',
-        red: 'text-red-600',
-        purple: 'text-purple-600',
-        gray: 'text-gray-600',
-    }
-
-    return (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col h-full hover:shadow-lg transition-shadow duration-300">
-            <div className={`px-4 py-3 bg-gradient-to-r ${colorClasses[color]} text-white`}>
-                <div className="font-bold text-xs uppercase tracking-wider flex justify-between items-center">
-                    {title}
-                    <span className="opacity-80 text-[10px]">İLK 10</span>
-                </div>
-            </div>
-
-            <div className="divide-y divide-gray-50 p-2 flex-1">
-                {sorted.length === 0 ? (
-                    <div className="h-full flex items-center justify-center p-4 text-center text-gray-300 text-xs font-bold uppercase tracking-wider">
-                        Veri Yok
-                    </div>
-                ) : sorted.map((city, idx) => (
-                    <div key={city.name} className={`px-3 py-2 flex justify-between items-center rounded-lg transition-colors ${bgClasses[color]}`}>
-                        <div className="flex items-center gap-2 overflow-hidden">
-                            <span className={`flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-gray-100 text-[10px] font-black text-gray-500`}>
-                                {idx + 1}
-                            </span>
-                            <span className="truncate flex-1 text-gray-700 font-bold text-xs">
-                                {city.name}
-                            </span>
                         </div>
-                        <div className="flex items-center gap-2 pl-2">
-                            <span className={`font-black text-sm tabular-nums ${textClasses[color]}`}>{city[sortKey]}</span>
-                            {showPercent && (
-                                <span className="text-[9px] text-gray-400 font-bold w-7 text-right bg-gray-50 px-1 py-0.5 rounded tabular-nums">
-                                    {city.total > 0 ? '%' + Math.round((city[sortKey] / city.total) * 100) : '-'}
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
             </div>
-        </div>
-    );
+            );
 }
