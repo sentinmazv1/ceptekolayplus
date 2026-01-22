@@ -108,6 +108,12 @@ export interface Customer {
   kefil_tapu_varmi?: string;
   kefil_notlar?: string;
 
+  // Collection Module
+  sinif?: string;
+  tahsilat_durumu?: string;
+  odeme_sozu_tarihi?: string;
+
+
   // New Guarantor Fields (Mirroring Main Customer)
   kefil_avukat_sorgu_durumu?: string;
   kefil_avukat_sorgu_sonuc?: string;
