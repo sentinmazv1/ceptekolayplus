@@ -9,7 +9,7 @@ import { BulkSmsManager } from '@/components/BulkSmsManager';
 import { BulkUpdateManager } from '@/components/BulkUpdateManager';
 
 export default function SettingsPage() {
-    const [activeTab, setActiveTab] = useState<'statuses' | 'cancellation' | 'sms_templates' | 'bulk_sms' | 'users' | 'import' | 'sync_sheets' | 'migrate_deliveries' | 'duplicates' | 'quick_notes' | 'backup' | 'system_health' | 'bulk_update'>('statuses');
+    const [activeTab, setActiveTab] = useState<'statuses' | 'cancellation' | 'sms_templates' | 'bulk_sms' | 'users' | 'import' | 'sync_sheets' | 'migrate_deliveries' | 'duplicates' | 'quick_notes' | 'backup' | 'system_health' | 'bulk_update' | 'collection'>('statuses');
     const [loading, setLoading] = useState(false);
 
     // Data Holders
@@ -55,12 +55,14 @@ export default function SettingsPage() {
         }
     }
 
+
     const menuGroups = [
         {
             title: 'Sistem Tanımları',
             items: [
                 { id: 'statuses', label: 'Durumlar & Aşamalar', icon: Loader2 },
                 { id: 'cancellation', label: 'İptal Nedenleri', icon: Scale },
+                { id: 'collection', label: 'Tahsilat Ayarları (Sınıf/Durum)', icon: Scale },
                 { id: 'sms_templates', label: 'SMS Şablonları', icon: Phone },
                 { id: 'bulk_sms', label: 'Toplu Mesaj Merkezi', icon: MessageSquare },
                 { id: 'quick_notes', label: 'Hızlı Not Şablonları', icon: FileSpreadsheet },
@@ -143,6 +145,16 @@ export default function SettingsPage() {
                             {activeTab === 'bulk_sms' && <BulkSmsManager />}
                             {activeTab === 'users' && <UserManager users={users} refresh={fetchData} />}
                             {activeTab === 'quick_notes' && <QuickNotesManager notes={quickNotes} refresh={fetchData} />}
+
+                            {activeTab === 'collection' && (
+                                <div className="space-y-6 animate-in fade-in">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <CollectionSettings type="CLASS" />
+                                        <CollectionSettings type="STATUS" />
+                                    </div>
+                                    <BulkClassUpdateManager classes={[]} />
+                                </div>
+                            )}
 
                             {activeTab === 'import' && <ImportManager />}
                             {activeTab === 'sync_sheets' && <SyncManager />}
