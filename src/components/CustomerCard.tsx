@@ -200,6 +200,8 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
             .then(data => { if (data.templates) setSmsTemplates(data.templates); })
             .catch(err => console.error('SMS Template fetch error:', err));
 
+        fetch('/api/admin/sms-templates?type=WHATSAPP')
+            .then(res => res.json())
             .then(data => { if (data.templates) setWhatsappTemplates(data.templates); })
             .catch(err => console.error('WhatsApp Template fetch error:', err));
 
