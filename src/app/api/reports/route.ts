@@ -268,7 +268,8 @@ export async function GET(req: NextRequest) {
             }
 
             // 2. Legacy Fallback
-            if (itemSaleCount === 0 && (status === 'Teslim edildi' || status === 'Satış yapıldı/Tamamlandı')) {
+            const sLower = (status || '').toLowerCase();
+            if (itemSaleCount === 0 && (sLower === 'teslim edildi' || sLower === 'satış yapıldı/tamamlandı')) {
                 const dDate = row.teslim_tarihi || row.updated_at;
                 if (isInRange(dDate)) {
                     itemSaleCount = 1;
@@ -286,9 +287,14 @@ export async function GET(req: NextRequest) {
                 stats.funnel.sale += itemSaleCount;
                 deliveredIds.add(row.id); // Still track unique customers for reference if needed
 
-                if (isTrackedUser && stats.performance[owner]) {
-                    stats.performance[owner].sales += itemSaleCount;
-                    stats.performance[owner].salesVolume = (stats.performance[owner].salesVolume || 0) + itemRevenue;
+                if (isTrackedUser) {
+                    if (!stats.performance[owner]) {
+                        stats.performance[owner] = { pulled: 0, calls: 0, approvals: 0, approvedLimit: 0, applications: 0, paceMinutes: 0, sms: 0, whatsapp: 0, sales: 0, salesVolume: 0, backoffice: 0, dailyGoal: 10, image: '' };
+                    }
+                    if (stats.performance[owner]) {
+                        stats.performance[owner].sales += itemSaleCount;
+                        stats.performance[owner].salesVolume = (stats.performance[owner].salesVolume || 0) + itemRevenue;
+                    }
                 }
             }
 
