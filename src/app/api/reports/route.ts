@@ -290,40 +290,53 @@ export async function GET(req: NextRequest) {
                 }
             }
 
-            // F. Standard Aggregates
-            const isDelivered = (status === 'Teslim edildi' || status === 'Satış yapıldı/Tamamlandı');
+            // F. Standard Aggregates (Cohort: Only for leads CREATED in this range)
+            // This answers "What is the status/city/outcome of leads generated in this period?"
+            if (isInRange(row.created_at)) {
 
-            if (row.sehir) {
-                if (!stats.city[row.sehir]) stats.city[row.sehir] = { total: 0, delivered: 0, approved: 0, rejected: 0, cancelled: 0, kefil: 0, noEdevlet: 0, unreachable: 0, other: 0 };
+                const isDelivered = (status === 'Teslim edildi' || status === 'Satış yapıldı/Tamamlandı');
 
-                stats.city[row.sehir].total++;
+                // City Stats
+                if (row.sehir) {
+                    if (!stats.city[row.sehir]) stats.city[row.sehir] = { total: 0, delivered: 0, approved: 0, rejected: 0, cancelled: 0, kefil: 0, noEdevlet: 0, unreachable: 0, other: 0 };
 
-                if (isDelivered) {
-                    stats.city[row.sehir].delivered++;
-                } else if (approval === 'Onaylandı') {
-                    stats.city[row.sehir].approved++;
-                } else if (['Reddetti', 'Uygun değil', 'Kriter Dışı'].includes(status || '') || approval === 'Reddedildi') {
-                    stats.city[row.sehir].rejected++;
-                } else if (status === 'İptal/Vazgeçti') {
-                    stats.city[row.sehir].cancelled++;
-                } else if (status === 'Kefil bekleniyor' || approval === 'Kefil İstendi') {
-                    stats.city[row.sehir].kefil++;
-                } else if (['Ulaşılamadı', 'Cevap Yok', 'Meşgul/Hattı kapalı', 'Yanlış numara', 'Numara kullanılmıyor'].includes(status || '')) {
-                    stats.city[row.sehir].unreachable++;
-                } else {
-                    stats.city[row.sehir].other++;
+                    stats.city[row.sehir].total++;
+
+                    if (isDelivered) {
+                        stats.city[row.sehir].delivered++;
+                    } else if (approval === 'Onaylandı') {
+                        stats.city[row.sehir].approved++;
+                    } else if (['Reddetti', 'Uygun değil', 'Kriter Dışı'].includes(status || '') || approval === 'Reddedildi') {
+                        stats.city[row.sehir].rejected++;
+                    } else if (status === 'İptal/Vazgeçti') {
+                        stats.city[row.sehir].cancelled++;
+                    } else if (status === 'Kefil bekleniyor' || approval === 'Kefil İstendi') {
+                        stats.city[row.sehir].kefil++;
+                    } else if (['Ulaşılamadı', 'Cevap Yok', 'Meşgul/Hattı kapalı', 'Yanlış numara', 'Numara kullanılmıyor'].includes(status || '')) {
+                        stats.city[row.sehir].unreachable++;
+                    } else {
+                        stats.city[row.sehir].other++;
+                    }
                 }
-            }
-            if (status) stats.status[status] = (stats.status[status] || 0) + 1;
 
-            // Rejections
-            if (['Reddetti', 'Uygun değil', 'İptal/Vazgeçti'].includes(status) || approval === 'Reddedildi') {
-                let reason = 'Diğer';
-                if (approval === 'Reddedildi') reason = 'Yönetici Reddi';
-                else if (status === 'Reddetti') reason = 'Müşteri Reddetti';
-                else if (status === 'Uygun değil') reason = 'Kriter Dışı';
-                else if (status === 'İptal/Vazgeçti') reason = 'İptal';
-                stats.rejection[reason] = (stats.rejection[reason] || 0) + 1;
+                // Status Stats
+                if (status) stats.status[status] = (stats.status[status] || 0) + 1;
+
+                // Rejections (Cancellation Reasons)
+                if (['Reddetti', 'Uygun değil', 'İptal/Vazgeçti'].includes(status) || approval === 'Reddedildi') {
+                    let reason = 'Diğer';
+                    if (approval === 'Reddedildi') reason = 'Yönetici Reddi';
+                    else if (status === 'Reddetti') reason = 'Müşteri Reddetti';
+                    else if (status === 'Uygun değil') reason = 'Kriter Dışı';
+
+                    // --- PRECISE CANCELLATION REASON ---
+                    // If status is 'İptal/Vazgeçti', use the specific 'iptal_nedeni' if available
+                    if (status === 'İptal/Vazgeçti') {
+                        reason = row.iptal_nedeni || 'İptal (Nedensiz)';
+                    }
+
+                    stats.rejection[reason] = (stats.rejection[reason] || 0) + 1;
+                }
             }
         });
 
