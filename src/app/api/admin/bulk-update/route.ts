@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin, logAction } from '@/lib/leads';
+import { supabaseAdmin } from '@/lib/supabase';
+import { logAction } from '@/lib/leads';
 
 // Force dynamic to ensure fresh data
 export const dynamic = 'force-dynamic';
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
         // Note: For very large datasets (e.g. 5000+), this loop might be slow. 
         // Ideally we'd do a bulk insert into logs, but logAction is singular.
         // We will batch insert manually here for performance.
-        const logEntries = leadsToUpdate.map(lead => ({
+        const logEntries = leadsToUpdate.map((lead: any) => ({
             user_email: userEmail,
             lead_id: lead.id,
             action: 'UPDATE_STATUS',
