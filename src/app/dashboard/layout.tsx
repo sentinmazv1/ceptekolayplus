@@ -86,17 +86,6 @@ export default function DashboardLayout({
                                     </Button>
                                 </Link>
 
-                                <Link href="/dashboard/my-leads">
-                                    <Button
-                                        variant={isActive('/dashboard/my-leads') ? 'primary' : 'ghost'}
-                                        size="sm"
-                                        className={isActive('/dashboard/my-leads') ? '' : 'text-gray-600 hover:text-gray-900'}
-                                    >
-                                        <UserPlus className="w-4 h-4 mr-2" />
-                                        Müşterilerim
-                                    </Button>
-                                </Link>
-
                                 <Link href="/dashboard/calendar">
                                     <Button
                                         variant={isActive('/dashboard/calendar') ? 'primary' : 'ghost'}

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Phone, Loader2, Command, PlusCircle } from 'lucide-react';
+import { Search, Phone, Loader2, Command, PlusCircle, Users } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 interface ActionCenterProps {
