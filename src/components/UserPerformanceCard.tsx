@@ -62,9 +62,17 @@ export function UserPerformanceCard({ user, stats, variant = 'default', rank }: 
                     {/* Calls */}
                     <div className="flex flex-col items-center">
                         <span className="text-[9px] font-bold text-indigo-400 uppercase mb-0.5">Arama</span>
-                        <div className="flex items-baseline gap-0.5">
+                        <div className="flex items-baseline gap-1">
                             <Phone className="w-3 h-3 text-indigo-400" />
                             <span className="text-lg font-bold text-indigo-600">{stats.calls}</span>
+                            <span className="text-[9px] font-medium text-gray-400">/ {stats.dailyGoal || 80}</span>
+                        </div>
+                        {/* Goal Progress Bar */}
+                        <div className="w-12 h-1 bg-gray-100 rounded-full mt-0.5 overflow-hidden">
+                            <div
+                                className={`h-full rounded-full ${goalPercent >= 100 ? 'bg-green-500' : 'bg-indigo-500'}`}
+                                style={{ width: `${goalPercent}%` }}
+                            ></div>
                         </div>
                     </div>
 
@@ -187,10 +195,17 @@ export function UserPerformanceCard({ user, stats, variant = 'default', rank }: 
                 {/* KPI Grid - Fixed Layout */}
                 <div className="grid grid-cols-3 gap-2 text-center border-t border-gray-100 pt-3">
                     {/* Calls */}
-                    <div className="bg-gray-50 rounded-lg p-2 flex flex-col items-center">
-                        <Phone className="w-3 h-3 text-indigo-400 mb-1" />
-                        <span className="text-lg font-black text-gray-800 leading-none">{stats.calls}</span>
-                        <span className="text-[9px] text-gray-400 uppercase font-bold mt-1">Arama</span>
+                    {/* Calls */}
+                    <div className="bg-gray-50 rounded-lg p-2 flex flex-col items-center relative overflow-hidden">
+                        <Phone className="w-3 h-3 text-indigo-400 mb-1 relative z-10" />
+                        <span className="text-lg font-black text-gray-800 leading-none relative z-10">{stats.calls}</span>
+                        <span className="text-[9px] text-gray-400 uppercase font-bold mt-1 relative z-10">Arama</span>
+
+                        {/* Goal Progress Background */}
+                        <div className="absolute bottom-0 left-0 h-1 bg-indigo-100 w-full">
+                            <div className="h-full bg-indigo-500" style={{ width: `${goalPercent}%` }}></div>
+                        </div>
+                        <div className="absolute top-1 right-1 text-[8px] text-gray-300 font-medium">/{stats.dailyGoal || 80}</div>
                     </div>
 
                     {/* Sales Count */}

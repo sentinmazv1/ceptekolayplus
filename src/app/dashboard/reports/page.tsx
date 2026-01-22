@@ -314,42 +314,51 @@ export default function ReportsPage() {
                         ))}
                 </div>
 
-                {/* Print Only Performance Table */}
-                <div className="hidden print:block overflow-hidden border border-gray-300 rounded-lg">
-                    <table className="w-full text-sm text-left border-collapse">
-                        <thead className="bg-gray-100 text-gray-900 uppercase text-xs font-black">
-                            <tr className="border-b border-gray-300">
-                                <th className="px-4 py-3 border-r border-gray-300">Personel</th>
-                                <th className="px-4 py-3 border-r border-gray-300 text-center">Çekilen</th>
-                                <th className="px-4 py-3 border-r border-gray-300 text-center">Arama</th>
-                                <th className="px-4 py-3 border-r border-gray-300 text-center">Sms/Wa</th>
-                                <th className="px-4 py-3 border-r border-gray-300 text-center">Başvuru</th>
-                                <th className="px-4 py-3 border-r border-gray-300 text-center">Onay</th>
-                                <th className="px-4 py-3 text-center">Satış</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                            {Object.entries(stats.performance)
-                                .sort((a, b) => b[1].calls - a[1].calls)
-                                .map(([user, pStats]) => (
-                                    <tr key={user} className="border-b border-gray-200">
-                                        <td className="px-4 py-2 border-r border-gray-200 font-bold">{user.split('@')[0]}</td>
-                                        <td className="px-4 py-2 border-r border-gray-200 text-center tabular-nums">{pStats.pulled || 0}</td>
-                                        <td className="px-4 py-2 border-r border-gray-200 text-center tabular-nums font-black">{pStats.calls || 0}</td>
-                                        <td className="px-4 py-2 border-r border-gray-200 text-center tabular-nums">{(pStats.sms || 0) + (pStats.whatsapp || 0)}</td>
-                                        <td className="px-4 py-2 border-r border-gray-200 text-center tabular-nums font-bold text-blue-700">{pStats.applications || 0}</td>
-                                        <td className="px-4 py-2 border-r border-gray-200 text-center tabular-nums font-bold text-indigo-700">{pStats.approvals || 0}</td>
-                                        <td className="px-4 py-2 text-center tabular-nums font-black text-emerald-700">{pStats.sales || 0}</td>
-                                    </tr>
-                                ))}
-                        </tbody>
-                    </table>
+                {/* Print Only Performance Cards (Detailed Scorecards) */}
+                <div className="hidden print:grid grid-cols-3 gap-2">
+                    {Object.entries(stats.performance)
+                        .sort((a, b) => b[1].calls - a[1].calls)
+                        .map(([user, pStats]) => (
+                            <div key={user} className="border border-gray-900 rounded p-1 flex flex-col gap-1 break-inside-avoid">
+                                <div className="flex justify-between items-center border-b border-gray-300 pb-1">
+                                    <span className="font-black text-[9px] uppercase">{user.split('@')[0]}</span>
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-[8px] font-bold">HEDEF: {pStats.dailyGoal || 80}</span>
+                                        {pStats.calls >= (pStats.dailyGoal || 80) && <span className="text-[8px]">⭐</span>}
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-4 gap-1 text-center">
+                                    <div className="bg-gray-50 rounded p-0.5">
+                                        <div className="text-[7px] text-gray-500 uppercase">ARAMA</div>
+                                        <div className="text-[10px] font-black">{pStats.calls}</div>
+                                    </div>
+                                    <div className="bg-blue-50 rounded p-0.5">
+                                        <div className="text-[7px] text-blue-600 uppercase">BAŞVURU</div>
+                                        <div className="text-[10px] font-black text-blue-900">{pStats.applications}</div>
+                                    </div>
+                                    <div className="bg-emerald-50 rounded p-0.5">
+                                        <div className="text-[7px] text-emerald-600 uppercase">SATIŞ</div>
+                                        <div className="text-[10px] font-black text-emerald-900">{pStats.sales}</div>
+                                    </div>
+                                    <div className="bg-indigo-50 rounded p-0.5">
+                                        <div className="text-[7px] text-indigo-600 uppercase">CİRO</div>
+                                        <div className="text-[10px] font-black text-indigo-900">{new Intl.NumberFormat('tr-TR', { notation: "compact", compactDisplay: "short", maximumFractionDigits: 1 }).format(pStats.salesVolume || 0)}</div>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between items-center text-[7px] text-gray-500 px-0.5">
+                                    <span>Çekilen: {pStats.pulled}</span>
+                                    <span>Onay: {pStats.approvals}</span>
+                                    <span>Sms/Wa: {(pStats.sms || 0) + (pStats.whatsapp || 0)}</span>
+                                </div>
+                            </div>
+                        ))}
                 </div>
             </div>
 
             {/* --- ROW 3: HOURLY & STATUS --- */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-10 break-inside-avoid animate-in slide-in-from-bottom-8 duration-700 delay-200 print-section">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-10 break-inside-avoid print-section">
                 <ChartCard title="Saatlik Çalışma Yoğunluğu" className="xl:col-span-2 h-[400px] chart-container">
+                    {/* ... (Chart Content Same) ... */}
                     <div className="h-full w-full pt-4">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={hourlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -370,39 +379,64 @@ export default function ReportsPage() {
                     </div>
                 </ChartCard>
 
-                <div className="bg-white p-8 rounded-3xl shadow-lg shadow-gray-200/50 border border-gray-100 flex flex-col h-full relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-gray-50 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-                    <h3 className="text-lg font-black text-gray-900 mb-6 uppercase tracking-tight relative z-10 flex items-center gap-2">
-                        <BadgeCheck className="w-5 h-5 text-gray-400" />
-                        Akıbet Dağılımı
-                    </h3>
-
-                    <div className="flex-1 overflow-auto max-h-[300px] pr-2 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent relative z-10 print:max-h-none print:overflow-visible">
-                        <table className="w-full text-sm">
-                            <thead className="text-xs text-gray-400 font-bold uppercase sticky top-0 bg-white z-10">
-                                <tr>
-                                    <th className="py-3 text-left pl-2">Durum</th>
-                                    <th className="py-3 text-right">Adet</th>
-                                    <th className="py-3 text-right pr-2">Oran</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50">
-                                {statusEntries.map(([status, count], idx) => (
-                                    <tr key={status} className="group hover:bg-gray-50 transition-colors">
-                                        <td className="py-3 pl-2 font-bold text-gray-700 truncate max-w-[140px] group-hover:text-indigo-600 transition-colors" title={status}>
-                                            <span className="inline-block w-2 h-2 rounded-full mr-2 bg-gray-300 group-hover:bg-indigo-500 transition-colors"></span>
-                                            {status}
-                                        </td>
-                                        <td className="py-3 text-right font-black text-gray-900 tabular-nums">{count}</td>
-                                        <td className="py-3 text-right pr-2">
-                                            <span className="inline-block px-2 py-1 rounded-md bg-gray-100 text-[10px] font-bold text-gray-600 tabular-nums min-w-[3rem] text-center">
-                                                {totalStatusCount > 0 ? `%${((count / totalStatusCount) * 100).toFixed(1)}` : '0%'}
-                                            </span>
-                                        </td>
+                <div className="flex flex-col gap-6 h-full">
+                    {/* Status Distribution */}
+                    <div className="bg-white p-6 rounded-3xl shadow-lg shadow-gray-200/50 border border-gray-100 flex-1 relative overflow-hidden flex flex-col">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-gray-50 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                        <h3 className="text-lg font-black text-gray-900 mb-4 uppercase tracking-tight relative z-10 flex items-center gap-2">
+                            <BadgeCheck className="w-5 h-5 text-gray-400" />
+                            Akıbet Dağılımı
+                        </h3>
+                        <div className="flex-1 overflow-auto max-h-[200px] pr-2 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent relative z-10">
+                            <table className="w-full text-sm">
+                                <thead className="text-xs text-gray-400 font-bold uppercase sticky top-0 bg-white z-10">
+                                    <tr>
+                                        <th className="py-2 text-left pl-2">Durum</th>
+                                        <th className="py-2 text-right">Adet</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {statusEntries.slice(0, 10).map(([status, count], idx) => (
+                                        <tr key={status} className="group hover:bg-gray-50 transition-colors">
+                                            <td className="py-2 pl-2 font-bold text-gray-700 truncate max-w-[120px]" title={status}>
+                                                <span className="inline-block w-1.5 h-1.5 rounded-full mr-2 bg-indigo-500"></span>
+                                                {status}
+                                            </td>
+                                            <td className="py-2 text-right font-black text-gray-900 tabular-nums">{count}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Rejection / Cancellation Reasons */}
+                    <div className="bg-white p-6 rounded-3xl shadow-lg shadow-red-100/50 border border-red-50 flex-1 relative overflow-hidden flex flex-col">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-red-50 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                        <h3 className="text-lg font-black text-gray-900 mb-4 uppercase tracking-tight relative z-10 flex items-center gap-2">
+                            <Scale className="w-5 h-5 text-red-400" />
+                            İptal & Ret
+                        </h3>
+                        <div className="flex-1 overflow-auto max-h-[200px] pr-2 scrollbar-thin scrollbar-thumb-red-100 scrollbar-track-transparent relative z-10">
+                            <table className="w-full text-sm">
+                                <thead className="text-xs text-gray-400 font-bold uppercase sticky top-0 bg-white z-10">
+                                    <tr>
+                                        <th className="py-2 text-left pl-2">Neden</th>
+                                        <th className="py-2 text-right">Adet</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {Object.entries(stats.rejection || {}).sort((a, b) => b[1] - a[1]).map(([reason, count]) => (
+                                        <tr key={reason} className="group hover:bg-red-50 transition-colors">
+                                            <td className="py-2 pl-2 font-bold text-gray-700 truncate max-w-[120px]">
+                                                {reason}
+                                            </td>
+                                            <td className="py-2 text-right font-black text-red-900 tabular-nums">{count}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -472,12 +506,10 @@ function SalesFunnel({ stats }: { stats: any }) {
                     <FunnelStep
                         title="YAPILAN ARAMA"
                         value={f.totalCalled}
-                        subValue={`TEKİL: ${f.uniqueCalled}`}
                         icon={PhoneCall}
                         color="text-indigo-600"
                         bg="bg-indigo-50"
                         desc="Toplam Çağrı"
-                        step={1}
                     />
 
                     <FunnelStep
@@ -487,32 +519,32 @@ function SalesFunnel({ stats }: { stats: any }) {
                         color="text-blue-600"
                         bg="bg-blue-50"
                         desc="Formu Doldurulan"
-                        step={2}
                     />
 
                     <FunnelStep
                         title="AVUKAT SORGUSU"
                         value={f.attorneyQueries}
                         subValue={
-                            <div className="flex flex-col gap-0.5 mt-1">
-                                <span className="text-[9px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-md self-center border border-gray-200">
-                                    {f.attorneyPending || 0} BEKLEYEN
-                                </span>
-                                <div className="flex items-center justify-center gap-1.5 mt-0.5">
-                                    <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100 flex items-center gap-0.5" title="Temiz">
+                            <div className="flex flex-col gap-1 mt-1 w-full">
+                                <div className="flex items-center justify-between px-2 w-full">
+                                    <span className="text-[9px] font-bold text-emerald-600 flex items-center gap-0.5" title="Temiz">
                                         ✅ {f.attorneyClean || 0}
                                     </span>
-                                    <span className="text-[9px] font-black text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md border border-amber-100 flex items-center gap-0.5" title="Riskli">
+                                    <span className="text-[9px] font-bold text-amber-600 flex items-center gap-0.5" title="Riskli">
                                         ⚠️ {f.attorneyRisky || 0}
                                     </span>
                                 </div>
+                                {(f.attorneyPending || 0) > 0 && (
+                                    <span className="text-[8px] font-medium text-gray-400 bg-gray-50 rounded px-1 w-fit mx-auto">
+                                        {f.attorneyPending} Bekleyen
+                                    </span>
+                                )}
                             </div>
                         }
                         icon={Scale}
                         color="text-purple-600"
                         bg="bg-purple-50"
                         desc="Sorgulanan"
-                        step={3}
                     />
 
                     <FunnelStep
@@ -523,7 +555,6 @@ function SalesFunnel({ stats }: { stats: any }) {
                         color="text-emerald-600"
                         bg="bg-emerald-50"
                         desc="Onaylanan Toplam Limit"
-                        step={4}
                     />
 
                     <FunnelStep
@@ -535,7 +566,6 @@ function SalesFunnel({ stats }: { stats: any }) {
                         bg="bg-gradient-to-br from-green-100 to-emerald-100"
                         desc="Teslimat & Günün Cirosu"
                         isFinal
-                        step={5}
                     />
                 </div>
             </div>
@@ -546,10 +576,7 @@ function SalesFunnel({ stats }: { stats: any }) {
 function FunnelStep({ title, value, icon: Icon, color, bg, desc, subValue, isFinal, step }: any) {
     return (
         <div className={`relative flex flex-col items-center text-center group/card`}>
-            {/* Step Number Badge */}
-            <div className={`absolute -top-3 -right-3 w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shadow-sm border-2 border-white z-20 print:hidden ${isFinal ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400 group-hover/card:bg-indigo-500 group-hover/card:text-white transition-colors'}`}>
-                {step}
-            </div>
+            {/* Step Badge Removed */}
 
             <div className={`w-full p-6 rounded-3xl border-2 transition-all duration-300 print:p-2 print:rounded-lg print:border-gray-200 ${bg} ${isFinal ? 'border-green-300 shadow-xl shadow-green-100 scale-105 print:scale-100 print:border-gray-900 print:shadow-none' : 'border-transparent shadow-sm hover:shadow-xl hover:-translate-y-2 hover:bg-white hover:border-indigo-100'}`}>
                 <div className={`mx-auto w-14 h-14 rounded-2xl bg-white shadow-md flex items-center justify-center mb-4 transition-all print:w-8 print:h-8 print:mb-1 print:shadow-none ${color}`}>
