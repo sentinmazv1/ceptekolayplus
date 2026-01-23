@@ -5,6 +5,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+    console.log('Force Re-Deploy: Fix Daily Stats');
     const { searchParams } = new URL(req.url);
     const confirm = searchParams.get('confirm') === 'true';
 
