@@ -323,8 +323,7 @@ export async function getReportData(startDate?: string, endDate?: string) {
     let page = 0;
     const pageSize = 1000;
 
-    let page = 0;
-    const pageSize = 1000; // Safer limit (Supabase default max rows is often 1000)
+
 
     while (true) {
         let query = supabaseAdmin
