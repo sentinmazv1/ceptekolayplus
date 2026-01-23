@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     try {
         let query = supabaseAdmin
             .from('leads')
-            .select('*')
+            .select('*', { count: 'exact' })
             .eq('sinif', 'Gecikme')
             .order('son_arama_zamani', { ascending: true, nullsFirst: true });
 
@@ -43,12 +43,8 @@ export async function GET(req: NextRequest) {
             else if (filterValue === 'overdue') query = query.lt('odeme_sozu_tarihi', today);
         }
 
-        // Get Total Count for Pagination
-        const { count, error: countError } = await query.select('*', { count: 'exact', head: true });
-        if (countError) throw countError;
-
-        // Get Data with range
-        const { data, error } = await query.select('*').range(offset, offset + limit - 1);
+        // Get Data with range AND Count in one go
+        const { data, error, count } = await query.range(offset, offset + limit - 1);
         if (error) throw error;
 
         return NextResponse.json({
