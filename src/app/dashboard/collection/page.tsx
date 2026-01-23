@@ -11,8 +11,12 @@ export default function CollectionPage() {
     const [viewMode, setViewMode] = useState<'DASHBOARD' | 'LIST' | 'CARD'>('DASHBOARD');
 
     // Data
+    // Data
     const [stats, setStats] = useState<any>(null);
     const [leadList, setLeadList] = useState<Customer[]>([]);
+    const [meta, setMeta] = useState({ page: 1, total: 0, totalPages: 1 });
+    const [currentFilter, setCurrentFilter] = useState({ type: 'status', value: 'all', title: '' });
+
     const [activeLead, setActiveLead] = useState<Customer | null>(null);
     const [loading, setLoading] = useState(false);
     const [listTitle, setListTitle] = useState('');
@@ -34,14 +38,18 @@ export default function CollectionPage() {
         }
     };
 
-    const fetchList = async (type: string, value: string, title: string) => {
+    const fetchList = async (type: string, value: string, title: string, page = 1) => {
         setLoading(true);
         setListTitle(title);
+        // Store filter for pagination
+        setCurrentFilter({ type, value, title });
+
         try {
-            const res = await fetch(`/api/collection/list?type=${type}&value=${value}`);
+            const res = await fetch(`/api/collection/list?type=${type}&value=${value}&page=${page}&limit=50`);
             const json = await res.json();
             if (json.success) {
                 setLeadList(json.leads || []);
+                setMeta(json.meta || { page: 1, total: 0, totalPages: 1 });
                 setViewMode('LIST');
             }
         } catch (e) {
@@ -49,6 +57,11 @@ export default function CollectionPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const changePage = (newPage: number) => {
+        if (newPage < 1 || newPage > meta.totalPages) return;
+        fetchList(currentFilter.type, currentFilter.value, currentFilter.title, newPage);
     };
 
     const fetchNext = async () => {
@@ -200,31 +213,81 @@ export default function CollectionPage() {
                     <div className="space-y-4 animate-in fade-in slide-in-from-right-8 duration-300">
                         <div className="bg-indigo-900 text-white p-4 rounded-xl flex justify-between items-center shadow-lg">
                             <h2 className="font-bold text-lg">{listTitle}</h2>
-                            <span className="bg-white/20 px-3 py-1 rounded-full font-mono">{leadList.length} Kayıt</span>
+                            <div className="flex items-center gap-4">
+                                <span className="bg-white/20 px-3 py-1 rounded-full font-mono text-sm">
+                                    {meta.total} Kayıt (Sayfa {meta.page}/{meta.totalPages})
+                                </span>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => changePage(meta.page - 1)}
+                                        disabled={meta.page <= 1}
+                                        className="p-1 hover:bg-white/20 rounded disabled:opacity-50"
+                                    >
+                                        <ArrowLeft className="w-5 h-5" />
+                                    </button>
+                                    <button
+                                        onClick={() => changePage(meta.page + 1)}
+                                        disabled={meta.page >= meta.totalPages}
+                                        className="p-1 hover:bg-white/20 rounded disabled:opacity-50"
+                                    >
+                                        <ArrowLeft className="w-5 h-5 rotate-180" />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="grid gap-3">
                             {leadList.map((lead) => (
                                 <div
                                     key={lead.id}
-                                    onClick={() => { setActiveLead(lead); setViewMode('CARD'); }}
-                                    className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:shadow-md hover:border-indigo-300 hover:scale-[1.01] transition-all group"
+                                    className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all group relative"
                                 >
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <h3 className="font-bold text-slate-900 group-hover:text-indigo-700 transition-colors">{lead.ad_soyad}</h3>
-                                            <div className="text-xs font-medium text-slate-400 mt-1 flex gap-2">
-                                                <span>{lead.telefon}</span>
-                                                {lead.odeme_sozu_tarihi && (
-                                                    <span className={lead.odeme_sozu_tarihi < new Date().toISOString() ? 'text-red-500 font-bold' : 'text-emerald-600 font-bold'}>
-                                                        Tarih: {new Date(lead.odeme_sozu_tarihi).toLocaleDateString('tr-TR')}
+                                    <div className="flex justify-between items-start gap-4">
+                                        {/* Left Info */}
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 className="font-bold text-slate-900 text-lg group-hover:text-indigo-700 transition-colors">
+                                                    {lead.ad_soyad}
+                                                </h3>
+                                                {lead.talep_edilen_tutar && (
+                                                    <span className="bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded text-xs">
+                                                        {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(lead.talep_edilen_tutar)}
                                                     </span>
                                                 )}
                                             </div>
+
+                                            <div className="text-sm font-medium text-slate-500 flex flex-wrap gap-4">
+                                                <span>{lead.telefon}</span>
+                                                {lead.odeme_sozu_tarihi && (
+                                                    <span className={lead.odeme_sozu_tarihi < new Date().toISOString() ? 'text-red-600 font-bold' : 'text-emerald-600 font-bold'}>
+                                                        Söz: {new Date(lead.odeme_sozu_tarihi).toLocaleDateString('tr-TR')}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Last Note */}
+                                            {lead.arama_not_kisa && (
+                                                <div className="mt-2 text-xs text-slate-600 bg-slate-50 p-2 rounded border border-slate-100 italic">
+                                                    "{lead.arama_not_kisa}"
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="text-right">
-                                            <div className="text-xs bg-slate-100 px-2 py-1 rounded mb-1">{lead.tahsilat_durumu || 'Durum Yok'}</div>
-                                            <div className="text-[10px] text-slate-400">Son Arama: {lead.son_arama_zamani ? new Date(lead.son_arama_zamani).toLocaleDateString('tr-TR') : '-'}</div>
+
+                                        {/* Right / Actions */}
+                                        <div className="flex flex-col items-end gap-2">
+                                            <div className="text-xs bg-slate-100 px-2 py-1 rounded font-bold text-slate-600">
+                                                {lead.tahsilat_durumu || 'İşlem Bekliyor'}
+                                            </div>
+                                            <div className="text-[10px] text-slate-400">
+                                                Son: {lead.son_arama_zamani ? new Date(lead.son_arama_zamani).toLocaleDateString('tr-TR') : '-'}
+                                            </div>
+
+                                            <button
+                                                onClick={() => { setActiveLead(lead); setViewMode('CARD'); }}
+                                                className="mt-1 px-4 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white font-bold rounded-lg text-sm transition-colors"
+                                            >
+                                                Detay
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -232,6 +295,27 @@ export default function CollectionPage() {
                             {leadList.length === 0 && (
                                 <div className="text-center py-12 text-slate-400">Kayıt Bulunamadı</div>
                             )}
+                        </div>
+
+                        {/* Bottom Pagination */}
+                        <div className="flex justify-center gap-4 py-4">
+                            <button
+                                onClick={() => changePage(meta.page - 1)}
+                                disabled={meta.page <= 1}
+                                className="px-4 py-2 bg-white border rounded shadow-sm disabled:opacity-50"
+                            >
+                                Önceki
+                            </button>
+                            <span className="flex items-center font-bold text-slate-600">
+                                {meta.page} / {meta.totalPages}
+                            </span>
+                            <button
+                                onClick={() => changePage(meta.page + 1)}
+                                disabled={meta.page >= meta.totalPages}
+                                className="px-4 py-2 bg-white border rounded shadow-sm disabled:opacity-50"
+                            >
+                                Sonraki
+                            </button>
                         </div>
                     </div>
                 )}
