@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { CustomerCard } from '@/components/CustomerCard';
-import { Loader2, Play, Users, Calendar, AlertTriangle, CheckCircle, RefreshCw, X, ArrowLeft } from 'lucide-react';
+import { Loader2, Play, Users, Calendar, AlertTriangle, CheckCircle, RefreshCw, X, ArrowLeft, BarChart3 } from 'lucide-react';
 import { Customer } from '@/lib/types';
 
 export default function CollectionPage() {
@@ -124,13 +124,22 @@ export default function CollectionPage() {
                         <p className="text-slate-500 font-medium">Takipteki müşteriler ve tahsilat durumu</p>
                     </div>
                     {viewMode === 'DASHBOARD' && (
-                        <button
-                            onClick={fetchNext}
-                            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 transition-transform active:scale-95"
-                        >
-                            <Play className="w-5 h-5 fill-white" />
-                            Sıradakini Getir
-                        </button>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => window.location.href = '/dashboard/collection/reports'}
+                                className="flex items-center gap-2 px-4 py-3 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-xl border border-slate-200 transition-transform active:scale-95"
+                            >
+                                <BarChart3 className="w-5 h-5 text-indigo-600" />
+                                Raporlar
+                            </button>
+                            <button
+                                onClick={fetchNext}
+                                className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 transition-transform active:scale-95"
+                            >
+                                <Play className="w-5 h-5 fill-white" />
+                                Sıradakini Getir
+                            </button>
+                        </div>
                     )}
                     {(viewMode === 'LIST' || viewMode === 'CARD') && (
                         <button
