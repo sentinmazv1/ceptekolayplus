@@ -314,19 +314,31 @@ export async function lockNextLead(userEmail: string): Promise<(Customer & { sou
 
 // --- REPORTING (BULK DATA) ---
 
-export async function getReportData() {
-    // Fetch only columns needed for reports to save bandwidth
-    // Columns: durum, sehir, meslek_is, son_yatan_maas, talep_edilen_urun, onay_durumu, basvuru_kanali, created_at, son_arama_zamani, sahip, onay_tarihi
-    // Note: Recursive fetch to ensure we get ALL data for reports.
+// UPDATED: Accepts Date Range to avoid full table scan
+export async function getReportData(startDate?: string, endDate?: string) {
+    // Strategy: Only fetch leads that were UPDATED in this range.
+    // Efficiently covers: New leads, status changes, sales, calls (assuming they update updated_at)
 
     let allRows: any[] = [];
+    let page = 0;
+    const pageSize = 1000;
+
     let page = 0;
     const pageSize = 1000; // Safer limit (Supabase default max rows is often 1000)
 
     while (true) {
-        const { data, error } = await supabaseAdmin
+        let query = supabaseAdmin
             .from('leads')
-            .select('id, durum, sehir, meslek_is, maas_bilgisi, talep_edilen_urun, onay_durumu, basvuru_kanali, created_at, son_arama_zamani, sahip_email, onay_tarihi, kredi_limiti, sonraki_arama_zamani, icra_durumu, dava_durumu, aciklama_uzun, avukat_sorgu_durumu, avukat_sorgu_sonuc, psikoteknik_varmi, psikoteknik_notu, ikametgah_varmi, hizmet_dokumu_varmi, ayni_isyerinde_sure_ay, mulkiyet_durumu, arac_varmi, arac_detay, tapu_varmi, tapu_detay, kapali_icra_kapanis_sekli, gizli_dosya_varmi, gizli_dosya_detay, kefil_meslek_is, kefil_son_yatan_maas, kefil_ayni_isyerinde_sure_ay, kefil_e_devlet_sifre, kefil_ikametgah_varmi, kefil_hizmet_dokumu_varmi, kefil_dava_dosyasi_varmi, kefil_dava_detay, kefil_acik_icra_varmi, kefil_acik_icra_detay, kefil_kapali_icra_varmi, kefil_kapali_icra_kapanis_sekli, kefil_mulkiyet_durumu, kefil_arac_varmi, kefil_tapu_varmi, kefil_notlar, winner_musteri_no, e_devlet_sifre, iptal_nedeni, kefil_ad_soyad, kefil_telefon, kefil_tc_kimlik, teslim_tarihi, teslim_eden, urun_imei, urun_seri_no, satilan_urunler')
+            .select('id, durum, sehir, meslek_is, maas_bilgisi, talep_edilen_urun, onay_durumu, basvuru_kanali, created_at, son_arama_zamani, sahip_email, onay_tarihi, kredi_limiti, sonraki_arama_zamani, icra_durumu, dava_durumu, aciklama_uzun, avukat_sorgu_durumu, avukat_sorgu_sonuc, psikoteknik_varmi, psikoteknik_notu, ikametgah_varmi, hizmet_dokumu_varmi, ayni_isyerinde_sure_ay, mulkiyet_durumu, arac_varmi, arac_detay, tapu_varmi, tapu_detay, kapali_icra_kapanis_sekli, gizli_dosya_varmi, gizli_dosya_detay, kefil_meslek_is, kefil_son_yatan_maas, kefil_ayni_isyerinde_sure_ay, kefil_e_devlet_sifre, kefil_ikametgah_varmi, kefil_hizmet_dokumu_varmi, kefil_dava_dosyasi_varmi, kefil_dava_detay, kefil_acik_icra_varmi, kefil_acik_icra_detay, kefil_kapali_icra_varmi, kefil_kapali_icra_kapanis_sekli, kefil_mulkiyet_durumu, kefil_arac_varmi, kefil_tapu_varmi, kefil_notlar, winner_musteri_no, e_devlet_sifre, iptal_nedeni, kefil_ad_soyad, kefil_telefon, kefil_tc_kimlik, teslim_tarihi, teslim_eden, urun_imei, urun_seri_no, satilan_urunler, updated_at') // Added updated_at
+
+        if (startDate && endDate) {
+            // Safe superset: Any lead relevant to the report period MUST have been updated (or created) in that period.
+            // We use a buffer of 1 day to be safe? No, updated_at is reliable.
+            // BUT: 'start' passed from API is usually 00:00. 
+            query = query.gte('updated_at', startDate).lte('updated_at', endDate + 'T23:59:59');
+        }
+
+        const { data, error } = await query
             .order('id', { ascending: true }) // Stable ordering for pagination
             .range(page * pageSize, (page + 1) * pageSize - 1);
 
@@ -344,7 +356,7 @@ export async function getReportData() {
     return allRows.map(mapRowToCustomer);
 }
 
-export async function getAllLogs(dateFilter?: string) {
+export async function getAllLogs(dateFilter?: string, startDate?: string, endDate?: string) {
     // Fetch logs for performance reports (Pace, Call Counts)
     let allLogs: any[] = [];
     let page = 0;
@@ -356,6 +368,8 @@ export async function getAllLogs(dateFilter?: string) {
 
         if (dateFilter) {
             query = query.ilike('created_at', `${dateFilter}%`);
+        } else if (startDate && endDate) {
+            query = query.gte('created_at', startDate).lte('created_at', endDate + 'T23:59:59');
         }
 
         // No arbitrary limit, use pagination to get everything

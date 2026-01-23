@@ -30,8 +30,8 @@ export async function GET(req: NextRequest) {
         const endDate = url.searchParams.get('endDate') || todayStr;
 
         const [customers, logs, inventoryStats, leadStats] = await Promise.all([
-            getReportData(),
-            getAllLogs(),
+            getReportData(startDate, endDate),
+            getAllLogs(undefined, startDate, endDate),
             getInventoryStats(),
             getLeadStats()
         ]);

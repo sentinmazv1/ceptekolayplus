@@ -34,13 +34,18 @@ if (fs.existsSync(envPath)) {
 }
 console.log('Loaded ENV Keys:', Object.keys(env)); // DEBUG
 
-const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY;
+// Fallback logic extracted from src/lib/supabase.ts
+const HARDCODED_URL = 'https://dfdzeedpufeixcwenoth.supabase.co';
+const HARDCODED_SERVICE = 'sb_secret_4qUtGIJ1K2_2I70zecIibw_a7ehmYIl';
+
+const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL || HARDCODED_URL;
+const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY || HARDCODED_SERVICE;
 
 if (!supabaseUrl || !supabaseServiceKey) {
-    console.error('Missing Env Vars. Expected NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
+    console.error('Missing Env Vars AND Fallback.');
     process.exit(1);
 }
+console.log('Using Supabase URL:', supabaseUrl);
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
