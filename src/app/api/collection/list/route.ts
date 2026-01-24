@@ -27,7 +27,9 @@ export async function GET(req: NextRequest) {
         const offset = (page - 1) * limit;
 
         if (filterType === 'status') {
-            if (filterValue === 'İşlem Bekliyor') {
+            if (filterValue === 'all') {
+                // Return all (No filter applied)
+            } else if (filterValue === 'İşlem Bekliyor') {
                 // Simplified to IS NULL to avoid OR syntax issues
                 query = query.is('tahsilat_durumu', null);
             } else {
