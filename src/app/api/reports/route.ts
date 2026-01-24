@@ -118,6 +118,12 @@ export async function GET(req: NextRequest) {
         const userBackOfficeIds: Record<string, Set<string>> = {}; // User -> Set<LeadID> (Touched for BackOffice)
 
         // --- 1. PROCESS LOGS (Activity Flow) ---
+        // SORT LOGS FIRST for Debounce Logic (Crucial for sequential grouping)
+        logs.sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+        // Debounce Tracking: User -> Customer -> LastTimestamp
+        const lastBackofficeTime: Record<string, Record<string, number>> = {};
+
         // Puts "Events" into buckets
         logs.forEach((l: any) => {
             const user = l.user_email;
@@ -132,6 +138,7 @@ export async function GET(req: NextRequest) {
                 if (!stats.performance[user]) stats.performance[user] = { pulled: 0, calls: 0, approvals: 0, approvedLimit: 0, applications: 0, paceMinutes: 0, sms: 0, whatsapp: 0, sales: 0, salesVolume: 0, backoffice: 0, dailyGoal: 0, image: '' };
                 if (!userAppIds[user]) userAppIds[user] = new Set();
                 if (!userBackOfficeIds[user]) userBackOfficeIds[user] = new Set();
+                if (!lastBackofficeTime[user]) lastBackofficeTime[user] = {};
 
                 // 1. Funnel Actions
                 if (action === 'PULL_LEAD') {
@@ -149,7 +156,12 @@ export async function GET(req: NextRequest) {
                 } else {
                     // 2. Backoffice Actions (Any other meaningful change like notes or field updates)
                     if (['UPDATE_STATUS', 'UPDATE_FIELDS', 'ADD_NOTE', 'CREATED'].includes(action)) {
-                        stats.performance[user].backoffice++;
+                        // FRAUD PREVENTION: 5 Minute Debounce per Customer
+                        const lastTime = lastBackofficeTime[user][l.customer_id] || 0;
+                        if (ts - lastTime > 300000) { // 5 minutes = 300,000 ms
+                            stats.performance[user].backoffice++;
+                            lastBackofficeTime[user][l.customer_id] = ts;
+                        }
                     }
                 }
 
@@ -393,8 +405,8 @@ export async function GET(req: NextRequest) {
         const last7DaysCalls: Record<string, number> = {};
         const lastLogTime: Record<string, number> = {};
 
-        // Sort logs by time to ensure correct dedup
-        logs.sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        // Sort logs by time to ensure correct dedup (Done at start)
+        // logs.sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
         logs.forEach((l: any) => {
             const user = l.user_email;
