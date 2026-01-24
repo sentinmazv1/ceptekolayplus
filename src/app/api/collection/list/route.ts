@@ -28,8 +28,8 @@ export async function GET(req: NextRequest) {
 
         if (filterType === 'status') {
             if (filterValue === 'İşlem Bekliyor') {
-                // Check for NULL or Empty
-                query = query.or('tahsilat_durumu.is.null,tahsilat_durumu.eq.');
+                // Simplified to IS NULL to avoid OR syntax issues
+                query = query.is('tahsilat_durumu', null);
             } else {
                 query = query.eq('tahsilat_durumu', filterValue);
             }

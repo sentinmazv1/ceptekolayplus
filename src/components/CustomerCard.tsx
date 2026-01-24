@@ -373,7 +373,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                     urun_seri_no: selectedStockItem.seri_no,
                     satilan_urunler: JSON.stringify(updatedItems),
                     durum: 'Teslim edildi',
-                    teslim_tarihi: new Date().toISOString()
+                    teslim_tarihi: data.teslim_tarihi || new Date().toISOString() // Only set if not already set
                 }));
                 // Update MultiProducts UI Helper State too if it exists? 
                 // Creating a simplified sync:

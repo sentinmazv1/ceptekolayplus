@@ -51,9 +51,12 @@ export default function CollectionPage() {
                 setLeadList(json.leads || []);
                 setMeta(json.meta || { page: 1, total: 0, totalPages: 1 });
                 setViewMode('LIST');
+            } else {
+                alert('Liste alınamadı: ' + (json.error || 'Bilinmeyen hata'));
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error('List error:', e);
+            alert('Bağlantı hatası: ' + e.message);
         } finally {
             setLoading(false);
         }

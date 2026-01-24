@@ -260,13 +260,19 @@ export async function GET(req: NextRequest) {
                             const itemDate = p.satis_tarihi;
                             const mainDate = row.teslim_tarihi;
 
-                            // 1. If Item has date and is in range -> Count
-                            // 2. If Item has NO date (or we want to override), and Main Date is in range -> Count
-                            // 3. (Best for "Closed Today"): If Main Delivery Date is in range, assume all items were sold now.
-                            if ((itemDate && isInRange(itemDate)) || (mainDate && isInRange(mainDate))) {
-                                itemSaleCount++;
-                                // Support both new satis_fiyati and legacy fiyat, prioritizing satis_fiyati
-                                itemRevenue += parseFloat(String(p.satis_fiyati || p.fiyat || '0'));
+                            // 1. If Item has date -> Check ONLY that date.
+                            // 2. If Item has NO date -> Fallback to Main Delivery Date.
+                            if (itemDate) {
+                                if (isInRange(itemDate)) {
+                                    itemSaleCount++;
+                                    itemRevenue += parseFloat(String(p.satis_fiyati || p.fiyat || '0'));
+                                }
+                            } else {
+                                // Fallback for legacy items inside the array that lack a date
+                                if (mainDate && isInRange(mainDate)) {
+                                    itemSaleCount++;
+                                    itemRevenue += parseFloat(String(p.satis_fiyati || p.fiyat || '0'));
+                                }
                             }
                         });
                     }
