@@ -1821,9 +1821,9 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                             <CustomerLogViewer customerId={data.id} />
                         </div>
                     )
+                }
 
-
-            </div >
+            </div>
 
             {/* --- ACTION FOOTER (Sticky) --- */}
             {
