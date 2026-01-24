@@ -375,13 +375,13 @@ export async function GET(req: NextRequest) {
             }
         });
 
-        // Goals: Last 3 Days EXCLUDING Today (Static Goal)
+        // Goals: Last 7 Days EXCLUDING Today (Static Goal)
         const todayMidnight = new Date();
         todayMidnight.setHours(0, 0, 0, 0);
-        const threeDaysAgoMidnight = todayMidnight.getTime() - (3 * 24 * 60 * 60 * 1000);
+        const sevenDaysAgoMidnight = todayMidnight.getTime() - (7 * 24 * 60 * 60 * 1000);
         const todayMidnightTime = todayMidnight.getTime();
 
-        const last3DaysCalls: Record<string, number> = {};
+        const last7DaysCalls: Record<string, number> = {};
         const lastLogTime: Record<string, number> = {};
 
         // Sort logs by time to ensure correct dedup
@@ -392,19 +392,38 @@ export async function GET(req: NextRequest) {
             if (!user || ['sistem', 'admin', 'ibrahim'].some(x => user.includes(x))) return;
             const t = new Date(l.timestamp).getTime();
 
-            // Strictly between 3 days ago (inclusive) and today midnight (exclusive)
-            if (t >= threeDaysAgoMidnight && t < todayMidnightTime && l.action === 'PULL_LEAD') {
-                // Deduplicate: If same user pulls multiple leads within 10 seconds, count as 1 event (bulk assign protection)
-                const lastTime = lastLogTime[user] || 0;
-                if (t - lastTime > 10000) { // 10 seconds
-                    last3DaysCalls[user] = (last3DaysCalls[user] || 0) + 1;
-                    lastLogTime[user] = t;
-                }
+            // Strictly between 7 days ago (inclusive) and today midnight (exclusive)
+            if (t >= sevenDaysAgoMidnight && t < todayMidnightTime && l.action === 'PULL_LEAD') { // Fix: Should based on PULL_LEAD or CLICK_CALL? Original was PULL_LEAD. Let's stick to PULL_LEAD or CLICK_CALL based on what stats.performance counts. 
+                // Stats performance counts CLICK_CALL for 'calls'. PULL_LEAD is 'pulled'. 
+                // User asked for "Call Target". Usually that means CLICK_CALL.
+                // However, previous code used PULL_LEAD.
+                // Let's check stats.performance[user].calls counting logic above.
+                // It counts 'CLICK_CALL'. 
+                // Let's SWITCH to CLICK_CALL for goal calculation to be consistent with "Call Goal".
+                // Deduplicate: If same user calls multiple leads within 10 seconds? Maybe less strict for calls.
+                // Let's allow all CLICK_CALLs for now or keep PULL_LEAD?
+                // "Arama hedefi" => Call Target. So CLICK_CALL is better.
+            }
+            // WAIT - Re-reading previous logic:
+            // if (t >= threeDaysAgoMidnight && t < todayMidnightTime && l.action === 'PULL_LEAD')
+            // It was counting PULL_LEAD. 
+            // If the user wants "Call Goal", they might mean actual calls. 
+            // But if the business logic "Arama" loosely means "Processed Lead", then PULL_LEAD is fine. 
+            // "Panelde sağ üstte ki güncel arama ve hedef" -> "Current Call and Target".
+            // Display shows `stats.performance[user].calls`.
+            // So goal should probably be based on CALLS (CLICK_CALL).
+
+            // Let's change action to 'CLICK_CALL' generally.
+            if (t >= sevenDaysAgoMidnight && t < todayMidnightTime && l.action === 'CLICK_CALL') {
+                last7DaysCalls[user] = (last7DaysCalls[user] || 0) + 1;
             }
         });
         Object.keys(stats.performance).forEach(user => {
-            const avg = Math.round((last3DaysCalls[user] || 0) / 3);
-            stats.performance[user].dailyGoal = Math.max(10, Math.ceil(avg * 1.1));
+            // Average of 7 days
+            // Note: Should we divide by 7 or by "Active Days"?
+            // Simple average over 7 days implies dividing by 7.
+            const avg = Math.round((last7DaysCalls[user] || 0) / 7);
+            stats.performance[user].dailyGoal = Math.max(10, Math.ceil(avg * 1.10)); // +10%
         });
 
         // Pace: Include today for pace calculation
