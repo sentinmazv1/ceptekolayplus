@@ -27,11 +27,12 @@ export async function GET(req: NextRequest) {
         if (dailyError) throw dailyError;
 
         // 3. Payment Stats (Simple Query)
+        // We match broad payment statuses.
         const { data: paymentsStats, error: payError } = await supabaseAdmin
             .from('leads')
-            .select('id, ad_soyad, odeme_sozu_tarihi, tahsilat_durumu, sinif, telefon')
+            .select('id, ad_soyad, odeme_sozu_tarihi, tahsilat_durumu, sinif, telefon, updated_at')
             .eq('sinif', 'Gecikme')
-            .in('tahsilat_durumu', ['Ödeme Alındı', 'Kısmi Ödeme', 'Yapılandırma Yapıldı']) // Assuming these are positive statuses
+            .or('tahsilat_durumu.eq.Ödeme Alındı,tahsilat_durumu.eq.Kısmi Ödeme,tahsilat_durumu.eq.Yapılandırma Yapıldı,tahsilat_durumu.eq.Hesap Kapandı,tahsilat_durumu.eq.Banka Yoluyla Ödeme')
             .gte('updated_at', `${start}T00:00:00`)
             .lte('updated_at', `${end}T23:59:59`)
             .order('updated_at', { ascending: false });
