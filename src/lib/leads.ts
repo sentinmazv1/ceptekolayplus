@@ -542,6 +542,54 @@ export async function updateLead(customer: Customer, userEmail: string): Promise
         odeme_sozu_tarihi: customer.odeme_sozu_tarihi
     };
 
+
+    // 1. Fetch CURRENT data effectively for diff
+    // We already do a select at the end, but we need the OLD values for logging.
+    // The calling function likely has it, BUT to be safe and atomic, let's fetch here or rely on the fact we build the 'updates' object.
+
+    // Actually, 'updateLead' receives the 'customer' object which is the NEW state. 
+    // We need to fetch the OLD state to compare.
+    const { data: oldData } = await supabaseAdmin.from('leads').select('*').eq('id', customer.id).single();
+
+    if (oldData) {
+        const changes: string[] = [];
+        // Define fields to track
+        const trackFields = [
+            'ad_soyad', 'telefon', 'tc_kimlik', 'durum', 'kredi_limiti', 'sehir', 'ilce',
+            'meslek_is', 'maas_bilgisi', 'aciklama_uzun', 'onay_durumu',
+            'avukat_sorgu_durumu', 'kefil_ad_soyad', 'tahsilat_durumu', 'sinif',
+            'teslim_tarihi', 'satis_tarihi', 'odeme_sozu_tarihi'
+        ];
+
+        trackFields.forEach(field => {
+            // Loose comparison for strings/numbers
+            const oldVal = String(oldData[field] || '').trim();
+            // @ts-ignore
+            const newVal = String(updates[field] || '').trim();
+
+            if (oldVal !== newVal) {
+                // Ignore empty to null transitions if both effectively empty
+                if (!oldVal && !newVal) return;
+                changes.push(`${field}: "${oldVal}" -> "${newVal}"`);
+            }
+        });
+
+        // Log if there are changes (Exclude Status Change as it's often logged separately or we can double log for detail)
+        // We filter out 'durum' if we only want generic fields, but user asked for "everything".
+        if (changes.length > 0) {
+            await logAction({
+                log_id: crypto.randomUUID(),
+                timestamp: new Date().toISOString(),
+                user_email: userEmail,
+                customer_id: customer.id,
+                action: 'UPDATE_FIELDS',
+                old_value: 'Detailed Log',
+                new_value: `${changes.length} fields changed`,
+                note: changes.join('\n')
+            });
+        }
+    }
+
     const { data, error } = await supabaseAdmin.from('leads').update(updates).eq('id', customer.id).select().single();
     if (error) throw error;
     return mapRowToCustomer(data);

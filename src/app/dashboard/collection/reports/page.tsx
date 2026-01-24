@@ -10,6 +10,7 @@ export default function CollectionReportsPage() {
     const [loading, setLoading] = useState(true);
     const [cityStats, setCityStats] = useState<any[]>([]);
     const [dailyStats, setDailyStats] = useState<any[]>([]);
+    const [paymentsStats, setPaymentsStats] = useState<any[]>([]);
     const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
     useEffect(() => {
@@ -35,6 +36,7 @@ export default function CollectionReportsPage() {
             if (json.success) {
                 setCityStats(json.cityStats || []);
                 setDailyStats(json.dailyStats || []);
+                setPaymentsStats(json.paymentsStats || []);
             }
         } catch (e) {
             console.error(e);
@@ -215,6 +217,51 @@ export default function CollectionReportsPage() {
                                         <td className="px-6 py-4 font-medium text-amber-600">{city.phones_off_count}</td>
                                     </tr>
                                 ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* Payments Report Table */}
+                <div className="bg-white rounded-3xl shadow-sm border border-emerald-100 overflow-hidden">
+                    <div className="p-6 border-b border-emerald-100 bg-emerald-50/30">
+                        <h3 className="text-lg font-bold text-emerald-900 flex items-center gap-2">
+                            <CheckCircle className="w-5 h-5 text-emerald-600" /> Tahsilat Yapılanlar (Bu Dönem)
+                        </h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-emerald-50 text-emerald-700 font-bold text-xs uppercase tracking-wider">
+                                <tr>
+                                    <th className="px-6 py-4">Müşteri</th>
+                                    <th className="px-6 py-4">Telefon</th>
+                                    <th className="px-6 py-4">Durum</th>
+                                    <th className="px-6 py-4">Tarih</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-emerald-50">
+                                {paymentsStats && paymentsStats.length > 0 ? (
+                                    paymentsStats.map((lead: any) => (
+                                        <tr key={lead.id} className="hover:bg-emerald-50/30 transition-colors">
+                                            <td className="px-6 py-4 font-bold text-slate-800">{lead.ad_soyad}</td>
+                                            <td className="px-6 py-4 text-slate-600 font-mono text-xs">{lead.telefon}</td>
+                                            <td className="px-6 py-4">
+                                                <span className="px-2 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">
+                                                    {lead.tahsilat_durumu}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-500 text-xs">
+                                                {new Date(lead.updated_at || new Date()).toLocaleDateString('tr-TR')}
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={4} className="px-6 py-8 text-center text-emerald-600/50 italic">
+                                            Bu dönemde tahsilat kaydı bulunamadı.
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>

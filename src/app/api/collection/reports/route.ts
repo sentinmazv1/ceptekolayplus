@@ -26,7 +26,20 @@ export async function GET(req: NextRequest) {
 
         if (dailyError) throw dailyError;
 
-        return NextResponse.json({ success: true, cityStats, dailyStats });
+        // 3. Payment Stats (Simple Query)
+        const { data: paymentsStats, error: payError } = await supabaseAdmin
+            .from('leads')
+            .select('id, ad_soyad, odeme_sozu_tarihi, tahsilat_durumu, sinif, telefon')
+            .eq('sinif', 'Gecikme')
+            .in('tahsilat_durumu', ['Ödeme Alındı', 'Kısmi Ödeme', 'Yapılandırma Yapıldı']) // Assuming these are positive statuses
+            .gte('updated_at', `${start}T00:00:00`)
+            .lte('updated_at', `${end}T23:59:59`)
+            .order('updated_at', { ascending: false });
+
+        // Note: Since we don't track "payment date" strictly separate from "updated_at" for status changes, 
+        // relying on updated_at for the report window is the best approximation without a separate 'payments' table.
+
+        return NextResponse.json({ success: true, cityStats, dailyStats, paymentsStats: paymentsStats || [] });
 
     } catch (error: any) {
         console.error('Report API error:', error);

@@ -11,6 +11,7 @@ import { Loader2, AlertCircle, CheckCircle, Info, Phone, Package, Smartphone, Se
 import { cityList, getDistrictsByCityCode } from 'turkey-neighbourhoods';
 import { replaceTemplateVariables as replaceVariables } from '@/lib/template-utils';
 import { CollectionNotes } from './CollectionNotes';
+import { CustomerLogViewer } from './CustomerLogViewer';
 
 
 
@@ -1816,336 +1817,328 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
 
                 {
                     activeTab === 'history' && (
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                                <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                                    <RefreshCw className="w-4 h-4 text-gray-500" /> İşlem Geçmişi
-                                </h3>
-                                <button
-                                    onClick={fetchLogs}
-                                    className="text-xs flex items-center gap-1 text-indigo-600 hover:text-indigo-800 px-2 py-1 bg-indigo-50 rounded transition-colors"
-                                >
-                                    <RefreshCw className={`w-3 h-3 ${logsLoading ? 'animate-spin' : ''}`} /> Yenile
-                                </button>
-                            </div>
-
-                            <div className="max-h-[500px] overflow-y-auto p-0">
-                                {logsLoading ? (
-                                    <div className="text-center py-12 text-gray-500 flex flex-col items-center justify-center">
-                                        <Loader2 className="w-8 h-8 animate-spin text-indigo-400 mb-3" />
-                                        <span className="text-sm font-medium">Loglar yükleniyor...</span>
-                                    </div>
-                                ) : logs.length === 0 ? (
-                                    <div className="text-center py-12 text-gray-400 bg-gray-50/30">
-                                        <Info className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                                        <p>Henüz işlem kaydı bulunmuyor.</p>
-                                    </div>
-                                ) : (
-                                    <div className="divide-y divide-gray-100">
-                                        {logs.map((log) => (
-                                            <div key={log.log_id} className="p-4 text-sm hover:bg-gray-50 transition-colors group">
-                                                <div className="flex justify-between items-start mb-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={`font-bold px-2.5 py-0.5 rounded-full text-[10px] uppercase tracking-wide shadow-sm ${log.action === 'SEND_SMS' ? 'bg-green-100 text-green-700 border border-green-200' :
-                                                            log.action === 'SEND_WHATSAPP' ? 'bg-teal-100 text-teal-700 border border-teal-200' :
-                                                                log.action === 'UPDATE_STATUS' ? 'bg-blue-100 text-blue-700 border border-blue-200' :
-                                                                    log.action === 'PULL_LEAD' ? 'bg-purple-100 text-purple-700 border border-purple-200' :
-                                                                        'bg-gray-100 text-gray-700 border border-gray-200'
-                                                            }`}>
-                                                            {log.action === 'SEND_SMS' ? 'SMS' :
-                                                                log.action === 'SEND_WHATSAPP' ? 'WHATSAPP' :
-                                                                    log.action === 'UPDATE_STATUS' ? 'DURUM' :
-                                                                        log.action === 'PULL_LEAD' ? 'HAVUZ' : log.action}
-                                                        </span>
-                                                        <span className="text-gray-500 font-medium text-xs">
-                                                            {log.user_email?.split('@')[0]}
-                                                        </span>
-                                                    </div>
-                                                    <span className="text-gray-400 text-[10px] font-mono group-hover:text-gray-600 transition-colors">
-                                                        {new Date(log.timestamp).toLocaleString('tr-TR')}
-                                                    </span>
-                                                </div>
-
-                                                {/* Content based on action */}
-                                                <div className="pl-2 border-l-2 border-gray-100 ml-1 mt-2">
-                                                    {log.action === 'UPDATE_STATUS' && (
-                                                        <div className="flex items-center gap-2 text-gray-700 bg-white p-2 rounded border border-gray-100 shadow-sm w-fit">
-                                                            <span className="line-through text-gray-400 text-xs">{log.old_value}</span>
-                                                            <span className="text-gray-300">➜</span>
-                                                            <span className="font-bold text-indigo-600">{log.new_value}</span>
-                                                        </div>
-                                                    )}
-
-                                                    {log.action === 'SEND_SMS' && (
-                                                        <div className="p-2 bg-green-50/50 border border-green-100 rounded text-green-800 text-xs italic font-medium">
-                                                            "{log.new_value}"
-                                                        </div>
-                                                    )}
-
-                                                    {log.action === 'SEND_WHATSAPP' && (
-                                                        <div className="p-2 bg-teal-50/50 border border-teal-100 rounded text-teal-800 text-xs italic font-medium">
-                                                            Whatsapp mesajı gönderildi.
-                                                        </div>
-                                                    )}
-
-                                                    {log.note && (
-                                                        <p className="mt-1 text-gray-600 italic">
-                                                            📝 {log.note}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                        <div className="bg-slate-50 rounded-xl p-4 min-h-[400px] animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <CustomerLogViewer customerId={data.id} />
                         </div>
                     )
-                }
+
+                    < div className="max-h-[500px] overflow-y-auto p-0">
+                {logsLoading ? (
+                    <div className="text-center py-12 text-gray-500 flex flex-col items-center justify-center">
+                        <Loader2 className="w-8 h-8 animate-spin text-indigo-400 mb-3" />
+                        <span className="text-sm font-medium">Loglar yükleniyor...</span>
+                    </div>
+                ) : logs.length === 0 ? (
+                    <div className="text-center py-12 text-gray-400 bg-gray-50/30">
+                        <Info className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                        <p>Henüz işlem kaydı bulunmuyor.</p>
+                    </div>
+                ) : (
+                    <div className="divide-y divide-gray-100">
+                        {logs.map((log) => (
+                            <div key={log.log_id} className="p-4 text-sm hover:bg-gray-50 transition-colors group">
+                                <div className="flex justify-between items-start mb-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className={`font-bold px-2.5 py-0.5 rounded-full text-[10px] uppercase tracking-wide shadow-sm ${log.action === 'SEND_SMS' ? 'bg-green-100 text-green-700 border border-green-200' :
+                                            log.action === 'SEND_WHATSAPP' ? 'bg-teal-100 text-teal-700 border border-teal-200' :
+                                                log.action === 'UPDATE_STATUS' ? 'bg-blue-100 text-blue-700 border border-blue-200' :
+                                                    log.action === 'PULL_LEAD' ? 'bg-purple-100 text-purple-700 border border-purple-200' :
+                                                        'bg-gray-100 text-gray-700 border border-gray-200'
+                                            }`}>
+                                            {log.action === 'SEND_SMS' ? 'SMS' :
+                                                log.action === 'SEND_WHATSAPP' ? 'WHATSAPP' :
+                                                    log.action === 'UPDATE_STATUS' ? 'DURUM' :
+                                                        log.action === 'PULL_LEAD' ? 'HAVUZ' : log.action}
+                                        </span>
+                                        <span className="text-gray-500 font-medium text-xs">
+                                            {log.user_email?.split('@')[0]}
+                                        </span>
+                                    </div>
+                                    <span className="text-gray-400 text-[10px] font-mono group-hover:text-gray-600 transition-colors">
+                                        {new Date(log.timestamp).toLocaleString('tr-TR')}
+                                    </span>
+                                </div>
+
+                                {/* Content based on action */}
+                                <div className="pl-2 border-l-2 border-gray-100 ml-1 mt-2">
+                                    {log.action === 'UPDATE_STATUS' && (
+                                        <div className="flex items-center gap-2 text-gray-700 bg-white p-2 rounded border border-gray-100 shadow-sm w-fit">
+                                            <span className="line-through text-gray-400 text-xs">{log.old_value}</span>
+                                            <span className="text-gray-300">➜</span>
+                                            <span className="font-bold text-indigo-600">{log.new_value}</span>
+                                        </div>
+                                    )}
+
+                                    {log.action === 'SEND_SMS' && (
+                                        <div className="p-2 bg-green-50/50 border border-green-100 rounded text-green-800 text-xs italic font-medium">
+                                            "{log.new_value}"
+                                        </div>
+                                    )}
+
+                                    {log.action === 'SEND_WHATSAPP' && (
+                                        <div className="p-2 bg-teal-50/50 border border-teal-100 rounded text-teal-800 text-xs italic font-medium">
+                                            Whatsapp mesajı gönderildi.
+                                        </div>
+                                    )}
+
+                                    {log.note && (
+                                        <p className="mt-1 text-gray-600 italic">
+                                            📝 {log.note}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+}
             </div >
 
-            {/* --- ACTION FOOTER (Sticky) --- */}
-            {
-                activeTab === 'details' && (
-                    <div className="p-4 border-t border-gray-200 bg-white sticky bottom-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-                        <div className="flex gap-2 justify-end">
-                            <Button
-                                variant="primary"
-                                className="bg-green-600 hover:bg-green-700 text-white w-full md:w-auto shadow-md"
-                                onClick={() => setIsWhatsAppModalOpen(true)}
+    {/* --- ACTION FOOTER (Sticky) --- */ }
+{
+    activeTab === 'details' && (
+        <div className="p-4 border-t border-gray-200 bg-white sticky bottom-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+            <div className="flex gap-2 justify-end">
+                <Button
+                    variant="primary"
+                    className="bg-green-600 hover:bg-green-700 text-white w-full md:w-auto shadow-md"
+                    onClick={() => setIsWhatsAppModalOpen(true)}
+                >
+                    <MessageSquare className="w-4 h-4 mr-2" /> WhatsApp
+                </Button>
+            </div>
+        </div>
+    )
+}
+
+{/* MODALS */ }
+{/* SMS Modal */ }
+{
+    isSmsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg flex flex-col p-6 animate-in fade-in zoom-in duration-200">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-green-600" />
+                    SMS Gönder ({data.telefon})
+                </h3>
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Mesaj İçeriği</label>
+                    <textarea
+                        className="w-full h-32 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                        placeholder="Mesajınızı buraya yazın..."
+                        value={smsMessage}
+                        onChange={(e) => setSmsMessage(e.target.value)}
+                    />
+                    <div className="mt-2 p-2 bg-gray-50 border border-dashed rounded text-[10px] text-gray-500 grid grid-cols-2 gap-x-4 gap-y-1">
+                        <div><span className="font-bold text-indigo-600">{'{name}'}</span> : Ad Soyad</div>
+                        <div><span className="font-bold text-indigo-600">{'{limit}'}</span> : Kredi Limiti</div>
+                        <div><span className="font-bold text-indigo-600">{'{product}'}</span> : Ürün</div>
+                        <div><span className="font-bold text-indigo-600">{'{imei}'}</span> : IMEI</div>
+                        <div><span className="font-bold text-indigo-600">{'{serial}'}</span> : Seri No</div>
+                    </div>
+                    <div className="text-right text-xs text-gray-500 mt-1">
+                        {smsMessage.length} karakter - {Math.ceil(smsMessage.length / 160)} SMS
+                    </div>
+                </div>
+
+                {/* Dynamic SMS Templates */}
+                <div className="mb-4 flex flex-col gap-3 max-h-60 overflow-y-auto pr-1">
+                    {smsTemplates.length === 0 && (
+                        <div className="text-gray-400 text-xs italic p-2 text-center">Şablon bulunamadı. Toplu Mesaj panelinden ekleyebilirsiniz.</div>
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                        {smsTemplates.map(t => (
+                            <button
+                                key={t.id}
+                                onClick={() => setSmsMessage(replaceTemplateVariables(t.content))}
+                                className="text-xs bg-gray-50 border border-gray-200 hover:bg-gray-100 px-2 py-1 rounded text-gray-700 transition truncate max-w-full"
+                                title={t.content}
                             >
-                                <MessageSquare className="w-4 h-4 mr-2" /> WhatsApp
-                            </Button>
-                        </div>
+                                {t.title}
+                            </button>
+                        ))}
                     </div>
-                )
-            }
+                </div>
 
-            {/* MODALS */}
-            {/* SMS Modal */}
-            {
-                isSmsModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg flex flex-col p-6 animate-in fade-in zoom-in duration-200">
-                            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <MessageSquare className="w-5 h-5 text-green-600" />
-                                SMS Gönder ({data.telefon})
-                            </h3>
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Mesaj İçeriği</label>
-                                <textarea
-                                    className="w-full h-32 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                                    placeholder="Mesajınızı buraya yazın..."
-                                    value={smsMessage}
-                                    onChange={(e) => setSmsMessage(e.target.value)}
-                                />
-                                <div className="mt-2 p-2 bg-gray-50 border border-dashed rounded text-[10px] text-gray-500 grid grid-cols-2 gap-x-4 gap-y-1">
-                                    <div><span className="font-bold text-indigo-600">{'{name}'}</span> : Ad Soyad</div>
-                                    <div><span className="font-bold text-indigo-600">{'{limit}'}</span> : Kredi Limiti</div>
-                                    <div><span className="font-bold text-indigo-600">{'{product}'}</span> : Ürün</div>
-                                    <div><span className="font-bold text-indigo-600">{'{imei}'}</span> : IMEI</div>
-                                    <div><span className="font-bold text-indigo-600">{'{serial}'}</span> : Seri No</div>
-                                </div>
-                                <div className="text-right text-xs text-gray-500 mt-1">
-                                    {smsMessage.length} karakter - {Math.ceil(smsMessage.length / 160)} SMS
-                                </div>
-                            </div>
+                <div className="flex justify-end gap-2">
+                    <Button variant="ghost" onClick={() => setIsSmsModalOpen(false)}>İptal</Button>
+                    <Button onClick={handleSendSMS} isLoading={smsLoading} className="bg-green-600 hover:bg-green-700 text-white">
+                        Gönder
+                    </Button>
+                </div>
+            </div>
+        </div>
+    )
+}
 
-                            {/* Dynamic SMS Templates */}
-                            <div className="mb-4 flex flex-col gap-3 max-h-60 overflow-y-auto pr-1">
-                                {smsTemplates.length === 0 && (
-                                    <div className="text-gray-400 text-xs italic p-2 text-center">Şablon bulunamadı. Toplu Mesaj panelinden ekleyebilirsiniz.</div>
-                                )}
-                                <div className="flex flex-wrap gap-2">
-                                    {smsTemplates.map(t => (
-                                        <button
-                                            key={t.id}
-                                            onClick={() => setSmsMessage(replaceTemplateVariables(t.content))}
-                                            className="text-xs bg-gray-50 border border-gray-200 hover:bg-gray-100 px-2 py-1 rounded text-gray-700 transition truncate max-w-full"
-                                            title={t.content}
-                                        >
-                                            {t.title}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end gap-2">
-                                <Button variant="ghost" onClick={() => setIsSmsModalOpen(false)}>İptal</Button>
-                                <Button onClick={handleSendSMS} isLoading={smsLoading} className="bg-green-600 hover:bg-green-700 text-white">
-                                    Gönder
-                                </Button>
-                            </div>
-                        </div>
+{/* WhatsApp Modal */ }
+{
+    isWhatsAppModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg flex flex-col p-6 animate-in fade-in zoom-in duration-200">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-green-600" />
+                    WhatsApp Gönder ({data.telefon})
+                </h3>
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Mesaj İçeriği</label>
+                    <textarea
+                        className="w-full h-32 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                        placeholder="Mesajınızı buraya yazın..."
+                        value={whatsAppMessage}
+                        onChange={(e) => setWhatsAppMessage(e.target.value)}
+                    />
+                    <div className="mt-2 p-2 bg-gray-50 border border-dashed rounded text-[10px] text-gray-500 grid grid-cols-2 gap-x-4 gap-y-1">
+                        <div><span className="font-bold text-indigo-600">{'{name}'}</span> : Ad Soyad</div>
+                        <div><span className="font-bold text-indigo-600">{'{limit}'}</span> : Kredi Limiti</div>
+                        <div><span className="font-bold text-indigo-600">{'{product}'}</span> : Ürün</div>
+                        <div><span className="font-bold text-indigo-600">{'{imei}'}</span> : IMEI</div>
+                        <div><span className="font-bold text-indigo-600">{'{serial}'}</span> : Seri No</div>
                     </div>
-                )
-            }
-
-            {/* WhatsApp Modal */}
-            {
-                isWhatsAppModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg flex flex-col p-6 animate-in fade-in zoom-in duration-200">
-                            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <MessageSquare className="w-5 h-5 text-green-600" />
-                                WhatsApp Gönder ({data.telefon})
-                            </h3>
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Mesaj İçeriği</label>
-                                <textarea
-                                    className="w-full h-32 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                                    placeholder="Mesajınızı buraya yazın..."
-                                    value={whatsAppMessage}
-                                    onChange={(e) => setWhatsAppMessage(e.target.value)}
-                                />
-                                <div className="mt-2 p-2 bg-gray-50 border border-dashed rounded text-[10px] text-gray-500 grid grid-cols-2 gap-x-4 gap-y-1">
-                                    <div><span className="font-bold text-indigo-600">{'{name}'}</span> : Ad Soyad</div>
-                                    <div><span className="font-bold text-indigo-600">{'{limit}'}</span> : Kredi Limiti</div>
-                                    <div><span className="font-bold text-indigo-600">{'{product}'}</span> : Ürün</div>
-                                    <div><span className="font-bold text-indigo-600">{'{imei}'}</span> : IMEI</div>
-                                    <div><span className="font-bold text-indigo-600">{'{serial}'}</span> : Seri No</div>
-                                </div>
-                                <div className="text-right text-xs text-gray-500 mt-1">
-                                    {whatsAppMessage.length} karakter
-                                </div>
-                            </div>
-
-                            {/* Dynamic WhatsApp Templates */}
-                            <div className="mb-4 flex flex-col gap-3 max-h-60 overflow-y-auto pr-1">
-                                {whatsappTemplates.length === 0 && (
-                                    <div className="text-gray-400 text-xs italic p-2 text-center">Şablon bulunamadı. Toplu Mesaj panelinden ekleyebilirsiniz.</div>
-                                )}
-                                <div className="flex flex-wrap gap-2">
-                                    {whatsappTemplates.map(t => (
-                                        <button
-                                            key={t.id}
-                                            onClick={() => setWhatsAppMessage(replaceTemplateVariables(t.content))}
-                                            className="text-xs bg-green-50 border border-green-200 hover:bg-green-100 px-2 py-1 rounded text-green-700 transition truncate max-w-full"
-                                            title={t.content}
-                                        >
-                                            {t.title}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end gap-2">
-                                <Button variant="ghost" onClick={() => setIsWhatsAppModalOpen(false)}>İptal</Button>
-                                <Button onClick={handleSendWhatsApp} isLoading={whatsAppLoading} className="bg-green-600 hover:bg-green-700 text-white">
-                                    Gönder
-                                </Button>
-                            </div>
-                        </div>
+                    <div className="text-right text-xs text-gray-500 mt-1">
+                        {whatsAppMessage.length} karakter
                     </div>
-                )
-            }
-            {
-                isStockModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg flex flex-col max-h-[80vh] animate-in fade-in zoom-in duration-200">
-                            {/* Modal Header */}
-                            <div className="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
-                                <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                                    <Package className="w-5 h-5 text-indigo-600" />
-                                    Stoktan Cihaz Seç
-                                </h3>
-                                <button onClick={() => setIsStockModalOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
-                            </div>
+                </div>
 
-                            {/* Search & Actions */}
-                            <div className="p-4 border-b flex gap-2">
-                                <div className="relative flex-1">
-                                    <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-                                    <input
-                                        className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-                                        placeholder="Marka, Model veya IMEI ara..."
-                                        value={stockSearch}
-                                        onChange={(e) => setStockSearch(e.target.value)}
-                                        autoFocus
-                                    />
+                {/* Dynamic WhatsApp Templates */}
+                <div className="mb-4 flex flex-col gap-3 max-h-60 overflow-y-auto pr-1">
+                    {whatsappTemplates.length === 0 && (
+                        <div className="text-gray-400 text-xs italic p-2 text-center">Şablon bulunamadı. Toplu Mesaj panelinden ekleyebilirsiniz.</div>
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                        {whatsappTemplates.map(t => (
+                            <button
+                                key={t.id}
+                                onClick={() => setWhatsAppMessage(replaceTemplateVariables(t.content))}
+                                className="text-xs bg-green-50 border border-green-200 hover:bg-green-100 px-2 py-1 rounded text-green-700 transition truncate max-w-full"
+                                title={t.content}
+                            >
+                                {t.title}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="flex justify-end gap-2">
+                    <Button variant="ghost" onClick={() => setIsWhatsAppModalOpen(false)}>İptal</Button>
+                    <Button onClick={handleSendWhatsApp} isLoading={whatsAppLoading} className="bg-green-600 hover:bg-green-700 text-white">
+                        Gönder
+                    </Button>
+                </div>
+            </div>
+        </div>
+    )
+}
+{
+    isStockModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg flex flex-col max-h-[80vh] animate-in fade-in zoom-in duration-200">
+                {/* Modal Header */}
+                <div className="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
+                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                        <Package className="w-5 h-5 text-indigo-600" />
+                        Stoktan Cihaz Seç
+                    </h3>
+                    <button onClick={() => setIsStockModalOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+                </div>
+
+                {/* Search & Actions */}
+                <div className="p-4 border-b flex gap-2">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                        <input
+                            className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="Marka, Model veya IMEI ara..."
+                            value={stockSearch}
+                            onChange={(e) => setStockSearch(e.target.value)}
+                            autoFocus
+                        />
+                    </div>
+                    <button
+                        onClick={fetchStock}
+                        className="p-2 border rounded-lg hover:bg-gray-50 text-gray-600"
+                        title="Yenile"
+                    >
+                        <RefreshCw className={`w-5 h-5 ${stockLoading ? 'animate-spin' : ''}`} />
+                    </button>
+                </div>
+
+                {/* List */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                    {stockItems
+                        .filter(item =>
+                            (item.marka || '').toLowerCase().includes(stockSearch.toLowerCase()) ||
+                            (item.model || '').toLowerCase().includes(stockSearch.toLowerCase()) ||
+                            (item.imei || '').includes(stockSearch)
+                        )
+                        .map(item => (
+                            <div key={item.id} className="border rounded-lg p-3 hover:bg-gray-50 flex justify-between items-center transition-colors">
+                                <div>
+                                    <div className="font-semibold text-gray-800">{item.marka} {item.model}</div>
+                                    <div className="text-xs text-gray-500 font-mono">IMEI: {item.imei}</div>
+                                    <div className="text-xs text-gray-400">Seri: {item.seri_no}</div>
                                 </div>
                                 <button
-                                    onClick={fetchStock}
-                                    className="p-2 border rounded-lg hover:bg-gray-50 text-gray-600"
-                                    title="Yenile"
+                                    onClick={() => handleStockAssign(item)}
+                                    className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-indigo-700 shadow-sm"
                                 >
-                                    <RefreshCw className={`w-5 h-5 ${stockLoading ? 'animate-spin' : ''}`} />
+                                    Seç
                                 </button>
                             </div>
-
-                            {/* List */}
-                            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                                {stockItems
-                                    .filter(item =>
-                                        (item.marka || '').toLowerCase().includes(stockSearch.toLowerCase()) ||
-                                        (item.model || '').toLowerCase().includes(stockSearch.toLowerCase()) ||
-                                        (item.imei || '').includes(stockSearch)
-                                    )
-                                    .map(item => (
-                                        <div key={item.id} className="border rounded-lg p-3 hover:bg-gray-50 flex justify-between items-center transition-colors">
-                                            <div>
-                                                <div className="font-semibold text-gray-800">{item.marka} {item.model}</div>
-                                                <div className="text-xs text-gray-500 font-mono">IMEI: {item.imei}</div>
-                                                <div className="text-xs text-gray-400">Seri: {item.seri_no}</div>
-                                            </div>
-                                            <button
-                                                onClick={() => handleStockAssign(item)}
-                                                className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-indigo-700 shadow-sm"
-                                            >
-                                                Seç
-                                            </button>
-                                        </div>
-                                    ))}
-                                {stockItems.length === 0 && !stockLoading && (
-                                    <p className="text-center text-gray-500 py-4">Stokta uygun cihaz bulunamadı.</p>
-                                )}
-                            </div>
-                        </div>
+                        ))}
+                    {stockItems.length === 0 && !stockLoading && (
+                        <p className="text-center text-gray-500 py-4">Stokta uygun cihaz bulunamadı.</p>
+                    )}
+                </div>
+            </div>
+        </div>
+    )
+}
+{
+    isPriceModalOpen && selectedStockItem && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col animate-in fade-in zoom-in duration-200">
+                <div className="p-4 border-b bg-gray-50 rounded-t-xl flex justify-between items-center">
+                    <div>
+                        <h3 className="font-bold text-gray-800">Satış Fiyatı Seçin</h3>
+                        <p className="text-xs text-gray-500">{selectedStockItem.marka} {selectedStockItem.model}</p>
                     </div>
-                )
-            }
-            {
-                isPriceModalOpen && selectedStockItem && (
-                    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col animate-in fade-in zoom-in duration-200">
-                            <div className="p-4 border-b bg-gray-50 rounded-t-xl flex justify-between items-center">
-                                <div>
-                                    <h3 className="font-bold text-gray-800">Satış Fiyatı Seçin</h3>
-                                    <p className="text-xs text-gray-500">{selectedStockItem.marka} {selectedStockItem.model}</p>
-                                </div>
-                                <button onClick={() => setIsPriceModalOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
-                            </div>
-                            <div className="p-4 space-y-2">
-                                {[
-                                    { label: 'Nakit / Tek Çekim', price: selectedStockItem.alis_fiyati, term: 1 },
-                                    { label: '3 Taksit', price: selectedStockItem.fiyat_3_taksit, term: 3 },
-                                    { label: '6 Taksit', price: selectedStockItem.fiyat_6_taksit, term: 6 },
-                                    { label: '12 Taksit', price: selectedStockItem.fiyat_12_taksit, term: 12 },
-                                    { label: '15 Taksit', price: selectedStockItem.fiyat_15_taksit, term: 15 },
-                                ].map((opt, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={() => confirmStockAssign(opt.price || 0, opt.term)}
-                                        disabled={!opt.price}
-                                        className="w-full flex justify-between items-center p-3 border rounded-lg hover:bg-indigo-50 hover:border-indigo-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed group"
-                                    >
-                                        <span className="font-medium text-gray-700 group-hover:text-indigo-700">{opt.label}</span>
-                                        <span className="font-bold text-gray-900 group-hover:text-indigo-900">
-                                            {opt.price ? new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(opt.price) : '-'}
-                                        </span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                )
-            }
+                    <button onClick={() => setIsPriceModalOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+                </div>
+                <div className="p-4 space-y-2">
+                    {[
+                        { label: 'Nakit / Tek Çekim', price: selectedStockItem.alis_fiyati, term: 1 },
+                        { label: '3 Taksit', price: selectedStockItem.fiyat_3_taksit, term: 3 },
+                        { label: '6 Taksit', price: selectedStockItem.fiyat_6_taksit, term: 6 },
+                        { label: '12 Taksit', price: selectedStockItem.fiyat_12_taksit, term: 12 },
+                        { label: '15 Taksit', price: selectedStockItem.fiyat_15_taksit, term: 15 },
+                    ].map((opt, i) => (
+                        <button
+                            key={i}
+                            onClick={() => confirmStockAssign(opt.price || 0, opt.term)}
+                            disabled={!opt.price}
+                            className="w-full flex justify-between items-center p-3 border rounded-lg hover:bg-indigo-50 hover:border-indigo-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed group"
+                        >
+                            <span className="font-medium text-gray-700 group-hover:text-indigo-700">{opt.label}</span>
+                            <span className="font-bold text-gray-900 group-hover:text-indigo-900">
+                                {opt.price ? new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(opt.price) : '-'}
+                            </span>
+                        </button>
+                    ))}
+                </div>
+            </div>
+        </div>
+    )
+}
 
-            <ApprovalSummaryModal
-                isOpen={isApprovalModalOpen}
-                onClose={() => setIsApprovalModalOpen(false)}
-                customer={data}
-            />
+<ApprovalSummaryModal
+    isOpen={isApprovalModalOpen}
+    onClose={() => setIsApprovalModalOpen(false)}
+    customer={data}
+/>
 
         </div >
     );
