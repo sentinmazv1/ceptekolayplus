@@ -29,9 +29,18 @@ export async function GET(req: NextRequest) {
         const startDate = url.searchParams.get('startDate') || todayStr;
         const endDate = url.searchParams.get('endDate') || todayStr;
 
+        // For Goal Calculation, we need logs from 7 days ago.
+        // Ensure we fetch enough history regardless of the requested report window.
+        const headerDate = new Date();
+        const historyDate = new Date(headerDate.getTime() - (8 * 24 * 60 * 60 * 1000)); // 8 days buffer
+        const historyStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(historyDate);
+
+        // Logs Start: Minimum of (Requested Start, 7 Days Ago)
+        const logsStart = startDate < historyStr ? startDate : historyStr;
+
         const [customers, logs, inventoryStats, leadStats] = await Promise.all([
             getReportData(startDate, endDate),
-            getAllLogs(undefined, startDate, endDate),
+            getAllLogs(undefined, logsStart, endDate), // Fetch wider range for goals
             getInventoryStats(),
             getLeadStats()
         ]);
