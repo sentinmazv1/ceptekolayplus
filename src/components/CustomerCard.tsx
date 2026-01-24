@@ -664,7 +664,18 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                             {/* CLASS SELECTOR */}
                             <select
                                 value={data.sinif || 'Normal'}
-                                onChange={(e) => handleChange('sinif', e.target.value)}
+                                onChange={(e) => {
+                                    const newVal = e.target.value;
+                                    const updates: any = { sinif: newVal };
+
+                                    // Auto-Sync Collection Status with Class
+                                    if (newVal === 'Gecikme') {
+                                        updates.tahsilat_durumu = 'Tahsilat Servisinde';
+                                    } else {
+                                        updates.tahsilat_durumu = 'Normal';
+                                    }
+                                    setData(prev => ({ ...prev, ...updates }));
+                                }}
                                 className={`text-xs font-bold rounded px-2 py-1 border outline-none cursor-pointer duration-200 ${data.sinif === 'Gecikme' ? 'bg-red-500 text-white border-red-400 focus:ring-red-300' :
                                     data.sinif === 'VIP' ? 'bg-amber-500 text-white border-amber-400 focus:ring-amber-300' :
                                         'bg-slate-700 text-slate-300 border-slate-600 focus:ring-slate-500'
