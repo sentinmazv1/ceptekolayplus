@@ -1172,6 +1172,21 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                             options={[{ value: 'Evet', label: 'Var' }, { value: 'Hayır', label: 'Yok' }]}
                                         />
                                     </div>
+                                    {data.psikoteknik_varmi === 'Evet' && (
+                                        <Input
+                                            label="Psikoteknik Detay / Tarih"
+                                            value={data.psikoteknik_notu || ''}
+                                            onChange={(e) => handleChange('psikoteknik_notu', e.target.value)}
+                                            placeholder="Geçerlilik tarihi veya not..."
+                                            className="bg-yellow-50 border-yellow-200"
+                                        />
+                                    )}
+                                    <Select
+                                        label="Hizmet Dökümü (SGK)"
+                                        value={data.hizmet_dokumu_varmi || 'Hayır'}
+                                        onChange={(e) => handleChange('hizmet_dokumu_varmi', e.target.value)}
+                                        options={[{ value: 'Evet', label: 'Var' }, { value: 'Hayır', label: 'Yok' }]}
+                                    />
                                     <Select
                                         label="Çalışma Şekli"
                                         value={data.calisma_sekli || ''}
@@ -1286,6 +1301,22 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                             )}
                                         </div>
                                     </div>
+
+                                    <Select
+                                        label="Gizli Dosya / Diğer Riskler"
+                                        value={data.gizli_dosya_varmi || 'Hayır'}
+                                        onChange={(e) => handleChange('gizli_dosya_varmi', e.target.value)}
+                                        options={[{ value: 'Evet', label: 'Evet (Var)' }, { value: 'Hayır', label: 'Hayır (Yok)' }]}
+                                    />
+                                    {data.gizli_dosya_varmi === 'Evet' && (
+                                        <Input
+                                            label="Gizli Dosya Detayı"
+                                            value={data.gizli_dosya_detay || ''}
+                                            onChange={(e) => handleChange('gizli_dosya_detay', e.target.value)}
+                                            className="border-purple-200 bg-purple-50 font-bold text-purple-900"
+                                            placeholder="Risk açıklaması..."
+                                        />
+                                    )}
 
                                     <div className="pt-4 border-t">
                                         <h4 className="text-xs font-bold text-gray-700 mb-2 uppercase">Avukat Sorgusu</h4>
@@ -2240,6 +2271,7 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                                     ${customer.dava_detay ? `<div class="field"><span class="label">Dava Detay</span> <span class="value">${customer.dava_detay}</span></div>` : ''}
                                     <div class="field"><span class="label">Kapalı İcra</span> <span class="value">${customer.kapali_icra_varmi || '-'}</span></div>
                                     <div class="field"><span class="label">Gizli Dosya</span> <span class="value ${customer.gizli_dosya_varmi === 'Evet' ? 'risk-high' : ''}">${customer.gizli_dosya_varmi || '-'}</span></div>
+                                    ${customer.gizli_dosya_detay ? `<div class="field"><span class="label">Gizli Dosya Detay</span> <span class="value text-red-700 font-bold">${customer.gizli_dosya_detay}</span></div>` : ''}
                                     <div class="field"><span class="label">Avukat Sorgu</span> <span class="value">${customer.avukat_sorgu_durumu || '-'}</span></div>
                                     ${customer.avukat_sorgu_sonuc ? `<div class="field"><span class="label text-red-700">Sorgu Sonucu</span> <span class="value text-red-700 font-bold">${customer.avukat_sorgu_sonuc}</span></div>` : ''}
                                 </div>
@@ -2254,6 +2286,7 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                                     <div class="field"><span class="label">Kredi Notu</span> <span class="value">${customer.findeks_risk_durumu || '-'}</span></div>
                                     <div class="field"><span class="label">İkametgah</span> <span class="value">${customer.ikametgah_varmi || '-'}</span></div>
                                     <div class="field"><span class="label">Psikoteknik</span> <span class="value">${customer.psikoteknik_varmi || '-'}</span></div>
+                                    ${customer.psikoteknik_notu ? `<div class="field"><span class="label">Psikoteknik Detay</span> <span class="value">${customer.psikoteknik_notu}</span></div>` : ''}
                                 </div>
                             </div>
                         </div>
