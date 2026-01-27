@@ -2284,10 +2284,14 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                                 <h2>⚖️ Kefil Yasal & Varlık</h2>
                                 <div class="field-group" style="background:#f8fafc;">
                                     <div class="field"><span class="label">Açık İcra</span> <span class="value ${customer.kefil_acik_icra_varmi === 'Evet' ? 'risk-high' : ''}">${customer.kefil_acik_icra_varmi || '-'}</span></div>
+                                    ${customer.kefil_acik_icra_detay ? `<div class="field"><span class="label">İcra Detay</span> <span class="value">${customer.kefil_acik_icra_detay}</span></div>` : ''}
                                     <div class="field"><span class="label">Dava</span> <span class="value ${customer.kefil_dava_dosyasi_varmi === 'Evet' ? 'risk-high' : ''}">${customer.kefil_dava_dosyasi_varmi || '-'}</span></div>
+                                    ${customer.kefil_dava_detay ? `<div class="field"><span class="label">Dava Detay</span> <span class="value">${customer.kefil_dava_detay}</span></div>` : ''}
                                     <div class="field"><span class="label">Kapalı İcra</span> <span class="value">${customer.kefil_kapali_icra_varmi || '-'}</span></div>
                                     <div class="field"><span class="label">Tapu</span> <span class="value ${customer.kefil_tapu_varmi === 'Evet' ? 'risk-low' : ''}">${customer.kefil_tapu_varmi || '-'}</span></div>
+                                    ${customer.kefil_tapu_detay ? `<div class="field"><span class="label">Tapu Detay</span> <span class="value">${customer.kefil_tapu_detay}</span></div>` : ''}
                                     <div class="field"><span class="label">Araç</span> <span class="value ${customer.kefil_arac_varmi === 'Evet' ? 'risk-low' : ''}">${customer.kefil_arac_varmi || '-'}</span></div>
+                                    ${customer.kefil_arac_detay ? `<div class="field"><span class="label">Araç Detay</span> <span class="value">${customer.kefil_arac_detay}</span></div>` : ''}
                                     ${customer.kefil_avukat_sorgu_sonuc ? `<div class="field"><span class="label text-red-700">Avukat Notu</span> <span class="value text-red-700">${customer.kefil_avukat_sorgu_sonuc}</span></div>` : ''}
                                 </div>
                             </div>
