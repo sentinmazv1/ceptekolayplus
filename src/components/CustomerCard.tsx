@@ -2269,7 +2269,9 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                                     ${customer.acik_icra_detay ? `<div class="field"><span class="label">İcra Detay</span> <span class="value">${customer.acik_icra_detay}</span></div>` : ''}
                                     <div class="field"><span class="label">Dava Dosyası</span> <span class="value ${customer.dava_dosyasi_varmi === 'Evet' ? 'risk-high' : 'risk-low'}">${customer.dava_dosyasi_varmi || '-'}</span></div>
                                     ${customer.dava_detay ? `<div class="field"><span class="label">Dava Detay</span> <span class="value">${customer.dava_detay}</span></div>` : ''}
+
                                     <div class="field"><span class="label">Kapalı İcra</span> <span class="value">${customer.kapali_icra_varmi || '-'}</span></div>
+                                    ${customer.kapali_icra_kapanis_sekli ? `<div class="field"><span class="label">Kapanış Şekli</span> <span class="value">${customer.kapali_icra_kapanis_sekli}</span></div>` : ''}
                                     <div class="field"><span class="label">Gizli Dosya</span> <span class="value ${customer.gizli_dosya_varmi === 'Evet' ? 'risk-high' : ''}">${customer.gizli_dosya_varmi || '-'}</span></div>
                                     ${customer.gizli_dosya_detay ? `<div class="field"><span class="label">Gizli Dosya Detay</span> <span class="value text-red-700 font-bold">${customer.gizli_dosya_detay}</span></div>` : ''}
                                     <div class="field"><span class="label">Avukat Sorgu</span> <span class="value">${customer.avukat_sorgu_durumu || '-'}</span></div>
@@ -2320,7 +2322,9 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                                     ${customer.kefil_acik_icra_detay ? `<div class="field"><span class="label">İcra Detay</span> <span class="value">${customer.kefil_acik_icra_detay}</span></div>` : ''}
                                     <div class="field"><span class="label">Dava</span> <span class="value ${customer.kefil_dava_dosyasi_varmi === 'Evet' ? 'risk-high' : ''}">${customer.kefil_dava_dosyasi_varmi || '-'}</span></div>
                                     ${customer.kefil_dava_detay ? `<div class="field"><span class="label">Dava Detay</span> <span class="value">${customer.kefil_dava_detay}</span></div>` : ''}
+
                                     <div class="field"><span class="label">Kapalı İcra</span> <span class="value">${customer.kefil_kapali_icra_varmi || '-'}</span></div>
+                                    ${customer.kefil_kapali_icra_kapanis_sekli ? `<div class="field"><span class="label">Kapanış Şekli</span> <span class="value">${customer.kefil_kapali_icra_kapanis_sekli}</span></div>` : ''}
                                     <div class="field"><span class="label">Tapu</span> <span class="value ${customer.kefil_tapu_varmi === 'Evet' ? 'risk-low' : ''}">${customer.kefil_tapu_varmi || '-'}</span></div>
                                     ${customer.kefil_tapu_detay ? `<div class="field"><span class="label">Tapu Detay</span> <span class="value">${customer.kefil_tapu_detay}</span></div>` : ''}
                                     <div class="field"><span class="label">Araç</span> <span class="value ${customer.kefil_arac_varmi === 'Evet' ? 'risk-low' : ''}">${customer.kefil_arac_varmi || '-'}</span></div>
