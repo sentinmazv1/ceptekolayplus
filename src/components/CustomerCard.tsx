@@ -2129,55 +2129,61 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                         <title>Müşteri Raporu - ${customer.ad_soyad}</title>
                         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
                         <style>
-                            @page { size: A4; margin: 10mm; }
-                            body { font-family: 'Inter', sans-serif; color: #1e293b; max-width: 210mm; margin: 0 auto; background: white; -webkit-print-color-adjust: exact; }
+                            @page { size: A4; margin: 8mm; }
+                            body { font-family: 'Inter', sans-serif; color: #1e293b; max-width: 210mm; margin: 0 auto; background: white; -webkit-print-color-adjust: exact; font-size: 10px; }
                             
                             /* Layout Utilities */
-                            .row { display: flex; gap: 15px; margin-bottom: 8px; }
+                            .row { display: flex; gap: 10px; margin-bottom: 8px; }
                             .col-6 { flex: 1; }
-                            .col-4 { flex: 0 0 33%; }
+                            .col-4 { flex: 0 0 33.33%; }
+                            .col-3 { flex: 0 0 25%; }
                             
                             /* Header */
-                            .header { border-bottom: 3px solid #0f172a; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
-                            .brand { font-size: 26px; font-weight: 800; color: #0f172a; line-height: 1; }
-                            .sub-brand { font-size: 12px; color: #64748b; margin-top: 5px; font-weight: 500; }
-                            .meta-box { text-align: right; font-size: 11px; color: #475569; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 4px; background: #f8fafc; }
+                            .header { border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: flex-end; }
+                            .brand { font-size: 22px; font-weight: 800; color: #0f172a; line-height: 1; }
+                            .sub-brand { font-size: 10px; color: #64748b; margin-top: 3px; font-weight: 500; }
+                            .meta-box { text-align: right; font-size: 9px; color: #475569; border: 1px solid #e2e8f0; padding: 4px 8px; border-radius: 4px; background: #f8fafc; }
 
                             /* Section Headings */
                             h2 { 
-                                font-size: 14px; 
+                                font-size: 11px; 
                                 font-weight: 700; 
                                 text-transform: uppercase; 
                                 color: #fff;
                                 background: #334155;
-                                padding: 6px 10px;
-                                margin: 15px 0 10px 0;
+                                padding: 4px 8px;
+                                margin: 10px 0 6px 0;
                                 border-radius: 4px;
                                 display: flex;
                                 align-items: center;
-                                gap: 8px;
+                                gap: 6px;
                             }
-                            
+                            h2.sub { background: #64748b; font-size: 10px; margin-top: 5px; }
+
                             /* Data Fields */
-                            .field-group { background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; height: 100%; box-sizing: border-box; }
-                            .field { display: flex; justify-content: space-between; border-bottom: 1px dashed #e2e8f0; padding: 4px 0; font-size: 11px; }
+                            .field-group { background: #fff; border: 1px solid #e2e8f0; border-radius: 4px; padding: 6px; height: 100%; box-sizing: border-box; }
+                            .field { display: flex; justify-content: space-between; border-bottom: 1px dashed #e2e8f0; padding: 3px 0; font-size: 9px; }
                             .field:last-child { border-bottom: none; }
                             .label { font-weight: 600; color: #64748b; }
-                            .value { font-weight: 500; color: #0f172a; text-align: right; }
+                            .value { font-weight: 500; color: #0f172a; text-align: right; max-width: 65%; }
                             
+                            /* Specific Styles */
+                            .badge { display: inline-block; padding: 1px 4px; border-radius: 3px; font-size: 8px; font-weight: bold; background: #e2e8f0; color: #475569; }
+                            .risk-high { color: #dc2626; font-weight: bold; }
+                            .risk-low { color: #16a34a; font-weight: bold; }
 
                             /* Signatures */
                             .signatures-container { 
-                                margin-top: 30px; 
-                                border-top: 2px dashed #cbd5e1; 
-                                padding-top: 20px;
+                                margin-top: 20px; 
+                                border-top: 1px dashed #cbd5e1; 
+                                padding-top: 15px;
                                 page-break-inside: avoid;
                             }
-                            .legal-text { font-size: 9px; color: #64748b; text-align: justify; margin-bottom: 20px; line-height: 1.3; }
-                            .sig-grid { display: flex; gap: 20px; }
-                            .sig-box { flex: 1; border: 1px solid #cbd5e1; height: 100px; border-radius: 4px; position: relative; background: #fdfdfd; }
-                            .sig-title { background: #f1f5f9; font-size: 10px; font-weight: 700; text-align: center; padding: 4px; border-bottom: 1px solid #cbd5e1; color: #334155; }
-                            .sig-name { position: absolute; bottom: 5px; width: 100%; text-align: center; font-size: 10px; font-weight: 600; color: #0f172a; }
+                            .legal-text { font-size: 8px; color: #64748b; text-align: justify; margin-bottom: 15px; line-height: 1.3; }
+                            .sig-grid { display: flex; gap: 15px; }
+                            .sig-box { flex: 1; border: 1px solid #cbd5e1; height: 70px; border-radius: 4px; position: relative; background: #fdfdfd; }
+                            .sig-title { background: #f1f5f9; font-size: 8px; font-weight: 700; text-align: center; padding: 3px; border-bottom: 1px solid #cbd5e1; color: #334155; }
+                            .sig-name { position: absolute; bottom: 4px; width: 100%; text-align: center; font-size: 9px; font-weight: 600; color: #0f172a; }
 
                             @media print {
                                 body { margin: 0; padding: 0; }
@@ -2192,87 +2198,113 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                                 <div class="sub-brand">PREMIUM ELEKTRONİK & FİNANS HİZMETLERİ</div>
                             </div>
                             <div class="meta-box">
-                                <div><strong>Müşteri No:</strong> ${customer.winner_musteri_no || customer.id.substring(0, 8).toUpperCase()}</div>
-                                <div style="margin-top:2px;"><strong>Tarih:</strong> ${new Date().toLocaleDateString('tr-TR')}</div>
-                                <div style="margin-top:2px;"><strong>Satış Temsilcisi:</strong> ${customer.sahip ? customer.sahip.split('@')[0] : (customer.created_by?.split('@')[0] || '-')}</div>
+                                <div><strong>No:</strong> ${customer.winner_musteri_no || customer.id.substring(0, 8).toUpperCase()}</div>
+                                <div><strong>Tarih:</strong> ${new Date().toLocaleDateString('tr-TR')}</div>
+                                <div><strong>Temsilci:</strong> ${customer.sahip ? customer.sahip.split('@')[0] : (customer.created_by?.split('@')[0] || '-')}</div>
                             </div>
                         </div>
 
-                        <!-- ROW 1: PERSONAL & WORK -->
+                        <!-- CUSTOMER MAIN INFO -->
                         <div class="row">
                             <div class="col-6">
-                                <h2>👤 Müşteri Kimlik Bilgileri</h2>
+                                <h2>👤 Müşteri Kimlik & İletişim</h2>
                                 <div class="field-group">
-                                    <div class="field"><span class="label">Ad Soyad</span> <span class="value">${customer.ad_soyad}</span></div>
-                                    <div class="field"><span class="label">TC Kimlik No</span> <span class="value">${customer.tc_kimlik || '-'}</span></div>
+                                    <div class="field"><span class="label">Ad Soyad</span> <span class="value font-bold">${customer.ad_soyad}</span></div>
+                                    <div class="field"><span class="label">TC Kimlik</span> <span class="value">${customer.tc_kimlik || '-'}</span></div>
                                     <div class="field"><span class="label">Telefon</span> <span class="value">${customer.telefon}</span></div>
                                     <div class="field"><span class="label">Doğum Tarihi</span> <span class="value">${customer.dogum_tarihi || '-'}</span></div>
-                                    <div class="field"><span class="label">E-Posta</span> <span class="value">${customer.email || '-'}</span></div>
-                                    <div class="field"><span class="label">Şehir / İlçe</span> <span class="value">${customer.sehir || '-'} / ${customer.ilce || '-'}</span></div>
-                                    <div class="field"><span class="label">Başvuru Kanalı</span> <span class="value">${customer.basvuru_kanali || '-'}</span></div>
+                                    <div class="field"><span class="label">Ev Adresi</span> <span class="value" style="font-size:8px; line-height:1.1;">${customer.ev_adresi || customer.sehir ? (customer.ev_adresi || '') + ' ' + (customer.ilce || '') + '/' + (customer.sehir || '') : '-'}</span></div>
+                                    <div class="field"><span class="label">Kanal</span> <span class="value">${customer.basvuru_kanali || '-'}</span></div>
                                 </div>
                             </div>
                             <div class="col-6">
-                                <h2>💼 İş & Finansal Durum</h2>
+                                <h2>💼 İş & Gelir Durumu</h2>
                                 <div class="field-group">
-                                    <div class="field"><span class="label">İş Yeri Ünvanı</span> <span class="value">${customer.is_yeri_unvani || '-'}</span></div>
-                                    <div class="field"><span class="label">Meslek / Branş</span> <span class="value">${customer.meslek_is || customer.meslek || '-'}</span></div>
-                                    <div class="field"><span class="label">İş Yeri Bilgisi</span> <span class="value">${customer.is_yeri_bilgisi || '-'}</span></div>
-                                    <div class="field"><span class="label">Çalışma Şekli</span> <span class="value">${customer.calisma_sekli || '-'}</span></div>
-                                    <div class="field"><span class="label">Ortalama Maaş (6 Ay)</span> <span class="value font-bold text-lg">${customer.maas_ortalama || '-'} TL</span></div>
-                                    <div class="field" style="border-top:none; padding-top:2px;">
-                                        <span class="label" style="font-size:9px; font-weight:normal;">Maaş Geçmişi:</span>
-                                        <span class="value" style="font-size:9px;">${customer.maas_1 || 0}, ${customer.maas_2 || 0}, ${customer.maas_3 || 0}, ${customer.maas_4 || 0}, ${customer.maas_5 || 0}, ${customer.maas_6 || 0} TL</span>
-                                    </div>
-                                    <div class="field"><span class="label">Kıdem (Ay)</span> <span class="value">${customer.ayni_isyerinde_sure_ay || '-'}</span></div>
-                                    <div class="field"><span class="label">Ek Gelir</span> <span class="value">${customer.ek_gelir || '-'}</span></div>
+                                    <div class="field"><span class="label">Ünvan / Firma</span> <span class="value">${customer.is_yeri_unvani || '-'}</span></div>
+                                    <div class="field"><span class="label">Meslek</span> <span class="value">${customer.meslek_is || customer.meslek || '-'}</span></div>
+                                    <div class="field"><span class="label">Gelir (Ort.)</span> <span class="value font-bold">${customer.maas_ortalama || 0} TL</span></div>
+                                    <div class="field"><span class="label">Çalışma Süresi</span> <span class="value">${customer.ayni_isyerinde_sure_ay || '-'} Ay</span></div>
+                                    <div class="field"><span class="label">Hizmet Dökümü</span> <span class="value">${customer.hizmet_dokumu_varmi || '-'}</span></div>
+                                    <div class="field"><span class="label">İş Adresi</span> <span class="value" style="font-size:8px;">${customer.is_adresi || customer.is_yeri_bilgisi || '-'}</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-6">
+                                <h2>⚖️ Müşteri Yasal Durum</h2>
+                                <div class="field-group">
+                                    <div class="field"><span class="label">İcra (Açık)</span> <span class="value ${customer.acik_icra_varmi === 'Evet' ? 'risk-high' : 'risk-low'}">${customer.acik_icra_varmi || '-'}</span></div>
+                                    ${customer.acik_icra_detay ? `<div class="field"><span class="label">İcra Detay</span> <span class="value">${customer.acik_icra_detay}</span></div>` : ''}
+                                    <div class="field"><span class="label">Dava Dosyası</span> <span class="value ${customer.dava_dosyasi_varmi === 'Evet' ? 'risk-high' : 'risk-low'}">${customer.dava_dosyasi_varmi || '-'}</span></div>
+                                    ${customer.dava_detay ? `<div class="field"><span class="label">Dava Detay</span> <span class="value">${customer.dava_detay}</span></div>` : ''}
+                                    <div class="field"><span class="label">Kapalı İcra</span> <span class="value">${customer.kapali_icra_varmi || '-'}</span></div>
+                                    <div class="field"><span class="label">Gizli Dosya</span> <span class="value ${customer.gizli_dosya_varmi === 'Evet' ? 'risk-high' : ''}">${customer.gizli_dosya_varmi || '-'}</span></div>
+                                    <div class="field"><span class="label">Avukat Sorgu</span> <span class="value">${customer.avukat_sorgu_durumu || '-'}</span></div>
+                                    ${customer.avukat_sorgu_sonuc ? `<div class="field"><span class="label text-red-700">Sorgu Sonucu</span> <span class="value text-red-700 font-bold">${customer.avukat_sorgu_sonuc}</span></div>` : ''}
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <h2>🏠 Müşteri Varlıklar</h2>
+                                <div class="field-group">
+                                    <div class="field"><span class="label">Tapu</span> <span class="value ${customer.tapu_varmi === 'Evet' ? 'risk-low' : ''}">${customer.tapu_varmi || '-'}</span></div>
+                                    ${customer.tapu_detay ? `<div class="field"><span class="label">Tapu Detay</span> <span class="value">${customer.tapu_detay}</span></div>` : ''}
+                                    <div class="field"><span class="label">Araç</span> <span class="value ${customer.arac_varmi === 'Evet' ? 'risk-low' : ''}">${customer.arac_varmi || '-'}</span></div>
+                                    ${customer.arac_detay ? `<div class="field"><span class="label">Araç Detay</span> <span class="value">${customer.arac_detay}</span></div>` : ''}
                                     <div class="field"><span class="label">Kredi Notu</span> <span class="value">${customer.findeks_risk_durumu || '-'}</span></div>
-                                    ${customer.finansal_notlar ? `<div class="field" style="background:#fefce8; border-left:3px solid #fbbf24;"><span class="label" style="color:#78350f;">Finansal Notlar</span> <span class="value" style="font-size:10px; color:#78350f;">${customer.finansal_notlar}</span></div>` : ''}
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- ROW 2: LEGAL & ASSETS -->
-                        <div class="row">
-                            <div class="col-6">
-                                <h2>⚖️ Yasal Durum & Varlıklar</h2>
-                                <div class="field-group">
-                                    <div class="field"><span class="label">İkametgah Belgesi</span> <span class="value">${customer.ikametgah_varmi || '-'}</span></div>
+                                    <div class="field"><span class="label">İkametgah</span> <span class="value">${customer.ikametgah_varmi || '-'}</span></div>
                                     <div class="field"><span class="label">Psikoteknik</span> <span class="value">${customer.psikoteknik_varmi || '-'}</span></div>
-                                    <div class="field"><span class="label">Tapu Durumu</span> <span class="value">${customer.tapu_varmi === 'Evet' ? 'VAR' : 'Yok'}</span></div>
-                                    ${customer.tapu_varmi === 'Evet' ? `<div class="field" style="border-top:none; padding-top:0;"><span class="label" style="font-weight:normal; font-size:10px;">Detay:</span> <span class="value" style="font-size:10px;">${customer.tapu_detay || '-'}</span></div>` : ''}
-                                    <div class="field"><span class="label">Araç Durumu</span> <span class="value">${customer.arac_varmi === 'Evet' ? 'VAR' : 'Yok'}</span></div>
-                                    ${customer.arac_varmi === 'Evet' ? `<div class="field" style="border-top:none; padding-top:0;"><span class="label" style="font-weight:normal; font-size:10px;">Detay:</span> <span class="value" style="font-size:10px;">${customer.arac_detay || '-'}</span></div>` : ''}
-                                    <div class="field"><span class="label">Avukat Sorgusu</span> <span class="value">${customer.avukat_sorgu_durumu || '-'}</span></div>
-                                    ${customer.avukat_sorgu_sonuc ? `<div class="field" style="background:#fef2f2; border-left:3px solid #dc2626; border-top:none; padding-top:2px;"><span class="label" style="color:#7f1d1d; font-weight:normal; font-size:10px;">Sorgu Sonucu:</span> <span class="value" style="font-size:10px; color:#7f1d1d; font-weight:600;">${customer.avukat_sorgu_sonuc}</span></div>` : ''}
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <h2>⚠️ Risk Analizi (İcra/Dava)</h2>
-                                <div class="field-group" style="background: #fff1f2; border-color: #fecdd3;">
-                                    <div class="field"><span class="label text-red-900">Açık İcra Dosyası</span> <span class="value font-bold ${customer.acik_icra_varmi === 'Evet' ? 'text-red-600' : 'text-green-600'}">${customer.acik_icra_varmi === 'Evet' ? 'VAR' : 'YOK'}</span></div>
-                                    ${customer.acik_icra_varmi === 'Evet' ? `<div class="field" style="border-top:none; padding-top:0;"><span class="label" style="font-weight:normal; font-size:10px;">Detay:</span> <span class="value" style="font-size:10px;">${customer.acik_icra_detay || '-'}</span></div>` : ''}
-                                    
-                                    <div class="field"><span class="label text-red-900">Dava Dosyası</span> <span class="value font-bold ${customer.dava_dosyasi_varmi === 'Evet' ? 'text-red-600' : 'text-green-600'}">${customer.dava_dosyasi_varmi === 'Evet' ? 'VAR' : 'YOK'}</span></div>
-                                    ${customer.dava_dosyasi_varmi === 'Evet' ? `<div class="field" style="border-top:none; padding-top:0;"><span class="label" style="font-weight:normal; font-size:10px;">Detay:</span> <span class="value" style="font-size:10px;">${customer.dava_detay || '-'}</span></div>` : ''}
-
-                                    <div class="field"><span class="label text-gray-700">Kapalı İcra</span> <span class="value font-bold">${customer.kapali_icra_varmi === 'Evet' ? 'VAR' : 'YOK'}</span></div>
-                                    ${customer.kapali_icra_varmi === 'Evet' ? `<div class="field" style="border-top:none; padding-top:0;"><span class="label" style="font-weight:normal; font-size:10px;">Detay:</span> <span class="value" style="font-size:10px;">${customer.kapali_icra_kapanis_sekli || '-'}</span></div>` : ''}
                                 </div>
                             </div>
                         </div>
 
-                        <!-- ROW 3: PRODUCT & DELIVERY -->
+                        <!-- GUARANTOR SECTION (FULL DETAIL) -->
+                        ${customer.kefil_ad_soyad ? `
+                        <div style="margin-top:15px; border-top:2px solid #334155; padding-top:5px;"></div>
                         <div class="row">
+                            <div class="col-4">
+                                <h2>🤝 Kefil Kimlik</h2>
+                                <div class="field-group" style="background:#f8fafc;">
+                                    <div class="field"><span class="label">Ad Soyad</span> <span class="value font-bold">${customer.kefil_ad_soyad}</span></div>
+                                    <div class="field"><span class="label">TC Kimlik</span> <span class="value">${customer.kefil_tc_kimlik || '-'}</span></div>
+                                    <div class="field"><span class="label">Telefon</span> <span class="value">${customer.kefil_telefon || '-'}</span></div>
+                                    <div class="field"><span class="label">İkametgah</span> <span class="value">${customer.kefil_ikametgah_varmi || '-'}</span></div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <h2>💼 Kefil İş & Finans</h2>
+                                <div class="field-group" style="background:#f8fafc;">
+                                    <div class="field"><span class="label">Meslek</span> <span class="value">${customer.kefil_meslek_is || '-'}</span></div>
+                                    <div class="field"><span class="label">Maaş</span> <span class="value font-bold">${customer.kefil_son_yatan_maas || '-'} TL</span></div>
+                                    <div class="field"><span class="label">Çalışma Süresi</span> <span class="value">${customer.kefil_ayni_isyerinde_sure_ay || '-'} Ay</span></div>
+                                    <div class="field"><span class="label">Hizmet Dökümü</span> <span class="value">${customer.kefil_hizmet_dokumu_varmi || '-'}</span></div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <h2>⚖️ Kefil Yasal & Varlık</h2>
+                                <div class="field-group" style="background:#f8fafc;">
+                                    <div class="field"><span class="label">Açık İcra</span> <span class="value ${customer.kefil_acik_icra_varmi === 'Evet' ? 'risk-high' : ''}">${customer.kefil_acik_icra_varmi || '-'}</span></div>
+                                    <div class="field"><span class="label">Dava</span> <span class="value ${customer.kefil_dava_dosyasi_varmi === 'Evet' ? 'risk-high' : ''}">${customer.kefil_dava_dosyasi_varmi || '-'}</span></div>
+                                    <div class="field"><span class="label">Kapalı İcra</span> <span class="value">${customer.kefil_kapali_icra_varmi || '-'}</span></div>
+                                    <div class="field"><span class="label">Tapu</span> <span class="value ${customer.kefil_tapu_varmi === 'Evet' ? 'risk-low' : ''}">${customer.kefil_tapu_varmi || '-'}</span></div>
+                                    <div class="field"><span class="label">Araç</span> <span class="value ${customer.kefil_arac_varmi === 'Evet' ? 'risk-low' : ''}">${customer.kefil_arac_varmi || '-'}</span></div>
+                                    ${customer.kefil_avukat_sorgu_sonuc ? `<div class="field"><span class="label text-red-700">Avukat Notu</span> <span class="value text-red-700">${customer.kefil_avukat_sorgu_sonuc}</span></div>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        <!-- PRODUCT INFO -->
+                        <div class="row" style="margin-top:10px;">
                              <div class="col-12" style="width:100%">
-                                <h2>📦 Ürün & Teslimat Bilgileri</h2>
-                                <div class="field-group" style="background: #f0f9ff; border-color: #bae6fd; display:flex; gap:20px;">
+                                <h2>📦 Ürün ve Teslimat</h2>
+                                <div class="field-group" style="background: #f0f9ff; border-color: #bae6fd; display:flex; gap:15px;">
                                     <div style="flex:1">
-                                        <div class="field"><span class="label">Talep Edilen Ürün</span> <span class="value font-bold text-blue-800">${customer.talep_edilen_urun || '-'}</span></div>
-                                        <div class="field"><span class="label">Ürün Bedeli / Limit</span> <span class="value font-bold">${customer.kredi_limiti || customer.talep_edilen_tutar || '-'} TL</span></div>
+                                        <div class="field"><span class="label">Talep Edilen</span> <span class="value font-bold text-blue-800">${customer.talep_edilen_urun || '-'}</span></div>
+                                        <div class="field"><span class="label">Tutar / Limit</span> <span class="value font-bold">${customer.kredi_limiti || customer.talep_edilen_tutar || '-'} TL</span></div>
                                     </div>
                                     <div style="flex:1">
-                                        <div class="field"><span class="label">IMEI No</span> <span class="value font-mono">${customer.urun_imei || '-'}</span></div>
+                                        <div class="field"><span class="label">Teslim Edilen IMEI</span> <span class="value font-mono font-bold">${customer.urun_imei || '-'}</span></div>
                                         <div class="field"><span class="label">Seri No</span> <span class="value font-mono">${customer.urun_seri_no || '-'}</span></div>
                                     </div>
                                     <div style="flex:1">
@@ -2283,40 +2315,21 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                             </div>
                         </div>
 
-                        <!-- ROW 4: GUARANTOR (Conditional) -->
-                        ${customer.kefil_ad_soyad ? `
-                        <div class="row">
-                            <div class="col-12" style="width:100%">
-                                <h2>🤝 Kefil Bilgileri</h2>
-                                <div class="field-group row" style="display:flex; gap:20px;">
-                                    <div style="flex:1">
-                                        <div class="field"><span class="label">Ad Soyad</span> <span class="value">${customer.kefil_ad_soyad}</span></div>
-                                        <div class="field"><span class="label">TC Kimlik</span> <span class="value">${customer.kefil_tc_kimlik || '-'}</span></div>
-                                        <div class="field"><span class="label">Telefon</span> <span class="value">${customer.kefil_telefon || '-'}</span></div>
-                                        <div class="field"><span class="label">Meslek / İş</span> <span class="value">${customer.kefil_meslek_is || '-'}</span></div>
-                                    </div>
-                                    <div style="flex:1">
-                                        <div class="field"><span class="label">Maaş</span> <span class="value">${customer.kefil_son_yatan_maas || '-'}</span></div>
-                                        <div class="field"><span class="label">İkametgah</span> <span class="value">${customer.kefil_ikametgah_varmi || '-'}</span></div>
-                                        ${customer.kefil_notlar ? `<div class="field" style="background:#fef9c3; border-left:3px solid #eab308;"><span class="label" style="color:#713f12;">Kefil Notları</span> <span class="value" style="font-size:10px; color:#713f12;">${customer.kefil_notlar}</span></div>` : ''}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        ` : ''}
-
                         <!-- NOTES -->
-                        <h2>📝 Notlar</h2>
-                        <div style="border:1px solid #e2e8f0; padding:10px; font-size:11px; background:#f8fafc; border-radius:4px; min-height:40px;">
-                            <strong>Satıcı Notları:</strong> ${customer.arama_not_kisa || 'Not bulunmuyor.'}<br/>
-                            ${customer.admin_notu ? `<div style="margin-top:5px; border-top:1px dashed #cbd5e1; padding-top:5px;"><strong>Yönetici Notu:</strong> ${customer.admin_notu}</div>` : ''}
+                        <h2>📝 Yönetici ve Sistem Notları</h2>
+                        <div style="border:1px solid #e2e8f0; padding:8px; font-size:9px; background:#f8fafc; border-radius:4px; min-height:40px;">
+                            ${customer.arama_not_kisa ? `<div><strong>Satış Notu:</strong> ${customer.arama_not_kisa}</div>` : ''}
+                            ${customer.admin_notu ? `<div style="margin-top:4px; color:#b45309;"><strong>Yönetici Notu:</strong> ${customer.admin_notu}</div>` : ''}
+                            ${customer.finansal_notlar ? `<div style="margin-top:4px; color:#b45309;"><strong>Finansal Not:</strong> ${customer.finansal_notlar}</div>` : ''}
+                            ${customer.kefil_notlar ? `<div style="margin-top:4px; color:#1e40af;"><strong>Kefil Notu:</strong> ${customer.kefil_notlar}</div>` : ''}
                         </div>
 
                         <!-- SIGNATURES -->
                         <div class="signatures-container">
                             <div class="legal-text">
-                                Yukarıdaki bilgilerin doğruluğunu beyan ederim. Cihazı eksiksiz, ayıpsız ve çalışır durumda, kutusu ve aksesuarları ile birlikte teslim aldım. 
-                                Ödeme planına ve sözleşme şartlarına uyacağımı, aksi takdirde yasal yollara başvurulacağını kabul ve taahhüt ederim.
+                                <strong>BEYAN ve TAAHHÜT:</strong> Yukarıdaki kimlik, iletişim ve gelir bilgilerimin doğruluğunu beyan ederim. 
+                                Talep ettiğim ürünü/hizmeti teslim aldım. Tarafıma bildirilen ödeme planına ve sözleşme şartlarına eksiksiz uyacağımı, 
+                                aksi takdirde doğacak yasal yükümlülükleri kabul ettiğimi taahhüt ederim.
                             </div>
                             <div class="sig-grid">
                                 <div class="sig-box">
@@ -2334,6 +2347,10 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                                     <div class="sig-name">${customer.sahip ? customer.sahip.split('@')[0] : 'Yetkili'}</div>
                                 </div>
                             </div>
+                        </div>
+
+                        <div class="no-print" style="margin-top:20px; text-align:center; font-size:10px; color:#94a3b8;">
+                            Sistem tarafından ${new Date().toLocaleString('tr-TR')} tarihinde oluşturulmuştur.
                         </div>
 
                         <script>
