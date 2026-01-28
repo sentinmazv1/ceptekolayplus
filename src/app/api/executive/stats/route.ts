@@ -59,8 +59,8 @@ export async function GET(req: any) {
         const rangeYear = rangeStartObj.getFullYear();
         const rangeMonth = rangeStartObj.getMonth();
         // Use UTC 00:00 for 1st of month
+        // Simplifying: Just YYYY-MM-01T00:00:00.000Z
         const monthStartObj = new Date(Date.UTC(rangeYear, rangeMonth, 1, 0, 0, 0));
-        monthStartObj.setHours(monthStartObj.getHours() - 3); // Approx TR Offset
         const startOfMonth = monthStartObj.toISOString();
 
 
