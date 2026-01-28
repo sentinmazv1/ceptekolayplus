@@ -6,8 +6,6 @@ import { useState, useEffect } from 'react';
 import { Home, LogOut, PlusCircle, Search, User, UserCircle, BarChart2, FileSearch, Package, Loader2, LayoutDashboard, UserPlus, Menu, X, Calendar, Database, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
-// import { LiveActivityTicker } from '@/components/LiveActivityTicker';
-// import { ActiveNotifications } from '@/components/ActiveNotifications';
 
 export default function DashboardLayout({
     children,
@@ -19,6 +17,24 @@ export default function DashboardLayout({
     const pathname = usePathname();
     const [stats, setStats] = useState<{ pending_approval: number } | null>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+    // --- BOSS MODE REDIRECT ---
+    useEffect(() => {
+        if (status === 'authenticated' && session?.user?.role === 'BOSS') {
+            // If Boss is on standard dashboard, redirect to executive
+            if (pathname === '/dashboard') {
+                router.replace('/dashboard/executive');
+            }
+        }
+    }, [status, session, pathname, router]);
+
+    // --- BOSS MODE LAYOUT ---
+    // If user is BOSS, render ONLY the children (Executive Dashboard handles its own layout)
+    // This removes the standard Header/Sidebar for the Boss.
+    if (session?.user?.role === 'BOSS') {
+        return <>{children}</>;
+    }
+    // -------------------------
 
     // Close sidebar on route change
     useEffect(() => {
