@@ -153,11 +153,12 @@ export async function GET(req: NextRequest) {
                     stats.performance[user].whatsapp++;
                 } else if ((action === 'UPDATE_STATUS' || action === 'CREATED')) {
                     const val = (l.new_value || '').toLowerCase();
-                    // Broader check for "Application" event
-                    // If status became ANY of these, it implies an application was taken
-                    const appStatuses = ['başvuru alındı', 'onay bekleniyor', 'onaya gönderildi', 'kefil bekleniyor', 'kefil istendi', 'onaylandı', 'reddedildi', 'eksik evrak bekleniyor'];
+                    // STRICT CHECK per user request:
+                    // Only count if user explicitly moved it to "Başvuru alındı" or "Onaya gönderildi"
+                    // "başvuru alındı = onaya sunuldu olmalı" -> These are the triggers for "Application Taken".
+                    const validAppStatuses = ['başvuru alındı', 'onaya gönderildi', 'onay bekleniyor']; // Included 'onay bekleniyor' just in case of alias usage, but focused on submission.
 
-                    if (appStatuses.some(s => val.includes(s))) {
+                    if (validAppStatuses.some(s => val === s || val.includes(s))) {
                         applicationIds.add(l.customer_id);
                         userAppIds[user].add(l.customer_id);
                     }
