@@ -149,14 +149,18 @@ export async function GET(req: NextRequest) {
                     stats.performance[user].sms++;
                 } else if (action === 'SEND_WHATSAPP' || action === 'CLICK_WHATSAPP') {
                     stats.performance[user].whatsapp++;
-                } else if (action === 'SEND_WHATSAPP' || action === 'CLICK_WHATSAPP') {
-                    stats.performance[user].whatsapp++;
                 } else if ((action === 'UPDATE_STATUS' || action === 'CREATED')) {
                     const val = (l.new_value || '').toLowerCase();
                     // STRICT CHECK per user request:
-                    // Only count if user explicitly moved it to "Başvuru alındı" or "Onaya gönderildi"
-                    // "başvuru alındı = onaya sunuldu olmalı" -> These are the triggers for "Application Taken".
-                    const validAppStatuses = ['başvuru alındı', 'onaya gönderildi', 'onay bekleniyor']; // Included 'onay bekleniyor' just in case of alias usage, but focused on submission.
+                    // TRIGGERS for "Application Taken":
+                    const validAppStatuses = [
+                        'başvuru alındı',
+                        'onaya gönderildi',
+                        'onay bekleniyor',
+                        'onay bekliyor', // Common variation
+                        'onaya sunuldu', // Requested alias
+                        'eksik evrak bekleniyor' // Implies process started
+                    ];
 
                     if (validAppStatuses.some(s => val === s || val.includes(s))) {
                         applicationIds.add(l.customer_id);
