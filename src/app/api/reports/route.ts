@@ -124,11 +124,29 @@ export async function GET(req: NextRequest) {
         // Debounce Tracking: User -> Customer -> LastTimestamp
         const lastBackofficeTime: Record<string, Record<string, number>> = {};
 
+        // Helper to normalize user identity
+        // User wants aggregation by EMAIL.
+        // If we get a plain name "Funda", map it to "funda".
+        // If we get "funda@ceptekolay...", map it to "funda".
+        const normalizeUser = (u: string) => {
+            if (!u) return 'Unknown';
+            let norm = u.toLowerCase().trim();
+            // Map known names to email usernames if needed
+            if (norm === 'funda') return 'funda@ceptekolayplus.com'; // Assume domain or just use email format
+            if (norm === 'gözde' || norm === 'gozde') return 'gozde@ceptekolayplus.com';
+
+            // If it's already an email, just lower case it (or keep full email)
+            // The UI splits by '@', so keeping full email is fine and safer.
+            return norm;
+        };
+
         // Puts "Events" into buckets
         logs.forEach((l: any) => {
-            const user = l.user_email;
-            if (!user) return;
-            if (['sistem', 'system', 'admin', 'ibrahim', 'ibrahimsentinmaz@gmail.com'].some(x => user.toLowerCase().includes(x))) return;
+            const rawUser = l.user_email;
+            if (!rawUser) return;
+            if (['sistem', 'system', 'admin', 'ibrahim', 'ibrahimsentinmaz@gmail.com'].some(x => rawUser.toLowerCase().includes(x))) return;
+
+            const user = normalizeUser(rawUser);
 
             const ts = new Date(l.timestamp).getTime();
             const action = l.action;
@@ -211,11 +229,13 @@ export async function GET(req: NextRequest) {
             const approvalDate = row.onay_tarihi;
             const status = row.durum;
             const approval = row.onay_durumu;
-            const owner = row.sahip || row.sahip_email;
+            const rawOwner = row.sahip || row.sahip_email;
+
+            const owner = normalizeUser(rawOwner);
             const createdAt = row.created_at;
 
             // SKIP ignored users
-            const isTrackedUser = owner && !['sistem', 'system', 'admin', 'ibrahim', 'ibrahimsentinmaz@gmail.com'].some(x => owner.toLowerCase().includes(x));
+            const isTrackedUser = owner && !['sistem', 'system', 'admin', 'ibrahim', 'ibrahimsentinmaz@gmail.com', 'unknown'].some(x => owner.toLowerCase().includes(x));
 
             // A. Funnel: Unique Called
             if (lastCalledInRange(row, start, end)) {
