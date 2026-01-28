@@ -958,6 +958,7 @@ function UserManager({ users, refresh }: { users: any[], refresh: () => void }) 
                             <select className="w-full border rounded px-3 py-2" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
                                 <option value="SALES_REP">Personel (Satış)</option>
                                 <option value="ADMIN">Yönetici (Admin)</option>
+                                <option value="BOSS">Patron / Yönetici 👑</option>
                             </select>
                         </div>
                         <div className="md:col-span-2 pt-2 flex gap-2 justify-end">
@@ -976,8 +977,11 @@ function UserManager({ users, refresh }: { users: any[], refresh: () => void }) 
                             <div className="text-sm text-gray-500">{u.email}</div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium mr-2 ${u.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
-                                {u.role === 'ADMIN' ? 'Yönetici' : 'Personel'}
+                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium mr-2 ${u.role === 'BOSS' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+                                u.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' :
+                                    'bg-blue-100 text-blue-800'
+                                }`}>
+                                {u.role === 'BOSS' ? '👑 Patron' : u.role === 'ADMIN' ? 'Yönetici' : 'Personel'}
                             </span>
                             <button onClick={() => openEdit(u)} className="p-2 hover:bg-indigo-50 text-indigo-600 rounded-lg transition" title="Düzenle">
                                 <Edit2 className="w-4 h-4" />
