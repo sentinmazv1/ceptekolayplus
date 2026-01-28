@@ -993,7 +993,7 @@ export default function InventoryPage() {
                         </div>
 
                         {/* PREMIUM FULL LIST PRINT LAYOUT (Hidden on screen, visible on print) */}
-                        <div className="hidden print:block p-8 bg-white fixed inset-0 z-[9999] w-screen h-auto overflow-visible text-black">
+                        <div className="hidden print:block p-8 bg-white absolute top-0 left-0 z-[9999] w-full min-h-screen h-auto overflow-visible text-black">
                             {/* Header */}
                             <div className="flex justify-between items-end border-b-4 border-black pb-4 mb-6">
                                 <div>
