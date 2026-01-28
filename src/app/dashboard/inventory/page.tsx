@@ -1047,16 +1047,31 @@ export default function InventoryPage() {
                                                             </td>
                                                             <td className="px-3 py-2 text-right font-black bg-gray-50/50">
                                                                 {model.fiyat_15_taksit && (
-                                                                    <div className="text-lg leading-none">
-                                                                        {(Number(model.fiyat_15_taksit) / 15).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺
-                                                                    </div>
+                                                                    <>
+                                                                        <div className="text-lg leading-none">
+                                                                            {(Number(model.fiyat_15_taksit) / 15).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺
+                                                                        </div>
+                                                                        <div className="text-[10px] text-gray-500 font-medium mt-0.5">
+                                                                            Top: {Number(model.fiyat_15_taksit).toLocaleString('tr-TR')} ₺
+                                                                        </div>
+                                                                    </>
                                                                 )}
                                                             </td>
                                                             <td className="px-3 py-2 text-right text-gray-600">
-                                                                {model.fiyat_12_taksit && (Number(model.fiyat_12_taksit) / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺
+                                                                {model.fiyat_12_taksit && (
+                                                                    <>
+                                                                        <div>{(Number(model.fiyat_12_taksit) / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺</div>
+                                                                        <div className="text-[9px] text-gray-400">Top: {Number(model.fiyat_12_taksit).toLocaleString('tr-TR')} ₺</div>
+                                                                    </>
+                                                                )}
                                                             </td>
                                                             <td className="px-3 py-2 text-right text-gray-600">
-                                                                {model.fiyat_6_taksit && (Number(model.fiyat_6_taksit) / 6).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺
+                                                                {model.fiyat_6_taksit && (
+                                                                    <>
+                                                                        <div>{(Number(model.fiyat_6_taksit) / 6).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺</div>
+                                                                        <div className="text-[9px] text-gray-400">Top: {Number(model.fiyat_6_taksit).toLocaleString('tr-TR')} ₺</div>
+                                                                    </>
+                                                                )}
                                                             </td>
                                                         </tr>
                                                     ))}
