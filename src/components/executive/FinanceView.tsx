@@ -24,14 +24,31 @@ interface FinanceViewProps {
 }
 
 export function FinanceView({ data, funnel, dailyDeliveries }: FinanceViewProps) {
+    // 1. Safe Defaults for Data
+    const safeData = data || { dailyTurnover: 0, monthlyTurnover: 0, target: 1 };
+
+    // 2. Safe Defaults for Funnel (Deep Merge)
+    const baseFunnel = { today: 0, yesterday: 0 };
+    const safeFunnel = {
+        calls: { ...baseFunnel, ...funnel?.calls },
+        leads: { ...baseFunnel, ...funnel?.leads },
+        approved: { ...baseFunnel, ...funnel?.approved },
+        delivered: { ...baseFunnel, ...funnel?.delivered }
+    };
+
+    // 3. Safe Defaults for List
+    const safeDeliveries = Array.isArray(dailyDeliveries) ? dailyDeliveries : [];
+
     const formatCurrency = (val: number) => {
-        return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(val);
+        return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(val || 0);
     };
 
     // Calculate Trend Percentage
     const getTrend = (today: number, yesterday: number) => {
-        if (yesterday === 0) return today > 0 ? 100 : 0;
-        return Math.round(((today - yesterday) / yesterday) * 100);
+        const y = yesterday || 0;
+        const t = today || 0;
+        if (y === 0) return t > 0 ? 100 : 0;
+        return Math.round(((t - y) / y) * 100);
     };
 
     const renderFunnelCard = (title: string, today: number, yesterday: number, icon: any, color: string, delay: number) => {
@@ -57,9 +74,9 @@ export function FinanceView({ data, funnel, dailyDeliveries }: FinanceViewProps)
                     </div>
                 </div>
 
-                <div className="text-2xl font-black text-white mb-1">{today}</div>
+                <div className="text-2xl font-black text-white mb-1">{today || 0}</div>
                 <div className="text-xs text-gray-400 font-medium">{title}</div>
-                <div className="text-[10px] text-gray-500 mt-1">Dün: {yesterday}</div>
+                <div className="text-[10px] text-gray-500 mt-1">Dün: {yesterday || 0}</div>
             </motion.div>
         );
     };
@@ -79,11 +96,11 @@ export function FinanceView({ data, funnel, dailyDeliveries }: FinanceViewProps)
                 <div className="relative z-10">
                     <h2 className="text-gray-400 font-bold uppercase tracking-widest text-xs mb-2">GÜNLÜK CİRO</h2>
                     <div className="text-5xl font-black text-white tracking-tighter drop-shadow-lg mb-2">
-                        {formatCurrency(data.dailyTurnover)}
+                        {formatCurrency(safeData.dailyTurnover)}
                     </div>
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-bold text-indigo-300">
                         <TrendingUp className="w-3 h-3" />
-                        Hedef: {formatCurrency(data.target)}
+                        Hedef: {formatCurrency(safeData.target)}
                     </div>
                 </div>
             </motion.div>
@@ -92,10 +109,10 @@ export function FinanceView({ data, funnel, dailyDeliveries }: FinanceViewProps)
             <div>
                 <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 px-2">Günün Özeti (Satış Hunisi)</h3>
                 <div className="grid grid-cols-2 gap-3">
-                    {renderFunnelCard('Aranan', funnel.calls.today, funnel.calls.yesterday, <Phone className="w-5 h-5" />, 'bg-blue-500', 0.1)}
-                    {renderFunnelCard('Başvuru', funnel.leads.today, funnel.leads.yesterday, <FileText className="w-5 h-5" />, 'bg-purple-500', 0.2)}
-                    {renderFunnelCard('Onaylanan', funnel.approved.today, funnel.approved.yesterday, <CheckCircle className="w-5 h-5" />, 'bg-emerald-500', 0.3)}
-                    {renderFunnelCard('Teslimat', funnel.delivered.today, funnel.delivered.yesterday, <Truck className="w-5 h-5" />, 'bg-amber-500', 0.4)}
+                    {renderFunnelCard('Aranan', safeFunnel.calls.today, safeFunnel.calls.yesterday, <Phone className="w-5 h-5" />, 'bg-blue-500', 0.1)}
+                    {renderFunnelCard('Başvuru', safeFunnel.leads.today, safeFunnel.leads.yesterday, <FileText className="w-5 h-5" />, 'bg-purple-500', 0.2)}
+                    {renderFunnelCard('Onaylanan', safeFunnel.approved.today, safeFunnel.approved.yesterday, <CheckCircle className="w-5 h-5" />, 'bg-emerald-500', 0.3)}
+                    {renderFunnelCard('Teslimat', safeFunnel.delivered.today, safeFunnel.delivered.yesterday, <Truck className="w-5 h-5" />, 'bg-amber-500', 0.4)}
                 </div>
             </div>
 
@@ -104,17 +121,17 @@ export function FinanceView({ data, funnel, dailyDeliveries }: FinanceViewProps)
                 <div className="flex items-center justify-between mb-4 px-2">
                     <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Günün Teslimatları</h3>
                     <div className="text-xs font-bold text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full">
-                        {dailyDeliveries.length} Adet
+                        {safeDeliveries.length} Adet
                     </div>
                 </div>
 
                 <div className="space-y-3">
-                    {dailyDeliveries.length === 0 ? (
+                    {safeDeliveries.length === 0 ? (
                         <div className="text-center py-8 text-gray-500 text-sm bg-white/5 rounded-2xl border border-white/5 border-dashed">
                             Henüz teslimat yapılmadı.
                         </div>
                     ) : (
-                        dailyDeliveries.map((sale, i) => (
+                        safeDeliveries.map((sale, i) => (
                             <motion.div
                                 key={i}
                                 initial={{ opacity: 0, x: -10 }}
@@ -136,7 +153,7 @@ export function FinanceView({ data, funnel, dailyDeliveries }: FinanceViewProps)
                                         {formatCurrency(sale.price)}
                                     </div>
                                     <div className="text-[10px] text-gray-600 font-medium">
-                                        Satış: {sale.user.split('@')[0]}
+                                        Satış: {(sale.user || '').split('@')[0] || 'Unknown'}
                                     </div>
                                 </div>
                             </motion.div>
