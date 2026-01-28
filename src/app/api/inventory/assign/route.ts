@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { updateInventoryItem, getInventoryItems } from '@/lib/inventory-service';
+import { updateInventoryItem, getInventoryItems, addInventoryItem } from '@/lib/inventory-service';
 import { updateLead, getLeads, logAction } from '@/lib/leads';
 
 export async function POST(req: NextRequest) {
@@ -34,12 +34,35 @@ export async function POST(req: NextRequest) {
 
         const now = new Date().toISOString();
 
-        // 2. Update Inventory Item -> SOLDOUT
-        await updateInventoryItem(inventoryId, {
-            durum: 'SATILDI',
-            cikis_tarihi: now,
-            musteri_id: customerId
-        });
+        // 2. Update Inventory Item or Split for Stock > 1
+        const currentStock = item.stok_adedi || 1;
+        const isAccessory = item.kategori === 'Aksesuar' || currentStock > 1;
+
+        if (isAccessory && currentStock > 1) {
+            // Case A: Bulk Item - Decrement Stock & Create New Sold Entry
+
+            // 2a. Decrement existing stock
+            await updateInventoryItem(inventoryId, {
+                stok_adedi: currentStock - 1
+            });
+
+            // 2b. Create new "Sold" item entry for this specific sale
+            const { id, ...itemData } = item;
+            await addInventoryItem({
+                ...(itemData as any),
+                stok_adedi: 1,
+                durum: 'SATILDI',
+                cikis_tarihi: now,
+                musteri_id: customerId
+            });
+        } else {
+            // Case B: Single Item - Mark as Sold
+            await updateInventoryItem(inventoryId, {
+                durum: 'SATILDI',
+                cikis_tarihi: now,
+                musteri_id: customerId
+            });
+        }
 
         // 3. Update Customer -> Set IMEI/Serial
 
