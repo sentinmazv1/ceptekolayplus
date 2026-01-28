@@ -27,9 +27,10 @@ export default function DashboardLayout({
 
     useEffect(() => {
         if (['ADMIN', 'Admin'].includes(session?.user?.role || '')) {
+            // Fetch once purely for badge counts, not on every page load
             fetch('/api/leads/stats').then(res => res.json()).then(setStats).catch(() => { });
         }
-    }, [pathname, session]);
+    }, [session]); // Removed pathname dependency
 
     if (status === 'loading') {
         return (

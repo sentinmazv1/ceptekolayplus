@@ -6,9 +6,9 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { CustomerCard } from '@/components/CustomerCard';
 import { ActionCenter } from '@/components/ActionCenter';
-import TickerFeed from '@/components/TickerFeed'; // New Import
+// import TickerFeed from '@/components/TickerFeed'; // REMOVED
 import { Customer } from '@/lib/types';
-import { Loader2, LogOut, Users, FileText } from 'lucide-react';
+import { Loader2, LogOut, Users, FileText, RefreshCcw } from 'lucide-react';
 import { UserPerformanceCard } from '@/components/UserPerformanceCard';
 
 export default function Dashboard() {
@@ -27,16 +27,23 @@ export default function Dashboard() {
     // TODO: Move this to a proper role check context later
     const isAdmin = session?.user?.email === 'ibrahimsentinmaz@gmail.com' || session?.user?.email === 'admin';
 
+    const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+
+    // Otomatik Yenileme İPTAL EDİLDİ (Ölü Mod)
+    // Sadece sayfa ilk açıldığında çalışır.
     useEffect(() => {
-        if (status === 'unauthenticated') router.push('/');
         if (status === 'authenticated') {
             fetchPerformance();
-            const interval = setInterval(() => {
-                fetchPerformance();
-            }, 30000);
-            return () => clearInterval(interval);
         }
-    }, [status, router]);
+    }, [status]); // router removed to prevent re-fetch on navigation
+
+    const handleManualRefresh = () => {
+        setLoading(true);
+        fetchPerformance().finally(() => {
+            setLoading(false);
+            setLastUpdated(new Date());
+        });
+    };
 
     const fetchPerformance = async () => {
         try {
@@ -113,10 +120,7 @@ export default function Dashboard() {
     return (
         <div className="flex flex-col h-full relative bg-gray-50/50 min-h-screen">
 
-            {/* 1. TOP TICKER (Full Width, Edge to Edge) */}
-            <div className="w-full">
-                <TickerFeed />
-            </div>
+            {/* 1. TOP TICKER REMOVED */}
 
             <div className="max-w-[1920px] mx-auto px-4 w-full space-y-6 pb-12 mt-6">
 
@@ -144,7 +148,6 @@ export default function Dashboard() {
                     </div>
                 )}
 
-                {/* 2. ACTION CENTER (Sticky Topish) */}
                 {/* 2. ACTION CENTER (Sticky Topish) */}
                 <div className="sticky top-2 z-40 bg-gray-50/95 backdrop-blur-sm -mx-4 px-4 pt-2 -mt-2 pb-2 transition-all">
                     <ActionCenter
@@ -187,7 +190,7 @@ export default function Dashboard() {
                                     initialData={activeLead}
                                     onSave={() => {
                                         setActiveLead(null);
-                                        fetchPerformance();
+                                        fetchPerformance(); // Update stats manually after save
                                     }}
                                 />
                             </div>
@@ -202,13 +205,21 @@ export default function Dashboard() {
                                     </div>
                                     <div>
                                         <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Ekip Performans Karnesi</h2>
-                                        <p className="text-xs font-medium text-gray-500">Bugünün Liderleri ve Canlı Sıralama</p>
+                                        <p className="text-xs font-medium text-gray-500">
+                                            Son Güncelleme: {lastUpdated ? lastUpdated.toLocaleTimeString() : '-'}
+                                        </p>
                                     </div>
                                 </div>
-                                <div className="bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100 flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
-                                    <span className="text-xs font-bold text-indigo-700">CANLI</span>
-                                </div>
+                                <Button
+                                    onClick={handleManualRefresh}
+                                    variant="outline"
+                                    size="sm"
+                                    className="bg-white text-indigo-600 border-indigo-200 hover:bg-indigo-50 flex items-center gap-2"
+                                    disabled={loading}
+                                >
+                                    <RefreshCcw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                                    {loading ? 'Güncelleniyor...' : 'Verileri Yenile'}
+                                </Button>
                             </div>
 
                             {performanceStats ? (
