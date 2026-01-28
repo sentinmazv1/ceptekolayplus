@@ -97,6 +97,17 @@ export default function DashboardLayout({
                                     </Button>
                                 </Link>
 
+                                <Link href="/dashboard/inventory">
+                                    <Button
+                                        variant={isActive('/dashboard/inventory') ? 'primary' : 'ghost'}
+                                        size="sm"
+                                        className={isActive('/dashboard/inventory') ? '' : 'text-gray-600 hover:text-gray-900'}
+                                    >
+                                        <Package className="w-4 h-4 mr-2" />
+                                        Stok
+                                    </Button>
+                                </Link>
+
                                 {['ADMIN', 'Admin'].includes(session?.user?.role || '') && (
                                     <>
                                         <Link href="/dashboard/approvals">
@@ -122,16 +133,7 @@ export default function DashboardLayout({
                                         </Link>
 
 
-                                        <Link href="/dashboard/inventory">
-                                            <Button
-                                                variant={isActive('/dashboard/inventory') ? 'primary' : 'ghost'}
-                                                size="sm"
-                                                className={isActive('/dashboard/inventory') ? '' : 'text-gray-600 hover:text-gray-900'}
-                                            >
-                                                <Package className="w-4 h-4 mr-2" />
-                                                Stok
-                                            </Button>
-                                        </Link>
+
 
                                         <Link href="/dashboard/collection">
                                             <Button
@@ -229,6 +231,16 @@ export default function DashboardLayout({
                                         </Button>
                                     </Link>
 
+                                    <Link href="/dashboard/inventory">
+                                        <Button
+                                            variant={isActive('/dashboard/inventory') ? 'primary' : 'ghost'}
+                                            className="w-full justify-start text-sm"
+                                        >
+                                            <Package className="w-4 h-4 mr-3" />
+                                            Stok
+                                        </Button>
+                                    </Link>
+
                                     {['ADMIN', 'Admin'].includes(session?.user?.role || '') && (
                                         <>
                                             <div className="my-2 border-t border-gray-100" />
@@ -254,15 +266,7 @@ export default function DashboardLayout({
                                                 </Button>
                                             </Link>
 
-                                            <Link href="/dashboard/inventory">
-                                                <Button
-                                                    variant={isActive('/dashboard/inventory') ? 'primary' : 'ghost'}
-                                                    className="w-full justify-start text-sm"
-                                                >
-                                                    <Package className="w-4 h-4 mr-3" />
-                                                    Stok
-                                                </Button>
-                                            </Link>
+
 
                                             <Link href="/dashboard/collection">
                                                 <Button

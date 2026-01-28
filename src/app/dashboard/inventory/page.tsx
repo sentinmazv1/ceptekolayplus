@@ -169,13 +169,15 @@ export default function InventoryPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setStockCountMode(!stockCountMode)}
-                        className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 font-medium border ${stockCountMode ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}
-                    >
-                        <ClipboardCheck className="w-4 h-4" />
-                        {stockCountMode ? 'Sayım Modunu Kapat' : 'Sayım Modu'}
-                    </button>
+                    {session?.user.role === 'ADMIN' && (
+                        <button
+                            onClick={() => setStockCountMode(!stockCountMode)}
+                            className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 font-medium border ${stockCountMode ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}
+                        >
+                            <ClipboardCheck className="w-4 h-4" />
+                            {stockCountMode ? 'Sayım Modunu Kapat' : 'Sayım Modu'}
+                        </button>
+                    )}
 
 
 
