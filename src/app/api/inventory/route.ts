@@ -113,19 +113,54 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        const newItem = await addInventoryItem({
+        // Sanitize Payload
+        // 1. Remove empty strings for numeric/optional fields (prevents "invalid input syntax for type numeric")
+        // 2. Ensure Accessory fields are handled correctly
+        // const isAccessory = body.kategori === 'Aksesuar'; // Already defined above
+
+        const payload: any = {
             ...body,
             durum: 'STOKTA', // Defaults to In Stock
             kategori: body.kategori || 'Cihaz',
-            stok_adedi: body.stok_adedi || 1,
+            stok_adedi: body.stok_adedi ? Number(body.stok_adedi) : 1,
             giris_tarihi: new Date().toISOString(),
-            ekleyen: session.user.email
-        });
+            ekleyen: session.user.email,
+            // Ensure numbers are numbers, empty strings are null
+            fiyat_3_taksit: body.fiyat_3_taksit ? Number(body.fiyat_3_taksit) : null,
+            fiyat_6_taksit: body.fiyat_6_taksit ? Number(body.fiyat_6_taksit) : null,
+            fiyat_12_taksit: body.fiyat_12_taksit ? Number(body.fiyat_12_taksit) : null,
+            fiyat_15_taksit: body.fiyat_15_taksit ? Number(body.fiyat_15_taksit) : null,
+            alis_fiyati: body.alis_fiyati ? Number(body.alis_fiyati) : null,
+            satis_fiyati: body.satis_fiyati ? Number(body.satis_fiyati) : null,
+        };
+
+        if (isAccessory) {
+            payload.imei = null;
+            payload.seri_no = null;
+        } else {
+            // For devices, allow imei/seri_no as is, but maybe trim?
+            if (!payload.imei) payload.imei = null;
+            if (!payload.seri_no) payload.seri_no = null;
+        }
+
+        const newItem = await addInventoryItem(payload);
 
         return NextResponse.json({ item: newItem });
     } catch (error: any) {
         console.error('Inventory Add Error:', error);
-        return NextResponse.json({ message: 'Failed to add item', details: error.message || error }, { status: 500 });
+        // Better error logging for Supabase errors
+        if (error.code) {
+            console.error('Supabase Error Code:', error.code);
+            console.error('Supabase Error Details:', error.details);
+            console.error('Supabase Error Hint:', error.hint);
+            console.error('Supabase Error Message:', error.message);
+        }
+        return NextResponse.json({
+            message: 'Failed to add item',
+            details: error.message || error,
+            hint: error.hint || 'Check if you ran the DB migration properly.',
+            code: error.code
+        }, { status: 500 });
     }
 }
 
