@@ -433,6 +433,9 @@ export default function InventoryPage() {
                                             <option value="General Mobile">General Mobile</option>
                                             <option value="Reeder">Reeder</option>
                                             <option value="TCL">TCL</option>
+                                            <option value="Sony">Sony</option>
+                                            <option value="JBL">JBL</option>
+                                            <option value="Anker">Anker</option>
                                             <option value="Diğer">Diğer</option>
                                         </select>
                                     </div>
