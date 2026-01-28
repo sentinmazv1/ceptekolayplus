@@ -3,54 +3,65 @@ import { supabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+// Helper for TR Time
+const getTRDate = (d: Date) => {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Europe/Istanbul',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false
+    });
+    const parts = formatter.formatToParts(d);
+    const getPart = (type: string) => parts.find(p => p.type === type)?.value || '';
+    return new Date(Date.UTC(
+        parseInt(getPart('year')),
+        parseInt(getPart('month')) - 1,
+        parseInt(getPart('day')),
+        0, 0, 0
+    ));
+}
+
+export async function GET(req: any) {
     try {
-        // --- TIMEZONE FIX: EUROPE/ISTANBUL ---
-        const now = new Date();
-        const formatter = new Intl.DateTimeFormat('en-CA', {
-            timeZone: 'Europe/Istanbul',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false
-        });
+        const { searchParams } = new URL(req.url);
+        const queryStart = searchParams.get('startDate');
+        const queryEnd = searchParams.get('endDate');
 
-        // Parts of "Today" in TR Time
-        const parts = formatter.formatToParts(now);
-        const getPart = (type: string) => parts.find(p => p.type === type)?.value || '';
-        const year = parseInt(getPart('year'));
-        const month = parseInt(getPart('month')) - 1; // JS month is 0-indexed
-        const day = parseInt(getPart('day'));
+        // Defaults (Today in TR Time)
+        // 1. Calculate "Now" in TR
+        const trNow = getTRDate(new Date());
 
-        // CALCULATE BOUNDARIES MANUALLY TO ENSURE TR TIME
-        // 1. Start of Today (TR)
-        // Create a date that IS today 00:00:00 in TR, then get ISO String.
-        // Best way: Use string construction for ISO-like comparison if DB is UTC, 
-        // BUT Supabase 'timestamptz' handles compare automatically if we send valid ISO with offset?
-        // Actually, easiest is to construct UTC dates that correspond to TR midnight.
-        // TR is UTC+3. So Midnight TR = 21:00 UTC previous day.
+        // Define variables using the original names to handle both cases (Default vs Custom)
+        // This ensures downstream code (startOfToday usage) remains valid.
+        let startOfToday: string;
+        let endOfToday: string;
 
-        const trOffset = 3 * 60 * 60 * 1000;
+        if (queryStart && queryEnd) {
+            // Use User Provided Range (Assume YYYY-MM-DD)
+            startOfToday = `${queryStart}T00:00:00.000`;
+            endOfToday = `${queryEnd}T23:59:59.999`;
+        } else {
+            // Default: Today
+            const trOffset = 3 * 60 * 60 * 1000;
+            const todayTR = new Date(trNow.getTime() - trOffset);
+            startOfToday = todayTR.toISOString();
+            endOfToday = new Date(todayTR.getTime() + (24 * 60 * 60 * 1000) - 1).toISOString();
+        }
 
-        // Today 00:00 TR
-        const todayTR = new Date(Date.UTC(year, month, day, 0, 0, 0));
-        todayTR.setTime(todayTR.getTime() - trOffset); // Shift back to UTC representation of TR midnight
+        // Comparison Period (Previous Day or Parallel Period)
+        // Map to "Yesterday" variables
+        const rangeStartObj = new Date(startOfToday);
+        const prevDayObj = new Date(rangeStartObj.getTime() - (24 * 60 * 60 * 1000));
+        const startOfYesterday = prevDayObj.toISOString();
+        const endOfYesterday = new Date(prevDayObj.getTime() + (24 * 60 * 60 * 1000) - 1).toISOString();
 
-        const startOfToday = todayTR.toISOString();
-        const endOfToday = new Date(todayTR.getTime() + (24 * 60 * 60 * 1000) - 1).toISOString();
-
-        // Yesterday 00:00 TR
-        const yesterdayTR = new Date(todayTR.getTime() - (24 * 60 * 60 * 1000));
-        const startOfYesterday = yesterdayTR.toISOString();
-        const endOfYesterday = new Date(yesterdayTR.getTime() + (24 * 60 * 60 * 1000) - 1).toISOString();
-
-        // Start of Month TR
-        const monthTR = new Date(Date.UTC(year, month, 1, 0, 0, 0));
-        monthTR.setTime(monthTR.getTime() - trOffset);
-        const startOfMonth = monthTR.toISOString();
+        // Month Start (Of the selected start date's month)
+        const rangeYear = rangeStartObj.getFullYear();
+        const rangeMonth = rangeStartObj.getMonth();
+        // Use UTC 00:00 for 1st of month
+        const monthStartObj = new Date(Date.UTC(rangeYear, rangeMonth, 1, 0, 0, 0));
+        monthStartObj.setHours(monthStartObj.getHours() - 3); // Approx TR Offset
+        const startOfMonth = monthStartObj.toISOString();
 
 
         // --- 1. FUNNEL METRICS (Today vs Yesterday) ---

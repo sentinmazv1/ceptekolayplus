@@ -15,6 +15,10 @@ const TABS = [
 ];
 
 export default function ExecutiveDashboard() {
+    // Default to Today
+    const [startDate, setStartDate] = useState(() => new Date().toLocaleDateString('en-CA'));
+    const [endDate, setEndDate] = useState(() => new Date().toLocaleDateString('en-CA'));
+
     const [activeTab, setActiveTab] = useState('finance');
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<any>(null);
@@ -22,7 +26,9 @@ export default function ExecutiveDashboard() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/executive/stats', { cache: 'no-store' });
+            // Append Dates
+            const params = new URLSearchParams({ startDate, endDate });
+            const res = await fetch(`/api/executive/stats?${params.toString()}`, { cache: 'no-store' });
             if (res.ok) {
                 const json = await res.json();
                 setData(json);
@@ -36,10 +42,10 @@ export default function ExecutiveDashboard() {
 
     useEffect(() => {
         fetchData();
-        // Auto-refresh every 5 minutes in background for BOSS (Low frequency)
+        // Auto-refresh every 5 minutes
         const interval = setInterval(fetchData, 5 * 60 * 1000);
         return () => clearInterval(interval);
-    }, []);
+    }, [startDate, endDate]); // Refetch when dates change
 
     return (
         <div className="min-h-screen bg-[#0f172a] text-white flex flex-col font-sans overflow-hidden relative selection:bg-indigo-500/30">
@@ -50,24 +56,43 @@ export default function ExecutiveDashboard() {
             </div>
 
             {/* Header (Minimal) */}
-            <header className="relative z-10 px-6 pt-12 pb-4 flex justify-between items-end backdrop-blur-sm bg-black/10">
+            <header className="relative z-10 px-6 pt-12 pb-4 flex flex-col md:flex-row justify-between items-end md:items-center gap-4 backdrop-blur-sm bg-black/10">
                 <div>
                     <p className="text-gray-400 text-xs font-medium uppercase tracking-widest mb-1">HOŞGELDİNİZ</p>
                     <h1 className="text-3xl font-black tracking-tight text-white/90">Patron Paneli</h1>
                 </div>
-                <button
-                    onClick={fetchData}
-                    disabled={loading}
-                    className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 p-[2px] active:scale-95 transition-transform"
-                >
-                    <div className="w-full h-full rounded-full bg-black/50 flex items-center justify-center backdrop-blur-md">
-                        {loading ? (
-                            <RefreshCcw className="w-5 h-5 text-white animate-spin" />
-                        ) : (
-                            <Activity className="w-5 h-5 text-white" />
-                        )}
-                    </div>
-                </button>
+
+                {/* Date Controls */}
+                <div className="flex items-center gap-2 bg-white/5 p-1 rounded-xl border border-white/10">
+                    <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="bg-transparent text-white text-xs font-bold p-2 outline-none [&::-webkit-calendar-picker-indicator]:invert"
+                    />
+                    <span className="text-gray-500">-</span>
+                    <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="bg-transparent text-white text-xs font-bold p-2 outline-none [&::-webkit-calendar-picker-indicator]:invert"
+                    />
+                </div>
+
+                <div className="hidden md:block">
+                    <button
+                        onClick={fetchData}
+                        disabled={loading}
+                        className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 p-[2px] active:scale-95 transition-transform"
+                    >
+                        <div className="w-full h-full rounded-full bg-black/50 flex items-center justify-center backdrop-blur-md">
+                            {loading ? (
+                                <RefreshCcw className="w-5 h-5 text-white animate-spin" />
+                            ) : (
+                                <Activity className="w-5 h-5 text-white" />
+                            )}
+                        </div>
+                    </button>
             </header>
 
             {/* Main Content Area */}
