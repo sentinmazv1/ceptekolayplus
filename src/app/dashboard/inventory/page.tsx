@@ -34,6 +34,8 @@ export default function InventoryPage() {
 
     // Form State
     const [formData, setFormData] = useState({
+        kategori: 'Cihaz',
+        stok_adedi: 1,
         marka: '',
         model: '',
         seri_no: '',
@@ -41,7 +43,8 @@ export default function InventoryPage() {
         fiyat_3_taksit: '',
         fiyat_6_taksit: '',
         fiyat_12_taksit: '',
-        fiyat_15_taksit: ''
+        fiyat_15_taksit: '',
+        satis_fiyati: '' // For accessories
     });
     const [submitting, setSubmitting] = useState(false);
 
@@ -66,21 +69,36 @@ export default function InventoryPage() {
 
     const openAddModal = () => {
         setEditingItem(null);
-        setFormData({ marka: '', model: '', seri_no: '', imei: '', fiyat_3_taksit: '', fiyat_6_taksit: '', fiyat_12_taksit: '', fiyat_15_taksit: '' });
+        setFormData({
+            kategori: 'Cihaz',
+            stok_adedi: 1,
+            marka: '',
+            model: '',
+            seri_no: '',
+            imei: '',
+            fiyat_3_taksit: '',
+            fiyat_6_taksit: '',
+            fiyat_12_taksit: '',
+            fiyat_15_taksit: '',
+            satis_fiyati: ''
+        });
         setShowModal(true);
     };
 
     const openEditModal = (item: InventoryItem) => {
         setEditingItem(item);
         setFormData({
+            kategori: item.kategori || 'Cihaz',
+            stok_adedi: item.stok_adedi || 1,
             marka: item.marka,
             model: item.model,
-            seri_no: item.seri_no,
-            imei: item.imei,
+            seri_no: item.seri_no || '',
+            imei: item.imei || '',
             fiyat_3_taksit: item.fiyat_3_taksit?.toString() || '',
             fiyat_6_taksit: item.fiyat_6_taksit?.toString() || '',
             fiyat_12_taksit: item.fiyat_12_taksit?.toString() || '',
-            fiyat_15_taksit: item.fiyat_15_taksit?.toString() || ''
+            fiyat_15_taksit: item.fiyat_15_taksit?.toString() || '',
+            satis_fiyati: item.satis_fiyati?.toString() || ''
         });
         setShowModal(true);
     };
@@ -279,7 +297,7 @@ export default function InventoryPage() {
                                 <th className="px-6 py-3">IMEI / Seri No</th>
                                 <th className="px-6 py-3">Durum</th>
                                 <th className="px-6 py-3">Ekleyen</th>
-                                <th className="px-6 py-3">3 Taksit</th>
+                                <th className="px-6 py-3">Fiyat / 3 Taksit</th>
                                 <th className="px-6 py-3">6 Taksit</th>
                                 <th className="px-6 py-3">12 Taksit</th>
                                 <th className="px-6 py-3">15 Taksit</th>
@@ -326,6 +344,11 @@ export default function InventoryPage() {
                                                 }`}>
                                                 {item.durum}
                                             </span>
+                                            {item.kategori === 'Aksesuar' && item.stok_adedi && item.stok_adedi > 0 && (
+                                                <span className="ml-1 px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                                                    Stok: {item.stok_adedi}
+                                                </span>
+                                            )}
                                             {item.durum === 'SATILDI' && item.musteri_id && (
                                                 <div
                                                     onClick={() => router.push(`/dashboard/customers/${item.musteri_id}`)}
@@ -342,36 +365,49 @@ export default function InventoryPage() {
 
                                         {/* Pricing Columns */}
                                         <td className="px-6 py-4 text-right">
-                                            {item.fiyat_3_taksit ? (
+                                            {item.kategori === 'Aksesuar' ? (
                                                 <div className="flex flex-col">
-                                                    <span className="font-bold text-gray-900">{Number(item.fiyat_3_taksit).toLocaleString('tr-TR')} ₺</span>
-                                                    <span className="text-xs text-gray-500">{(Number(item.fiyat_3_taksit) / 3).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/ay</span>
+                                                    <span className="font-bold text-indigo-600">{Number(item.satis_fiyati).toLocaleString('tr-TR')} ₺</span>
+                                                    <span className="text-xs text-gray-500">Nakit/Tek Çekim</span>
                                                 </div>
-                                            ) : '-'}
+                                            ) : (
+                                                item.fiyat_3_taksit ? (
+                                                    <div className="flex flex-col">
+                                                        <span className="font-bold text-gray-900">{Number(item.fiyat_3_taksit).toLocaleString('tr-TR')} ₺</span>
+                                                        <span className="text-xs text-gray-500">{(Number(item.fiyat_3_taksit) / 3).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/ay</span>
+                                                    </div>
+                                                ) : '-'
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            {item.fiyat_6_taksit ? (
-                                                <div className="flex flex-col">
-                                                    <span className="font-bold text-gray-900">{Number(item.fiyat_6_taksit).toLocaleString('tr-TR')} ₺</span>
-                                                    <span className="text-xs text-gray-500">{(Number(item.fiyat_6_taksit) / 6).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/ay</span>
-                                                </div>
-                                            ) : '-'}
+                                            {item.kategori === 'Aksesuar' ? '-' : (
+                                                item.fiyat_6_taksit ? (
+                                                    <div className="flex flex-col">
+                                                        <span className="font-bold text-gray-900">{Number(item.fiyat_6_taksit).toLocaleString('tr-TR')} ₺</span>
+                                                        <span className="text-xs text-gray-500">{(Number(item.fiyat_6_taksit) / 6).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/ay</span>
+                                                    </div>
+                                                ) : '-'
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            {item.fiyat_12_taksit ? (
-                                                <div className="flex flex-col">
-                                                    <span className="font-bold text-gray-900">{Number(item.fiyat_12_taksit).toLocaleString('tr-TR')} ₺</span>
-                                                    <span className="text-xs text-gray-500">{(Number(item.fiyat_12_taksit) / 12).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/ay</span>
-                                                </div>
-                                            ) : '-'}
+                                            {item.kategori === 'Aksesuar' ? '-' : (
+                                                item.fiyat_12_taksit ? (
+                                                    <div className="flex flex-col">
+                                                        <span className="font-bold text-gray-900">{Number(item.fiyat_12_taksit).toLocaleString('tr-TR')} ₺</span>
+                                                        <span className="text-xs text-gray-500">{(Number(item.fiyat_12_taksit) / 12).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/ay</span>
+                                                    </div>
+                                                ) : '-'
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            {item.fiyat_15_taksit ? (
-                                                <div className="flex flex-col">
-                                                    <span className="font-bold text-gray-900">{Number(item.fiyat_15_taksit).toLocaleString('tr-TR')} ₺</span>
-                                                    <span className="text-xs text-gray-500">{(Number(item.fiyat_15_taksit) / 15).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/ay</span>
-                                                </div>
-                                            ) : '-'}
+                                            {item.kategori === 'Aksesuar' ? '-' : (
+                                                item.fiyat_15_taksit ? (
+                                                    <div className="flex flex-col">
+                                                        <span className="font-bold text-gray-900">{Number(item.fiyat_15_taksit).toLocaleString('tr-TR')} ₺</span>
+                                                        <span className="text-xs text-gray-500">{(Number(item.fiyat_15_taksit) / 15).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/ay</span>
+                                                    </div>
+                                                ) : '-'
+                                            )}
                                         </td>
 
                                         <td className="px-6 py-4 text-gray-500">
@@ -410,6 +446,24 @@ export default function InventoryPage() {
                             </div>
 
                             <form onSubmit={handleSubmit} className="space-y-6">
+                                {/* Category Toggle */}
+                                <div className="flex bg-gray-100 p-1 rounded-lg mb-6">
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, kategori: 'Cihaz' })}
+                                        className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${formData.kategori !== 'Aksesuar' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                    >
+                                        📱 Cihaz (Telefon/Tablet)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, kategori: 'Aksesuar' })}
+                                        className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${formData.kategori === 'Aksesuar' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                    >
+                                        🎧 Aksesuar & Diğer
+                                    </button>
+                                </div>
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Marka</label>
@@ -443,32 +497,55 @@ export default function InventoryPage() {
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
                                         <input
                                             className="w-full border rounded-lg p-2"
-                                            placeholder="Örn: iPhone 15 Pro 128GB"
+                                            placeholder={formData.kategori === 'Aksesuar' ? "Örn: Galaxy Buds 2 Pro" : "Örn: iPhone 15 Pro 128GB"}
                                             value={formData.model}
                                             onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                                             required
                                         />
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">IMEI (15 Hane)</label>
-                                        <input
-                                            className="w-full border rounded-lg p-2"
-                                            placeholder="123456789012345"
-                                            value={formData.imei}
-                                            onChange={(e) => setFormData({ ...formData, imei: e.target.value })}
-                                            required
-                                            maxLength={15}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Seri No</label>
-                                        <input
-                                            className="w-full border rounded-lg p-2"
-                                            placeholder="Seri Numarası"
-                                            value={formData.seri_no}
-                                            onChange={(e) => setFormData({ ...formData, seri_no: e.target.value })}
-                                        />
-                                    </div>
+
+                                    {formData.kategori === 'Aksesuar' ? (
+                                        // Aksesuar Inputs
+                                        <>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Stok Adedi</label>
+                                                <input
+                                                    type="number"
+                                                    className="w-full border rounded-lg p-2"
+                                                    placeholder="1"
+                                                    value={formData.stok_adedi}
+                                                    onChange={(e) => setFormData({ ...formData, stok_adedi: parseInt(e.target.value) || 0 })}
+                                                    required
+                                                    min={1}
+                                                />
+                                            </div>
+                                            <div className="hidden md:block"></div> {/* Spacer */}
+                                        </>
+                                    ) : (
+                                        // Cihaz Inputs (IMEI / Seri No)
+                                        <>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">IMEI (15 Hane)</label>
+                                                <input
+                                                    className="w-full border rounded-lg p-2"
+                                                    placeholder="123456789012345"
+                                                    value={formData.imei}
+                                                    onChange={(e) => setFormData({ ...formData, imei: e.target.value })}
+                                                    required
+                                                    maxLength={15}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Seri No</label>
+                                                <input
+                                                    className="w-full border rounded-lg p-2"
+                                                    placeholder="Seri Numarası"
+                                                    value={formData.seri_no}
+                                                    onChange={(e) => setFormData({ ...formData, seri_no: e.target.value })}
+                                                />
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
 
                                 <div className="border-t pt-4">
@@ -477,34 +554,36 @@ export default function InventoryPage() {
                                             <div className="w-1 h-4 bg-indigo-600 rounded"></div>
                                             Fiyatlandırma
                                         </div>
-                                        <button
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                const alis = parseFloat((formData as any).alis_fiyati);
-                                                if (!alis) return alert('Lütfen önce alış fiyatı giriniz');
+                                        {formData.kategori !== 'Aksesuar' && (
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    const alis = parseFloat((formData as any).alis_fiyati);
+                                                    if (!alis) return alert('Lütfen önce alış fiyatı giriniz');
 
-                                                // 15 Ay = Alış x 2.6
-                                                const f15 = Math.ceil(alis * 2.6);
-                                                // 12 Ay = 15 Ay / 1.05
-                                                const f12 = Math.ceil(f15 / 1.05);
-                                                // 6 Ay = 12 Ay / 1.10
-                                                const f6 = Math.ceil(f12 / 1.10);
-                                                // 3 Ay = 6 Ay / 1.10
-                                                const f3 = Math.ceil(f6 / 1.10);
+                                                    // 15 Ay = Alış x 2.6
+                                                    const f15 = Math.ceil(alis * 2.6);
+                                                    // 12 Ay = 15 Ay / 1.05
+                                                    const f12 = Math.ceil(f15 / 1.05);
+                                                    // 6 Ay = 12 Ay / 1.10
+                                                    const f6 = Math.ceil(f12 / 1.10);
+                                                    // 3 Ay = 6 Ay / 1.10
+                                                    const f3 = Math.ceil(f6 / 1.10);
 
-                                                setFormData(prev => ({
-                                                    ...prev,
-                                                    fiyat_15_taksit: f15.toString(),
-                                                    fiyat_12_taksit: f12.toString(),
-                                                    fiyat_6_taksit: f6.toString(),
-                                                    fiyat_3_taksit: f3.toString()
-                                                }));
-                                            }}
-                                            className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-100 transition-colors font-medium border border-indigo-200"
-                                        >
-                                            ✨ Otomatik Hesapla
-                                        </button>
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        fiyat_15_taksit: f15.toString(),
+                                                        fiyat_12_taksit: f12.toString(),
+                                                        fiyat_6_taksit: f6.toString(),
+                                                        fiyat_3_taksit: f3.toString()
+                                                    }));
+                                                }}
+                                                className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-100 transition-colors font-medium border border-indigo-200"
+                                            >
+                                                ✨ Otomatik Hesapla
+                                            </button>
+                                        )}
                                     </h3>
 
                                     <div className="mb-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
@@ -521,6 +600,24 @@ export default function InventoryPage() {
                                         </p>
                                     </div>
 
+                                </div>
+
+                                {formData.kategori === 'Aksesuar' ? (
+                                    <div className="mt-4">
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">Satış Fiyatı (Nakit/Tek Çekim)</label>
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                className="w-full border rounded-lg p-2 text-right pr-8 font-bold text-lg"
+                                                placeholder="0.00"
+                                                value={(formData as any).satis_fiyati || ''}
+                                                onChange={(e) => setFormData({ ...formData, satis_fiyati: e.target.value } as any)}
+                                                required
+                                            />
+                                            <span className="absolute right-2 top-3 text-gray-400 text-sm">₺</span>
+                                        </div>
+                                    </div>
+                                ) : (
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                         <div>
                                             <label className="block text-xs font-medium text-gray-700 mb-1">3 Taksit (Toplam)</label>
@@ -595,7 +692,7 @@ export default function InventoryPage() {
                                             )}
                                         </div>
                                     </div>
-                                </div>
+                                )}
 
                                 {editingItem && (
                                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-3 mt-4">
@@ -659,7 +756,7 @@ export default function InventoryPage() {
                                 </div>
                             </form>
                         </div>
-                    </div>
+                    </div >
                 )
             }
 

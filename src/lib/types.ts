@@ -212,4 +212,9 @@ export interface InventoryItem {
   fiyat_12_taksit?: number;
   fiyat_15_taksit?: number;
   alis_fiyati?: number;
+
+  // Accessory / V2 Fields
+  kategori?: 'Cihaz' | 'Aksesuar';
+  stok_adedi?: number;
+  satis_fiyati?: number; // Single price for accessories
 }

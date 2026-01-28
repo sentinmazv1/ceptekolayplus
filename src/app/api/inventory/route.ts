@@ -86,27 +86,38 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
 
         // Basic validation
-        if (!body.marka || !body.model || !body.imei) {
-            return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
+        if (!body.marka || !body.model) {
+            return NextResponse.json({ message: 'Missing required fields (Marka, Model)' }, { status: 400 });
+        }
+
+        // Conditional Validation based on Category
+        const isAccessory = body.kategori === 'Aksesuar';
+
+        if (!isAccessory && !body.imei) {
+            return NextResponse.json({ message: 'Missing required fields (IMEI needed for Devices)' }, { status: 400 });
         }
 
 
-        // Duplicate Check
-        const existingItems = await getInventoryItems();
-        const duplicate = existingItems.find(i =>
-            (i.imei && i.imei === body.imei) ||
-            (i.seri_no && i.seri_no === body.seri_no && body.seri_no.length > 0)
-        );
+        // Duplicate Check (Only for Devices with IMEI)
+        if (!isAccessory && body.imei) {
+            const existingItems = await getInventoryItems();
+            const duplicate = existingItems.find(i =>
+                (i.imei && i.imei === body.imei) ||
+                (i.seri_no && i.seri_no === body.seri_no && body.seri_no.length > 0)
+            );
 
-        if (duplicate) {
-            return NextResponse.json({
-                message: `Duplicate entry found. IMEI/Serial already exists (Marka: ${duplicate.marka}).`
-            }, { status: 409 });
+            if (duplicate) {
+                return NextResponse.json({
+                    message: `Duplicate entry found. IMEI/Serial already exists (Marka: ${duplicate.marka}).`
+                }, { status: 409 });
+            }
         }
 
         const newItem = await addInventoryItem({
             ...body,
             durum: 'STOKTA', // Defaults to In Stock
+            kategori: body.kategori || 'Cihaz',
+            stok_adedi: body.stok_adedi || 1,
             giris_tarihi: new Date().toISOString(),
             ekleyen: session.user.email
         });
