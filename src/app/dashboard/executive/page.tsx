@@ -97,7 +97,11 @@ export default function ExecutiveDashboard() {
                                     transition={{ duration: 0.3 }}
                                     className="flex-1 overflow-y-auto"
                                 >
-                                    <FinanceView data={data.finance} recentSales={data.recentSales} />
+                                    <FinanceView
+                                        data={data.finance}
+                                        funnel={data.funnel}
+                                        dailyDeliveries={data.dailyDeliveries}
+                                    />
                                 </motion.div>
                             )}
 
