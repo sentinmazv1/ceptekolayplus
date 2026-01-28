@@ -93,6 +93,7 @@ export default function ExecutiveDashboard() {
                             )}
                         </div>
                     </button>
+                </div>
             </header>
 
             {/* Main Content Area */}
