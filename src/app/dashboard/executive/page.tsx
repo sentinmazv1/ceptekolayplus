@@ -100,6 +100,7 @@ export default function ExecutiveDashboard() {
                                     <FinanceView
                                         data={data.finance}
                                         funnel={data.funnel}
+                                        operational={data.operational}
                                         dailyDeliveries={data.dailyDeliveries}
                                     />
                                 </motion.div>

@@ -154,6 +154,32 @@ export async function GET() {
         const sortedCity = Object.entries(cityStats).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, value]) => ({ name, value }));
         const sortedAge = Object.entries(ageStats).map(([name, value]) => ({ name, value }));
 
+        // --- 4. OPERATIONAL TOTALS (Month to Date) ---
+        // Fetch logs for the whole month to count aggregated actions
+        const { count: totalCalls } = await supabaseAdmin.from('activity_logs').select('id', { count: 'exact', head: true })
+            .eq('action', 'CLICK_CALL')
+            .gte('timestamp', startOfMonth);
+
+        const { count: totalSms } = await supabaseAdmin.from('activity_logs').select('id', { count: 'exact', head: true })
+            .or('action.eq.SEND_SMS,action.eq.CLICK_SMS')
+            .gte('timestamp', startOfMonth);
+
+        const { count: totalWhatsapp } = await supabaseAdmin.from('activity_logs').select('id', { count: 'exact', head: true })
+            .or('action.eq.SEND_WHATSAPP,action.eq.CLICK_WHATSAPP')
+            .gte('timestamp', startOfMonth);
+
+        // Backoffice logs (approximated by removing known actions)
+        const { count: totalLogs } = await supabaseAdmin.from('activity_logs').select('id', { count: 'exact', head: true })
+            .not('action', 'in', '("CLICK_CALL","SEND_SMS","CLICK_SMS","SEND_WHATSAPP","CLICK_WHATSAPP","PULL_LEAD")')
+            .gte('timestamp', startOfMonth);
+
+        // Calculate Total Product Count vs Sales Count
+        // 'sortedTeam' sales is actually product count based on current logic (items.length).
+        // Let's sum it up for "Total Products Sold"
+        const totalProductsSold = Object.values(teamStats).reduce((acc, curr) => acc + curr.sales, 0);
+        // "Sales Count" refers to number of leads closed (Deals).
+        const totalDealsClosed = (monthSales || []).length;
+
         return NextResponse.json({
             funnel: {
                 calls: { today: callsToday || 0, yesterday: callsYesterday || 0 },
@@ -164,7 +190,15 @@ export async function GET() {
             finance: {
                 dailyTurnover,
                 monthlyTurnover,
-                target: 100 // Daily Call Target? Or Sales Target? Let's use 100 Calls as mock daily target
+                target: 100 // Legacy support
+            },
+            operational: {
+                totalCalls: totalCalls || 0,
+                totalSms: totalSms || 0,
+                totalWhatsapp: totalWhatsapp || 0,
+                totalLogs: totalLogs || 0,
+                totalProducts: totalProductsSold,
+                totalDeals: totalDealsClosed
             },
             dailyDeliveries: dailyDeliveries.reverse(), // Newest first
             team: sortedTeam,
