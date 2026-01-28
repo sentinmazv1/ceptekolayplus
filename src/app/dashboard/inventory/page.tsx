@@ -297,7 +297,7 @@ export default function InventoryPage() {
                                 <th className="px-6 py-3">IMEI / Seri No</th>
                                 <th className="px-6 py-3">Durum</th>
                                 <th className="px-6 py-3">Ekleyen</th>
-                                <th className="px-6 py-3">Fiyat / 3 Taksit</th>
+                                <th className="px-6 py-3">3 Taksit</th>
                                 <th className="px-6 py-3">6 Taksit</th>
                                 <th className="px-6 py-3">12 Taksit</th>
                                 <th className="px-6 py-3">15 Taksit</th>
@@ -365,12 +365,7 @@ export default function InventoryPage() {
 
                                         {/* Pricing Columns */}
                                         <td className="px-6 py-4 text-right">
-                                            {item.kategori === 'Aksesuar' ? (
-                                                <div className="flex flex-col">
-                                                    <span className="font-bold text-indigo-600">{Number(item.satis_fiyati).toLocaleString('tr-TR')} ₺</span>
-                                                    <span className="text-xs text-gray-500">Nakit/Tek Çekim</span>
-                                                </div>
-                                            ) : (
+                                            {item.kategori === 'Aksesuar' ? '-' : (
                                                 item.fiyat_3_taksit ? (
                                                     <div className="flex flex-col">
                                                         <span className="font-bold text-gray-900">{Number(item.fiyat_3_taksit).toLocaleString('tr-TR')} ₺</span>
@@ -400,7 +395,12 @@ export default function InventoryPage() {
                                             )}
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            {item.kategori === 'Aksesuar' ? '-' : (
+                                            {item.kategori === 'Aksesuar' ? (
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-indigo-600">{Number(item.fiyat_15_taksit).toLocaleString('tr-TR')} ₺</span>
+                                                    <span className="text-xs text-gray-500">{(Number(item.fiyat_15_taksit) / 15).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/ay</span>
+                                                </div>
+                                            ) : (
                                                 item.fiyat_15_taksit ? (
                                                     <div className="flex flex-col">
                                                         <span className="font-bold text-gray-900">{Number(item.fiyat_15_taksit).toLocaleString('tr-TR')} ₺</span>
@@ -586,36 +586,39 @@ export default function InventoryPage() {
                                         )}
                                     </h3>
 
-                                    <div className="mb-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
-                                        <label className="block text-xs font-bold text-blue-800 mb-1">Alış Fiyatı (Maliyet)</label>
-                                        <input
-                                            type="number"
-                                            className="w-full border border-blue-200 rounded-lg p-2 text-right font-bold text-blue-900 bg-white"
-                                            placeholder="0.00"
-                                            value={(formData as any).alis_fiyati || ''}
-                                            onChange={(e) => setFormData({ ...formData, alis_fiyati: e.target.value } as any)}
-                                        />
-                                        <p className="text-[10px] text-blue-600 mt-1">
-                                            * Satış fiyatları bu tutar üzerinden hesaplanır (15 Ay = x2.6 çarpanı)
-                                        </p>
-                                    </div>
+                                    {formData.kategori !== 'Aksesuar' && (
+                                        <div className="mb-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                            <label className="block text-xs font-bold text-blue-800 mb-1">Alış Fiyatı (Maliyet)</label>
+                                            <input
+                                                type="number"
+                                                className="w-full border border-blue-200 rounded-lg p-2 text-right font-bold text-blue-900 bg-white"
+                                                placeholder="0.00"
+                                                value={(formData as any).alis_fiyati || ''}
+                                                onChange={(e) => setFormData({ ...formData, alis_fiyati: e.target.value } as any)}
+                                            />
+                                            <p className="text-[10px] text-blue-600 mt-1">
+                                                * Satış fiyatları bu tutar üzerinden hesaplanır (15 Ay = x2.6 çarpanı)
+                                            </p>
+                                        </div>
+                                    )}
 
                                 </div>
 
                                 {formData.kategori === 'Aksesuar' ? (
                                     <div className="mt-4">
-                                        <label className="block text-xs font-medium text-gray-700 mb-1">Satış Fiyatı (Nakit/Tek Çekim)</label>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">Satış Fiyatı (15 Ay Taksitli)</label>
                                         <div className="relative">
                                             <input
                                                 type="number"
                                                 className="w-full border rounded-lg p-2 text-right pr-8 font-bold text-lg"
                                                 placeholder="0.00"
-                                                value={(formData as any).satis_fiyati || ''}
-                                                onChange={(e) => setFormData({ ...formData, satis_fiyati: e.target.value } as any)}
+                                                value={(formData as any).fiyat_15_taksit || ''}
+                                                onChange={(e) => setFormData({ ...formData, fiyat_15_taksit: e.target.value, satis_fiyati: e.target.value } as any)}
                                                 required
                                             />
                                             <span className="absolute right-2 top-3 text-gray-400 text-sm">₺</span>
                                         </div>
+                                        <p className="text-[10px] text-gray-500 mt-1">* Aksesuarlar için sadece 15 aylık satış fiyatı girilir.</p>
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
