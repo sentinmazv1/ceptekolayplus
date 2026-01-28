@@ -137,7 +137,7 @@ export function TeamView({ teamStats }: TeamViewProps) {
                         <Tooltip
                             contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', color: '#fff' }}
                             itemStyle={{ color: '#fff' }}
-                            formatter={(val: number) => formatCurrency(val)}
+                            formatter={(val: any) => formatCurrency(Number(val) || 0)}
                         />
                         <Bar dataKey="revenue" radius={[4, 4, 0, 0]}>
                             {teamStats.map((entry, index) => (
