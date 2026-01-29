@@ -2116,6 +2116,31 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                 customer={data}
             />
 
+            {/* Verify Modal */}
+            {isVerifyModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsVerifyModalOpen(false)} />
+                    <div className="relative bg-white rounded-xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                            <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                                <ShieldCheck className="w-5 h-5 text-indigo-600" />
+                                Telefon Doğrulama
+                            </h3>
+                            <button onClick={() => setIsVerifyModalOpen(false)}><X className="w-5 h-5 text-gray-400 hover:text-gray-600" /></button>
+                        </div>
+                        <VerifyModalContent
+                            customerId={data.id}
+                            phone={data.telefon || ''}
+                            onSuccess={() => {
+                                setIsVerifyModalOpen(false);
+                                setData(prev => ({ ...prev, telefon_onayli: true }));
+                                alert('Telefon numarası başarıyla doğrulandı!');
+                            }}
+                        />
+                    </div>
+                </div>
+            )}
+
         </div >
     );
 }
@@ -2465,30 +2490,7 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                     </div>
                 </div>
             </div>
-            {/* Verify Modal */}
-            {isVerifyModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsVerifyModalOpen(false)} />
-                    <div className="relative bg-white rounded-xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-                            <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                                <ShieldCheck className="w-5 h-5 text-indigo-600" />
-                                Telefon Doğrulama
-                            </h3>
-                            <button onClick={() => setIsVerifyModalOpen(false)}><X className="w-5 h-5 text-gray-400 hover:text-gray-600" /></button>
-                        </div>
-                        <VerifyModalContent
-                            customerId={data.id}
-                            phone={data.telefon || ''}
-                            onSuccess={() => {
-                                setIsVerifyModalOpen(false);
-                                setData(prev => ({ ...prev, telefon_onayli: true }));
-                                alert('Telefon numarası başarıyla doğrulandı!');
-                            }}
-                        />
-                    </div>
-                </div>
-            )}
+
         </div>
     );
 }
