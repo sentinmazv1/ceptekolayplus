@@ -790,6 +790,7 @@ function mapRowToCustomer(row: any): Customer {
         is_yeri_unvani: row.is_yeri_unvani,
         is_yeri_bilgisi: row.is_yeri_bilgisi,
         meslek: row.meslek,
+        telefon_onayli: row.telefon_onayli,
 
         ...row
     };

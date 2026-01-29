@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { logAction, getLogs } from '@/lib/leads';
-import { query } from '@/lib/db';
+import { logAction } from '@/lib/leads';
+import { supabaseAdmin } from '@/lib/supabase';
 import { sendSMS } from '@/lib/sms';
 import { randomInt } from 'crypto';
 
@@ -54,22 +54,22 @@ export async function POST(req: NextRequest) {
             if (!customerId || !code) return NextResponse.json({ success: false, message: 'Missing params' }, { status: 400 });
 
             // Fetch last log for this customer
-            // We need to query DB directly or use getLogs. getLogs fetches all.
-            const result = await query(`
-                SELECT * FROM logs 
-                WHERE customer_id = $1 AND action = 'SMS_VERIFICATION_CODE'
-                ORDER BY timestamp DESC
-                LIMIT 1
-            `, [customerId]);
+            const { data: logs, error } = await supabaseAdmin
+                .from('activity_logs')
+                .select('*')
+                .eq('lead_id', customerId)
+                .eq('action', 'SMS_VERIFICATION_CODE')
+                .order('created_at', { ascending: false })
+                .limit(1);
 
-            const lastLog = result.rows[0];
-
-            if (!lastLog) {
+            if (error || !logs || logs.length === 0) {
                 return NextResponse.json({ success: false, message: 'Kod bulunamadı.' }, { status: 400 });
             }
 
+            const lastLog = logs[0];
+
             // Check expiry (e.g. 5 mins)
-            const diff = new Date().getTime() - new Date(lastLog.timestamp).getTime();
+            const diff = new Date().getTime() - new Date(lastLog.created_at).getTime();
             if (diff > 5 * 60 * 1000) {
                 return NextResponse.json({ success: false, message: 'Kod süresi dolmuş.' }, { status: 400 });
             }
@@ -80,11 +80,16 @@ export async function POST(req: NextRequest) {
             }
 
             // Mark as Verified
-            await query(`
-                UPDATE customers 
-                SET telefon_onayli = TRUE 
-                WHERE id = $1
-            `, [customerId]);
+            // Table is 'leads'
+            const { error: updateError } = await supabaseAdmin
+                .from('leads')
+                .update({ telefon_onayli: true })
+                .eq('id', customerId);
+
+            if (updateError) {
+                console.error('Update Error:', updateError);
+                return NextResponse.json({ success: false, message: 'Güncelleme hatası' }, { status: 500 });
+            }
 
             // Log Success
             await logAction({
