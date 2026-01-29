@@ -28,7 +28,9 @@ export type LeadStatus =
   | 'Cevap Yok'
   | 'SMS Atıldı'
   | 'Onaya gönderildi'
-  | 'Onaylandı';
+  | 'Onaylandı'
+  | 'TALEP_BEKLEYEN'
+  | 'TALEP_KAPATILDI';
 
 export interface Customer {
   id: string;

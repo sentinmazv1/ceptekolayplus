@@ -11,7 +11,7 @@ export default function RequestsPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [requests, setRequests] = useState<Customer[]>([]);
-    const [activeTab, setActiveTab] = useState<'ALL' | 'Aranma Talebi' | 'Web Başvuru' | 'Durum Sorgulama'>('ALL');
+    const [activeTab, setActiveTab] = useState<'ALL' | 'Aranma Talebi' | 'Web Başvuru' | 'Durum Sorgulama' | 'HISTORY'>('ALL');
     const [selectedRequest, setSelectedRequest] = useState<Customer | null>(null);
 
     // Fetch Requests
@@ -75,14 +75,24 @@ export default function RequestsPage() {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Bu talebi silmek/kapatmak istediğinize emin misiniz?')) return;
+    const handleClose = async (id: string) => {
+        if (!confirm('Bu talebi kapatmak istediğinize emin misiniz? (Geçmiş sekmesinden görebilirsiniz)')) return;
         try {
-            const res = await fetch(`/api/customers/${id}`, { method: 'DELETE' });
+            // Update status to 'TALEP_KAPATILDI' instead of full delete
+            const res = await fetch(`/api/customers/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ durum: 'TALEP_KAPATILDI' })
+            });
+
             if (res.ok) {
-                setRequests(requests.filter(r => r.id !== id));
+                // If in history tab, we might want to keep it? No, usually we refresh or just kept it?
+                // If we are in 'Pending' tabs, we remove it from view.
+                // If we are in 'History', we might keep it.
+                // Simplest: Update local state.
+                setRequests(prev => prev.map(p => p.id === id ? { ...p, durum: 'TALEP_KAPATILDI' } : p));
             } else {
-                alert('Silinemedi');
+                alert('Kapatılamadı');
             }
         } catch (e) {
             alert('Hata');
@@ -91,8 +101,18 @@ export default function RequestsPage() {
 
     // Filter Logic
     const filtered = requests.filter(r => {
-        if (activeTab === 'ALL') return true;
-        return r.basvuru_kanali === activeTab;
+        // If Active Tab is HISTORY, show only closed. Else show only PENDING.
+        const isHistory = activeTab === 'HISTORY';
+        const isClosed = r.durum === 'TALEP_KAPATILDI';
+
+        if (isHistory) {
+            return isClosed;
+        } else {
+            // Normal Tabs
+            if (isClosed) return false; // Don't show closed in normal tabs
+            if (activeTab === 'ALL') return true;
+            return r.basvuru_kanali === activeTab;
+        }
     });
 
     const getIcon = (source: string) => {
@@ -133,9 +153,13 @@ export default function RequestsPage() {
                     { id: 'Aranma Talebi', label: 'Aranma', icon: Phone, color: 'text-blue-600' },
                     { id: 'Web Başvuru', label: 'Başvuru', icon: Globe, color: 'text-green-600' },
                     { id: 'Durum Sorgulama', label: 'Sorgu', icon: HelpCircle, color: 'text-purple-600' },
+                    { id: 'HISTORY', label: 'Geçmiş', icon: XCircle, color: 'text-red-500' },
                 ].map((tab) => {
                     const isActive = activeTab === tab.id;
-                    const count = requests.filter(r => tab.id === 'ALL' ? true : r.basvuru_kanali === tab.id).length;
+                    let count = 0;
+                    if (tab.id === 'HISTORY') count = requests.filter(r => r.durum === 'TALEP_KAPATILDI').length;
+                    else if (tab.id === 'ALL') count = requests.filter(r => r.durum !== 'TALEP_KAPATILDI').length;
+                    else count = requests.filter(r => r.durum !== 'TALEP_KAPATILDI' && r.basvuru_kanali === tab.id).length;
 
                     return (
                         <button
@@ -174,7 +198,7 @@ export default function RequestsPage() {
             ) : (
                 <div className="grid grid-cols-1 gap-4">
                     {filtered.map((req) => (
-                        <div key={req.id} className="bg-white p-5 rounded-xl border border-gray-200 hover:shadow-md transition-shadow flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+                        <div key={req.id} className={`bg-white p-5 rounded-xl border hover:shadow-md transition-shadow flex flex-col md:flex-row gap-4 justify-between items-start md:items-center ${req.durum === 'TALEP_KAPATILDI' ? 'opacity-75 border-gray-100 bg-gray-50' : 'border-gray-200'}`}>
 
                             {/* Left: Info */}
                             <div className="flex items-start gap-4">
@@ -212,20 +236,28 @@ export default function RequestsPage() {
 
                             {/* Right: Actions */}
                             <div className="flex items-center gap-3 w-full md:w-auto">
-                                <Button
-                                    onClick={() => handleConvert(req)}
-                                    className="flex-1 md:flex-none bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm shadow-indigo-200"
-                                >
-                                    <UserPlus className="w-4 h-4 mr-2" />
-                                    Başvuru Oluştur
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => handleDelete(req.id)}
-                                    className="bg-white border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </Button>
+                                {activeTab !== 'HISTORY' && (
+                                    <>
+                                        <Button
+                                            onClick={() => handleConvert(req)}
+                                            className="flex-1 md:flex-none bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm shadow-indigo-200"
+                                        >
+                                            <UserPlus className="w-4 h-4 mr-2" />
+                                            Başvuru
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => handleClose(req.id)}
+                                            className="bg-white border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                                        >
+                                            <XCircle className="w-4 h-4 mr-2" />
+                                            Kapat
+                                        </Button>
+                                    </>
+                                )}
+                                {activeTab === 'HISTORY' && (
+                                    <span className="text-sm font-bold text-gray-400 border border-gray-200 px-3 py-1 rounded-lg bg-gray-50">Kapatıldı</span>
+                                )}
                             </div>
 
                         </div>
