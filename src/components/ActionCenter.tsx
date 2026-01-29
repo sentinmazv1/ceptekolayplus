@@ -1,10 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-
 import { useRouter } from 'next/navigation';
-import { Search, Phone, Loader2, Command, PlusCircle, Users } from 'lucide-react';
+import { Search, Phone, Loader2, Command, PlusCircle, Users, Inbox } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useEffect, useState } from 'react';
 
 interface ActionCenterProps {
     onPullLead: () => void;
@@ -18,6 +17,14 @@ interface ActionCenterProps {
 export function ActionCenter({ onPullLead, loading, myStats, teamStats, newLeadCount = 0, mode = 'personal' }: ActionCenterProps) {
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
+    const [requestCount, setRequestCount] = useState(0);
+
+    useEffect(() => {
+        // Fetch Request Counts
+        fetch('/api/leads/stats?type=requests').then(res => res.json()).then(data => {
+            if (data.total) setRequestCount(data.total);
+        }).catch(() => { });
+    }, []);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -82,6 +89,22 @@ export function ActionCenter({ onPullLead, loading, myStats, teamStats, newLeadC
                     >
                         <Users className="w-6 h-6 group-hover/list:scale-110 transition-transform duration-300" />
                         {/* Hidden label for accessibility/tooltip logic if needed, but visually hidden as requested */}
+                    </Button>
+
+                    {/* D) REQUESTS BUTTON (Talepler) */}
+                    <Button
+                        onClick={() => router.push('/dashboard/requests')}
+                        className="relative w-16 md:w-20 h-20 md:h-16 bg-white hover:bg-gray-50 text-orange-600 border border-orange-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 active:scale-95 group/req flex flex-col items-center justify-center gap-1"
+                    >
+                        <div className="relative">
+                            <Inbox className="w-6 h-6 group-hover/req:scale-110 transition-transform duration-300" />
+                            {requestCount > 0 && (
+                                <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full animate-pulse shadow-sm">
+                                    {requestCount}
+                                </span>
+                            )}
+                        </div>
+                        <span className="text-[9px] font-bold uppercase tracking-wider hidden md:block">Talepler</span>
                     </Button>
                 </div>
 

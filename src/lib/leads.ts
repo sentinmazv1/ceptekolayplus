@@ -12,11 +12,19 @@ export async function getLead(id: string): Promise<Customer | null> {
     return mapRowToCustomer(data);
 }
 
-export async function getLeads(filters?: { sahip?: string; durum?: LeadStatus }): Promise<Customer[]> {
+export async function getLeads(filters?: { sahip?: string; durum?: LeadStatus | string }): Promise<Customer[]> {
     let query = supabaseAdmin.from('leads').select('*');
 
     if (filters?.sahip) query = query.eq('sahip_email', filters.sahip);
-    if (filters?.durum) query = query.eq('durum', filters.durum);
+
+    // Explicit Status Filter
+    if (filters?.durum) {
+        query = query.eq('durum', filters.durum);
+    } else {
+        // Default View: Exclude 'TALEP_BEKLEYEN' (Requests) so they don't pollute the main list
+        // Unless we are specifically asking for them, we hide them.
+        query = query.neq('durum', 'TALEP_BEKLEYEN');
+    }
 
     const { data, error } = await query.order('created_at', { ascending: false }).limit(1000);
 
@@ -122,7 +130,9 @@ export async function getLeadStats(user?: { email: string; role: string }) {
     // To solve the "800 vs 300" confusion, we interpret "Available" as "Ready to Call Now".
     retryQuery = retryQuery.or(`son_arama_zamani.lt.${twoHoursAgo},son_arama_zamani.is.null`);
 
-    const pWaitRetry = retryQuery;
+    // 4. Retry (Ready)
+    // Exclude TALEP_BEKLEYEN from standard pools
+    const pWaitRetry = retryQuery.not('durum', 'eq', 'TALEP_BEKLEYEN');
 
     // 2. USER/ADMIN OWNED COUNTS
     const pTotalSched = baseFilter(supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).eq('durum', 'Daha sonra aranmak istiyor'));
@@ -196,6 +206,25 @@ export async function getLeadStats(user?: { email: string; role: string }) {
         statusCounts: statusCounts,
         hourly: {}
     };
+}
+
+export async function getRequestStats() {
+    // Count pending requests (TALEP_BEKLEYEN)
+    // We can group by source (basvuru_kanali) for better badges
+    const { data, error } = await supabaseAdmin
+        .from('leads')
+        .select('basvuru_kanali')
+        .eq('durum', 'TALEP_BEKLEYEN');
+
+    if (error || !data) return { total: 0, bySource: {} };
+
+    const bySource: Record<string, number> = {};
+    data.forEach(r => {
+        const src = r.basvuru_kanali || 'Diğer';
+        bySource[src] = (bySource[src] || 0) + 1;
+    });
+
+    return { total: data.length, bySource };
 }
 
 

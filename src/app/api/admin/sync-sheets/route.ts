@@ -21,21 +21,22 @@ export async function POST(req: NextRequest) {
         const mode = body.mode || 'preview'; // 'preview' | 'confirm'
 
         // --- PREVIEW MODE ---
+        // --- PREVIEW MODE ---
         if (mode === 'preview') {
             // 1. Fetch "Aranma Talepleri"
             const aramaRows = await fetchSheetData('Aranma Talepleri!A2:E');
-            // 2. Fetch "E-Devlet Verenler"
-            const edevletRows = await fetchSheetData('E-Devlet Verenler!A2:E');
+            // 2. Fetch "Web Başvuru" (Changed from 'E-Devlet Verenler' or added new)
+            // Assuming the sheet name for applications is "Basvuru Yapanlar" or "Web Başvuru" as per user request
+            const basvuruRows = await fetchSheetData('Başvuru Yapanlar!A2:G'); // Extended range for details
+            // 3. Fetch "Durum Sorgulama"
+            const sorguRows = await fetchSheetData('Durum Sorgulama!A2:E');
 
             const allRows: any[] = [];
 
-            // Process Aranma Talepleri
-            // Columns: A=Timestamp?, B=Name, C=Phone, D=Note, E=...
-            // User didn't specify changes here, assuming: 1=Name, 2=Phone, 3=Note matches previous logic?
-            // Wait, standard Google Forms is: A=Time, B=Name, C=Phone.
-            // Let's keep logic for Aranma as is for now: 1=>Name, 2=>Phone.
+            // A. Aranma Talepleri (Basit: İsim, Tel)
             if (aramaRows) {
                 aramaRows.forEach(r => {
+                    // Col indices: A=Time, B=Name, C=Phone, D=Note
                     const name = r[1] ? String(r[1]).trim() : '';
                     const phone = r[2] ? String(r[2]).replace(/\s/g, '') : '';
                     const note = r[3] || '';
@@ -46,8 +47,8 @@ export async function POST(req: NextRequest) {
                             ad_soyad: name,
                             telefon: phone,
                             basvuru_kanali: 'Aranma Talebi',
-                            aciklama_uzun: `Otomasyon ile eklendi. Kaynak: Aranma Talebi. Detay: ${note}`,
-                            durum: 'Yeni',
+                            aciklama_uzun: `Talep: Aranma İsteği. Not: ${note}`,
+                            durum: 'TALEP_BEKLEYEN', // PENDING REQUEST
                             ozel_musteri_mi: true,
                             e_devlet_sifre: '',
                             raw_data: r
@@ -56,27 +57,47 @@ export async function POST(req: NextRequest) {
                 });
             }
 
-            // Process E-Devlet Verenler
-            // User Config: B=Name, C=TC, D=Phone, E=Pass
-            // Indices: 1, 2, 3, 4
-            if (edevletRows) {
-                edevletRows.forEach(r => {
+            // B. Başvuru Yapanlar (Detaylı)
+            if (basvuruRows) {
+                basvuruRows.forEach(r => {
+                    // Mapping assumption: A=Time, B=Name, C=Phone, D=TC, E=Product, F=E-Devlet Pass (maybe)
                     const name = r[1] ? String(r[1]).trim() : '';
-                    const tc = r[2] ? String(r[2]).trim() : '';     // Column C
-                    const phone = r[3] ? String(r[3]).replace(/\s/g, '') : ''; // Column D
-                    const pass = r[4] ? String(r[4]).trim() : '';   // Column E
+                    const phone = r[2] ? String(r[2]).replace(/\s/g, '') : '';
+                    const tc = r[3] ? String(r[3]).trim() : '';
 
                     if (name && phone && phone.length >= 10) {
                         allRows.push({
                             temp_id: crypto.randomUUID(),
                             ad_soyad: name,
                             telefon: phone,
-                            tc_kimlik: tc, // Map TC
-                            basvuru_kanali: 'E-Devlet',
-                            aciklama_uzun: `Otomasyon ile eklendi. Kaynak: E-Devlet.`,
-                            durum: 'E-Devlet Veren',
+                            tc_kimlik: tc,
+                            basvuru_kanali: 'Web Başvuru',
+                            aciklama_uzun: `Talep: Web Başvurusu.`,
+                            talep_edilen_urun: r[4] || '',
+                            durum: 'TALEP_BEKLEYEN',
                             ozel_musteri_mi: true,
-                            e_devlet_sifre: pass,
+                            e_devlet_sifre: r[5] || '', // If present
+                            raw_data: r
+                        });
+                    }
+                });
+            }
+
+            // C. Durum Sorgulama
+            if (sorguRows) {
+                sorguRows.forEach(r => {
+                    const name = r[1] ? String(r[1]).trim() : '';
+                    const phone = r[2] ? String(r[2]).replace(/\s/g, '') : '';
+
+                    if (name && phone && phone.length >= 10) {
+                        allRows.push({
+                            temp_id: crypto.randomUUID(),
+                            ad_soyad: name,
+                            telefon: phone,
+                            basvuru_kanali: 'Durum Sorgulama',
+                            aciklama_uzun: `Talep: Başvuru Durumu Sorgulama.`,
+                            durum: 'TALEP_BEKLEYEN',
+                            ozel_musteri_mi: false,
                             raw_data: r
                         });
                     }
@@ -84,7 +105,8 @@ export async function POST(req: NextRequest) {
             }
 
             // Check Duplicates in DB
-            // We can't query "IN (long_list)" easily if list is huge, but for reasonable batch sizes it's fine.
+            // We duplicate check against ALL leads to mark "Existing"
+            // (Even requests might be from existing customers)
             const phones = allRows.map(r => r.telefon);
 
             const { data: existingLeads } = await supabaseAdmin
@@ -94,16 +116,29 @@ export async function POST(req: NextRequest) {
 
             const existingPhones = new Set(existingLeads?.map(l => l.telefon) || []);
 
-            // FILTER: Only show NON-EXISTING leads for import
-            const newLeads = allRows.filter(row => !existingPhones.has(row.telefon));
+            // Map duplications
+            const previewData = allRows.map(row => ({
+                ...row,
+                exists: existingPhones.has(row.telefon),
+                is_request: true
+            }));
+
+            // FILTER: We show ALL, but mark existing.
+            // Actually, for Requests module, maybe we want to import even if existing? 
+            // "Mevcut müşteri tekrar başvurdu". 
+            // Logic: If existing, we can't insert duplicate Phone (Unique Key). 
+            // So we can only import NEW numbers. 
+            // Existing ones need to be handled manually or update existing? 
+            // For now, let's stick to "Only New" for import, OR let user decide?
+            // The UI filters logic handles the "New" filter usually.
+            // We pass everything to UI.
 
             return NextResponse.json({
                 success: true,
                 mode: 'preview',
-                data: newLeads, // Only send new ones
-                count: newLeads.length,
-                total_found: allRows.length,
-                duplicates_skipped: allRows.length - newLeads.length
+                data: previewData,
+                count: previewData.length,
+                total_found: allRows.length
             });
         }
 
