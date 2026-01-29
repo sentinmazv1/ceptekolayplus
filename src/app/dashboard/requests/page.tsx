@@ -22,13 +22,17 @@ export default function RequestsPage() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            // We use the same leads API but with specific status filter
-            // Note: Our modified getLeads allows filtering by 'TALEP_BEKLEYEN' explicitly
-            const res = await fetch('/api/leads?durum=TALEP_BEKLEYEN');
-            const data = await res.json();
-            if (data.leads) {
-                setRequests(data.leads);
-            }
+            // Fetch Pending (Bekleyen)
+            const p1 = fetch('/api/leads?durum=TALEP_BEKLEYEN').then(res => res.json());
+            // Fetch Closed (Kapatılan)
+            const p2 = fetch('/api/leads?durum=TALEP_KAPATILDI').then(res => res.json());
+
+            const [res1, res2] = await Promise.all([p1, p2]);
+
+            const leads1 = res1.leads || [];
+            const leads2 = res2.leads || [];
+
+            setRequests([...leads1, ...leads2]);
         } catch (error) {
             console.error('Fetch error:', error);
         } finally {
@@ -175,8 +179,8 @@ export default function RequestsPage() {
                             {/* Left: Info */}
                             <div className="flex items-start gap-4">
                                 <div className={`p-3 rounded-xl shrink-0 ${req.basvuru_kanali === 'Aranma Talebi' ? 'bg-blue-50 text-blue-600' :
-                                        req.basvuru_kanali === 'Web Başvuru' ? 'bg-green-50 text-green-600' :
-                                            'bg-purple-50 text-purple-600'
+                                    req.basvuru_kanali === 'Web Başvuru' ? 'bg-green-50 text-green-600' :
+                                        'bg-purple-50 text-purple-600'
                                     }`}>
                                     {getIcon(req.basvuru_kanali || '')}
                                 </div>

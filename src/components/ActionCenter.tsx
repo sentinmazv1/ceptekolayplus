@@ -94,12 +94,12 @@ export function ActionCenter({ onPullLead, loading, myStats, teamStats, newLeadC
                     {/* D) REQUESTS BUTTON (Talepler) */}
                     <Button
                         onClick={() => router.push('/dashboard/requests')}
-                        className="relative w-16 md:w-20 h-20 md:h-16 bg-white hover:bg-gray-50 text-orange-600 border border-orange-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 active:scale-95 group/req flex flex-col items-center justify-center gap-1"
+                        className={`relative w-16 md:w-20 h-20 md:h-16 bg-white hover:bg-gray-50 text-orange-600 border border-orange-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 active:scale-95 group/req flex flex-col items-center justify-center gap-1 ${requestCount > 0 ? 'ring-2 ring-red-400 ring-offset-2 ring-offset-red-50 animate-pulse' : ''}`}
                     >
                         <div className="relative">
                             <Inbox className="w-6 h-6 group-hover/req:scale-110 transition-transform duration-300" />
                             {requestCount > 0 && (
-                                <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full animate-pulse shadow-sm">
+                                <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-600 text-white text-[10px] font-bold flex items-center justify-center rounded-full animate-bounce shadow-sm z-10">
                                     {requestCount}
                                 </span>
                             )}
