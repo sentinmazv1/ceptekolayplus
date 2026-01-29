@@ -92,20 +92,37 @@ export function ActionCenter({ onPullLead, loading, myStats, teamStats, newLeadC
                     </Button>
 
                     {/* D) REQUESTS BUTTON (Talepler) */}
-                    <Button
-                        onClick={() => router.push('/dashboard/requests')}
-                        className={`relative w-16 md:w-20 h-20 md:h-16 bg-white hover:bg-gray-50 text-orange-600 border border-orange-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 active:scale-95 group/req flex flex-col items-center justify-center gap-1 ${requestCount > 0 ? 'ring-2 ring-red-400 ring-offset-2 ring-offset-red-50 animate-pulse' : ''}`}
-                    >
-                        <div className="relative">
+                    {/* D) REQUESTS BUTTON (Talepler) - Conditionally Heroic */}
+                    {requestCount > 0 ? (
+                        <Button
+                            onClick={() => router.push('/dashboard/requests')}
+                            className="relative flex-1 md:flex-none h-20 md:h-16 pl-3 pr-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl shadow-xl shadow-emerald-200 hover:shadow-2xl hover:shadow-emerald-300 transition-all duration-300 hover:-translate-y-1 active:scale-95 group/req overflow-hidden"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover/req:translate-x-[200%] transition-transform duration-1000"></div>
+                            <div className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2">
+                                <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm relative">
+                                    <Inbox className="w-5 h-5 animate-bounce" />
+                                </div>
+                                <div className="text-center md:text-left flex flex-col">
+                                    <div className="text-[8px] uppercase font-bold text-emerald-100 tracking-wider flex items-center justify-center md:justify-start gap-1">
+                                        Bekleyen
+                                        <span className="bg-white text-emerald-600 px-1.5 py-0.5 rounded-full text-[9px] font-black flex items-center gap-0.5 shadow-sm">
+                                            {requestCount}
+                                        </span>
+                                    </div>
+                                    <div className="text-xs md:text-sm font-black tracking-tight">TALEPLER</div>
+                                </div>
+                            </div>
+                        </Button>
+                    ) : (
+                        <Button
+                            onClick={() => router.push('/dashboard/requests')}
+                            className="relative w-16 md:w-20 h-20 md:h-16 bg-white hover:bg-gray-50 text-orange-600 border border-orange-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 active:scale-95 group/req flex flex-col items-center justify-center gap-1"
+                        >
                             <Inbox className="w-6 h-6 group-hover/req:scale-110 transition-transform duration-300" />
-                            {requestCount > 0 && (
-                                <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-600 text-white text-[10px] font-bold flex items-center justify-center rounded-full animate-bounce shadow-sm z-10">
-                                    {requestCount}
-                                </span>
-                            )}
-                        </div>
-                        <span className="text-[9px] font-bold uppercase tracking-wider hidden md:block">Talepler</span>
-                    </Button>
+                            <span className="text-[9px] font-bold uppercase tracking-wider hidden md:block">Talepler</span>
+                        </Button>
+                    )}
                 </div>
 
                 {/* 2. Global Search */}
