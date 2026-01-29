@@ -2153,7 +2153,7 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
         summary += `👤 *Kişisel Bilgiler*\n`;
         summary += `Ad Soyad: ${customer.ad_soyad}\n`;
         summary += `TC: ${customer.tc_kimlik || '-'}\n`;
-        summary += `Tel: ${customer.telefon}\n\n`;
+        summary += `Tel: ${customer.telefon} ${customer.telefon_onayli ? '✅ (Doğrulanmış)' : '⚠️ (Doğrulanmamış)'}\n\n`;
 
         summary += `💼 *İş & Finans*\n`;
         summary += `Unvan: ${customer.is_yeri_unvani || '-'}\n`;
@@ -2284,7 +2284,12 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                                 <div class="field-group">
                                     <div class="field"><span class="label">Ad Soyad</span> <span class="value font-bold">${customer.ad_soyad}</span></div>
                                     <div class="field"><span class="label">TC Kimlik</span> <span class="value">${customer.tc_kimlik || '-'}</span></div>
-                                    <div class="field"><span class="label">Telefon</span> <span class="value">${customer.telefon}</span></div>
+                                    <div class="field"><span class="label">Telefon</span> <span class="value">
+                                        ${customer.telefon} 
+                                        ${customer.telefon_onayli
+                    ? '<span style="color:#16a34a; font-weight:bold; font-size:8px; border:1px solid #16a34a; padding:0 3px; border-radius:3px;">ONAYLI</span>'
+                    : '<span style="color:#ca8a04; font-size:8px;">(Onaysız)</span>'}
+                                    </span></div>
                                     <div class="field"><span class="label">Doğum Tarihi</span> <span class="value">${customer.dogum_tarihi || '-'}</span></div>
                                     <div class="field"><span class="label">Ev Adresi</span> <span class="value" style="font-size:8px; line-height:1.1;">${customer.ev_adresi || customer.sehir ? (customer.ev_adresi || '') + ' ' + (customer.ilce || '') + '/' + (customer.sehir || '') : '-'}</span></div>
                                     <div class="field"><span class="label">Kanal</span> <span class="value">${customer.basvuru_kanali || '-'}</span></div>
