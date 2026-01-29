@@ -1006,16 +1006,15 @@ export default function InventoryPage() {
                                 </div>
                             </div>
 
-                            {/* Content Columns */}
-                            <div className="columns-2 gap-8 space-y-8">
+                            {/* Content Columns - Auto Count based on density, usually 2 for A4 */}
+                            <div className="columns-1 md:columns-2 gap-6 space-y-6">
                                 {Object.entries(
                                     items
                                         .filter(i => i.durum === 'STOKTA' && i.fiyat_15_taksit)
                                         .reduce((acc, curr) => {
                                             const brand = curr.marka || 'Diğer';
                                             if (!acc[brand]) acc[brand] = [];
-
-                                            // Unique by NORMALIZED model (trim + case insensitive check if needed, but strict string check is safer for now, just trim)
+                                            // Unique by Model Name to avoid duplicates in list
                                             const modelName = (curr.model || '').trim();
                                             if (!acc[brand].some(m => (m.model || '').trim() === modelName)) {
                                                 acc[brand].push(curr);
@@ -1025,53 +1024,51 @@ export default function InventoryPage() {
                                 )
                                     .sort((a, b) => a[0].localeCompare(b[0]))
                                     .map(([brand, models]) => (
-                                        <div key={brand} className="break-inside-avoid mb-6 border border-gray-200 rounded-lg overflow-hidden">
-                                            <div className="bg-gray-100 px-4 py-2 border-b border-gray-300 flex items-center justify-between">
-                                                <h3 className="font-black text-xl uppercase tracking-tight">{brand}</h3>
+                                        <div key={brand} className="break-inside-avoid mb-6 border border-black/10 rounded-lg overflow-hidden shadow-sm">
+                                            <div className="bg-gray-100 px-3 py-2 border-b border-gray-300 flex items-center justify-between">
+                                                <h3 className="font-black text-lg uppercase tracking-tight text-black">{brand}</h3>
                                             </div>
 
-                                            <table className="w-full text-sm">
-                                                <thead className="bg-gray-50 border-b border-gray-200 text-xs text-gray-500 font-bold uppercase">
+                                            <table className="w-full text-[10px] leading-tight">
+                                                <thead className="bg-gray-50 border-b border-gray-200 font-bold uppercase text-gray-600">
                                                     <tr>
-                                                        <th className="px-3 py-2 text-left w-1/3">Model</th>
-                                                        <th className="px-3 py-2 text-right">15 Taksit</th>
-                                                        <th className="px-3 py-2 text-right text-gray-400">12 Taksit</th>
-                                                        <th className="px-3 py-2 text-right text-gray-400">6 Taksit</th>
+                                                        <th className="px-2 py-1.5 text-left w-1/3">Model</th>
+                                                        <th className="px-2 py-1.5 text-right text-black/90">Toplam</th>
+                                                        <th className="px-2 py-1.5 text-right bg-indigo-50/50 text-indigo-900">15 Tak.</th>
+                                                        <th className="px-2 py-1.5 text-right">12 Tak.</th>
+                                                        <th className="px-2 py-1.5 text-right">6 Tak.</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-100">
                                                     {models.sort((a, b) => a.model.localeCompare(b.model)).map(model => (
-                                                        <tr key={model.id} className="hover:bg-gray-50">
-                                                            <td className="px-3 py-2 font-bold text-gray-900 border-r border-gray-100">
+                                                        <tr key={model.id} className="hover:bg-gray-50 break-inside-avoid">
+                                                            <td className="px-2 py-2 font-bold text-black border-r border-gray-100 align-middle">
                                                                 {model.model}
                                                             </td>
-                                                            <td className="px-3 py-2 text-right font-black bg-gray-50/50">
-                                                                {model.fiyat_15_taksit && (
-                                                                    <>
-                                                                        <div className="text-lg leading-none">
-                                                                            {(Number(model.fiyat_15_taksit) / 15).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺
-                                                                        </div>
-                                                                        <div className="text-[10px] text-gray-500 font-medium mt-0.5">
-                                                                            Top: {Number(model.fiyat_15_taksit).toLocaleString('tr-TR')} ₺
-                                                                        </div>
-                                                                    </>
-                                                                )}
+                                                            {/* Total Price (15 Month Base) */}
+                                                            <td className="px-2 py-2 text-right font-black text-black align-middle text-xs">
+                                                                {model.fiyat_15_taksit ? `${Number(model.fiyat_15_taksit).toLocaleString('tr-TR')} ₺` : '-'}
                                                             </td>
-                                                            <td className="px-3 py-2 text-right text-gray-600">
-                                                                {model.fiyat_12_taksit && (
-                                                                    <>
-                                                                        <div>{(Number(model.fiyat_12_taksit) / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺</div>
-                                                                        <div className="text-[9px] text-gray-400">Top: {Number(model.fiyat_12_taksit).toLocaleString('tr-TR')} ₺</div>
-                                                                    </>
-                                                                )}
+
+                                                            {/* 15 Months */}
+                                                            <td className="px-2 py-2 text-right font-bold text-indigo-700 bg-indigo-50/30 align-middle border-l border-r border-indigo-100">
+                                                                {model.fiyat_15_taksit ? (
+                                                                    <span>{(Number(model.fiyat_15_taksit) / 15).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺</span>
+                                                                ) : '-'}
                                                             </td>
-                                                            <td className="px-3 py-2 text-right text-gray-600">
-                                                                {model.fiyat_6_taksit && (
-                                                                    <>
-                                                                        <div>{(Number(model.fiyat_6_taksit) / 6).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺</div>
-                                                                        <div className="text-[9px] text-gray-400">Top: {Number(model.fiyat_6_taksit).toLocaleString('tr-TR')} ₺</div>
-                                                                    </>
-                                                                )}
+
+                                                            {/* 12 Months */}
+                                                            <td className="px-2 py-2 text-right text-gray-700 align-middle border-r border-gray-100">
+                                                                {model.fiyat_12_taksit ? (
+                                                                    <span>{(Number(model.fiyat_12_taksit) / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺</span>
+                                                                ) : '-'}
+                                                            </td>
+
+                                                            {/* 6 Months */}
+                                                            <td className="px-2 py-2 text-right text-gray-600 align-middle">
+                                                                {model.fiyat_6_taksit ? (
+                                                                    <span>{(Number(model.fiyat_6_taksit) / 6).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₺</span>
+                                                                ) : '-'}
                                                             </td>
                                                         </tr>
                                                     ))}
