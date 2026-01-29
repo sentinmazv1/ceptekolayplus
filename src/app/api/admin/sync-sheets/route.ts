@@ -71,8 +71,8 @@ export async function POST(req: NextRequest) {
                 basvuruRows.forEach(r => {
                     // Mapping assumption: A=Time, B=Name, C=Phone, D=TC, E=Product, F=E-Devlet Pass (maybe)
                     const name = r[1] ? String(r[1]).trim() : '';
-                    const phone = r[2] ? String(r[2]).replace(/\s/g, '') : '';
-                    const tc = r[3] ? String(r[3]).trim() : '';
+                    const tc = r[2] ? String(r[2]).trim() : '';
+                    const phone = r[3] ? String(r[3]).replace(/\s/g, '') : '';
 
                     if (name && phone && phone.length >= 10) {
                         allRows.push({
