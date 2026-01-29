@@ -37,8 +37,8 @@ export async function POST(req: NextRequest) {
             const aramaRows = await safeFetch('Aranma Talepleri!A2:E');
             // 2. Fetch "Web Başvuru"
             const basvuruRows = await safeFetch('Başvuru Yapanlar!A2:G');
-            // 3. Fetch "Durum Sorgulama"
-            const sorguRows = await safeFetch('Durum Sorgulama!A2:E');
+            // 3. Fetch "Başvuru Durumları"
+            const sorguRows = await safeFetch('Başvuru Durumları!A2:E');
 
             const allRows: any[] = [];
 
