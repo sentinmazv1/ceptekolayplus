@@ -1035,7 +1035,14 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                         <Select
                                             label="Arama Durumu (Statü)"
                                             value={data.durum}
-                                            onChange={(e) => handleChange('durum', e.target.value as any)}
+                                            onChange={(e) => {
+                                                const val = e.target.value as any;
+                                                if (val === 'Teslim edildi' && !data.telefon_onayli) {
+                                                    alert('⚠️ Teslimat yapabilmek için önce telefon numarasını doğrulamanız gerekmektedir!');
+                                                    return;
+                                                }
+                                                handleChange('durum', val);
+                                            }}
                                             options={statusOptions.length > 0 ? statusOptions : [
                                                 { value: 'Yeni', label: 'Yeni' },
                                                 { value: 'Aranacak', label: 'Aranacak' },
