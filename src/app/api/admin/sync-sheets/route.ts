@@ -23,13 +23,22 @@ export async function POST(req: NextRequest) {
         // --- PREVIEW MODE ---
         // --- PREVIEW MODE ---
         if (mode === 'preview') {
+            // Helper for safe fetching
+            const safeFetch = async (range: string) => {
+                try {
+                    return await fetchSheetData(range);
+                } catch (e) {
+                    console.warn(`Sheet fetch failed for ${range}:`, e);
+                    return null;
+                }
+            };
+
             // 1. Fetch "Aranma Talepleri"
-            const aramaRows = await fetchSheetData('Aranma Talepleri!A2:E');
-            // 2. Fetch "Web Başvuru" (Changed from 'E-Devlet Verenler' or added new)
-            // Assuming the sheet name for applications is "Basvuru Yapanlar" or "Web Başvuru" as per user request
-            const basvuruRows = await fetchSheetData('Başvuru Yapanlar!A2:G'); // Extended range for details
+            const aramaRows = await safeFetch('Aranma Talepleri!A2:E');
+            // 2. Fetch "Web Başvuru"
+            const basvuruRows = await safeFetch('Başvuru Yapanlar!A2:G');
             // 3. Fetch "Durum Sorgulama"
-            const sorguRows = await fetchSheetData('Durum Sorgulama!A2:E');
+            const sorguRows = await safeFetch('Durum Sorgulama!A2:E');
 
             const allRows: any[] = [];
 
