@@ -67,41 +67,39 @@ export async function GET(req: any) {
         // --- 1. FUNNEL METRICS (Today vs Yesterday) ---
         // We need: Calls, Leads (Applications), Approvals, Deliveries
 
-        // A. CALLS (Aranan)
+        // A. CALLS (Aranan) - Uses son_arama_zamani (Correct)
         const { count: callsToday } = await supabaseAdmin.from('leads').select('id', { count: 'exact', head: true })
             .gte('son_arama_zamani', startOfToday).lte('son_arama_zamani', endOfToday);
 
         const { count: callsYesterday } = await supabaseAdmin.from('leads').select('id', { count: 'exact', head: true })
             .gte('son_arama_zamani', startOfYesterday).lte('son_arama_zamani', endOfYesterday);
 
-        // B. APPLICATIONS (Başvuru) - ROBUST CHECK
-        // Using "updated_at" for speed, checking strictly for application statuses.
-        // Statuses matches "Reports" logic: 'Başvuru alındı', 'Onaya gönderildi', 'Onay Bekleniyor', 'Eksik Evrak' etc.
+        // B. APPLICATIONS (Başvuru) - Use Created At for new leads, or keep updated_at if tracking movement? 
+        // Better: Count NEW leads entering system.
         const appStatusQuery = `durum.eq.Başvuru alındı,durum.eq.Onaya gönderildi,durum.eq.Onaya sunuldu,durum.eq.Onay bekleniyor,durum.eq.Onay bekliyor,durum.eq.Eksik evrak bekleniyor,onay_durumu.eq.Onay Bekliyor`;
 
         const { count: leadsToday } = await supabaseAdmin.from('leads').select('id', { count: 'exact', head: true })
             .or(appStatusQuery)
-            .gte('updated_at', startOfToday).lte('updated_at', endOfToday);
+            .gte('created_at', startOfToday).lte('created_at', endOfToday); // Changed to created_at to avoid edit duplicates
 
         const { count: leadsYesterday } = await supabaseAdmin.from('leads').select('id', { count: 'exact', head: true })
             .or(appStatusQuery)
-            .gte('updated_at', startOfYesterday).lte('updated_at', endOfYesterday);
+            .gte('created_at', startOfYesterday).lte('created_at', endOfYesterday);
 
-        // C. APPROVALS (Onay) - 'onay_durumu' = 'Onaylandı'
+        // C. APPROVALS (Onay) - Use onay_tarihi if available, fallback to updated_at if null logic needed (but sticking to onay_tarihi is safer)
         const { count: approvedToday } = await supabaseAdmin.from('leads').select('id', { count: 'exact', head: true })
             .eq('onay_durumu', 'Onaylandı')
-            .gte('updated_at', startOfToday).lte('updated_at', endOfToday);
+            .gte('onay_tarihi', startOfToday).lte('onay_tarihi', endOfToday);
 
         const { count: approvedYesterday } = await supabaseAdmin.from('leads').select('id', { count: 'exact', head: true })
             .eq('onay_durumu', 'Onaylandı')
-            .gte('updated_at', startOfYesterday).lte('updated_at', endOfYesterday);
+            .gte('onay_tarihi', startOfYesterday).lte('onay_tarihi', endOfYesterday);
 
-        // D. DELIVERIES (Teslimat) - 'durum' = 'Teslim edildi' using 'teslim_tarihi'
-        // Ideally rely on 'teslim_tarihi' if set, else updated_at
+        // D. DELIVERIES (Teslimat) - 'durum' = 'Teslim edildi' using 'teslim_tarihi' (Already Correct in original, just keeping it)
         const { data: deliveriesTodayRows, error: delError } = await supabaseAdmin.from('leads')
-            .select('id, satilan_urunler, teslim_tarihi, ad_soyad, sahip_email, satis_fiyati') // satis_fiyati might be on lead or in items
+            .select('id, satilan_urunler, teslim_tarihi, ad_soyad, sahip_email, satis_fiyati')
             .eq('durum', 'Teslim edildi')
-            .gte('teslim_tarihi', startOfToday); // deliveries are strictly tracked by date
+            .gte('teslim_tarihi', startOfToday);
 
         const { count: deliveriesYesterday } = await supabaseAdmin.from('leads').select('id', { count: 'exact', head: true })
             .eq('durum', 'Teslim edildi')
@@ -109,10 +107,12 @@ export async function GET(req: any) {
 
 
         // --- 2. DAILY TURNOVER & DELIVERY LIST ---
+        // ... (No change needed here as it used deliveriesTodayRows which uses teslim_tarihi) ...
+
         let dailyTurnover = 0;
         const dailyDeliveries: any[] = [];
 
-        // Helper to parse currency
+        // Helper to parse currency (Keep existing)
         const parsePrice = (p: any) => {
             if (!p) return 0;
             let str = String(p).replace(/[^0-9,.-]/g, '');
@@ -130,8 +130,6 @@ export async function GET(req: any) {
                 } catch (e) { }
 
                 let leadTotal = 0;
-
-                // If items exist, calculate from them
                 if (items.length > 0) {
                     items.forEach(item => {
                         const price = parsePrice(item.satis_fiyati || item.fiyat);
@@ -144,20 +142,29 @@ export async function GET(req: any) {
                         });
                     });
                 } else {
-                    // Fallback using single price field on lead if items are empty?
-                    // Skipping for robustness
+                    // Fallback check if single satis_fiyati exists on lead
+                    if (lead.satis_fiyati) {
+                        const p = parsePrice(lead.satis_fiyati);
+                        leadTotal += p;
+                        dailyDeliveries.push({
+                            customer: lead.ad_soyad,
+                            product: 'Cihaz',
+                            price: p,
+                            user: lead.sahip_email
+                        });
+                    }
                 }
                 dailyTurnover += leadTotal;
             });
         }
 
-        // --- 3. TEAM & ANALYTICS (Existing Logic - Simplified) ---
-        // Fetch monthly data for these
+        // --- 3. TEAM & ANALYTICS ---
+        // CRITICAL FIX: Use 'teslim_tarihi' instead of 'updated_at' for monthly stats to avoid counting edits as new sales.
         const { data: monthSales } = await supabaseAdmin
             .from('leads')
-            .select('id, satilan_urunler, sahip_email, sehir, dogum_tarihi')
+            .select('id, satilan_urunler, sahip_email, sehir, dogum_tarihi, satis_fiyati')
             .or(`durum.eq.Teslim edildi,durum.eq.Satış yapıldı/Tamamlandı`)
-            .gte('updated_at', startOfMonth);
+            .gte('teslim_tarihi', startOfMonth);
 
         const teamStats: Record<string, { sales: number, revenue: number, name: string }> = {};
         const cityStats: Record<string, number> = {};
@@ -173,7 +180,11 @@ export async function GET(req: any) {
             } catch (e) { }
 
             let rev = 0;
-            items.forEach(i => rev += parsePrice(i.satis_fiyati || i.fiyat));
+            if (items.length > 0) {
+                items.forEach(i => rev += parsePrice(i.satis_fiyati || i.fiyat));
+            } else if (lead.satis_fiyati) {
+                rev += parsePrice(lead.satis_fiyati);
+            }
             monthlyTurnover += rev;
 
             const user = lead.sahip_email || 'Unknown';
