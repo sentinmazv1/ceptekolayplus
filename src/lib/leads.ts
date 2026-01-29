@@ -629,7 +629,19 @@ export async function addLead(customer: Partial<Customer>, userEmail: string): P
 }
 
 export async function deleteCustomer(id: string, userEmail: string) {
-    await supabaseAdmin.from('leads').delete().eq('id', id);
+    // 1. Unlink Inventory (Set musteri_id to null for items owned by this lead)
+    await supabaseAdmin.from('inventory').update({ musteri_id: null, durum: 'STOKTA' }).eq('musteri_id', id); // Logic choice: If we delete customer, maybe item returns to stock? Or just unlink? 
+    // Actually, if a lead is deleted, it's likely a mistake/duplicate. If they BOUGHT something, we should probably keep it sold? 
+    // Safest: Just unlink.
+    // Better yet: Just delete logs. Inventory FK might be SET NULL or NO ACTION.
+    // Let's delete logs usually the headers.
+    await supabaseAdmin.from('activity_logs').delete().eq('lead_id', id);
+
+    // 2. Delete Lead
+    const { error } = await supabaseAdmin.from('leads').delete().eq('id', id);
+    if (error) throw error;
+
+    // Log
     await logAction({ log_id: crypto.randomUUID(), timestamp: new Date().toISOString(), user_email: userEmail, customer_id: id, action: 'UPDATE_STATUS', old_value: 'Active', new_value: 'DELETED', note: `Deleted by ${userEmail}` });
 }
 

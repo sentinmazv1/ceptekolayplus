@@ -1157,8 +1157,17 @@ function ImportManager() {
 function DuplicateManager({ groups, refresh }: { groups: any[], refresh: () => void }) {
     async function deleteCustomer(id: string) {
         if (!confirm('Silmek istediğinize emin misiniz?')) return;
-        await fetch(`/api/customers/${id}`, { method: 'DELETE' });
-        refresh();
+        try {
+            const res = await fetch(`/api/customers/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                refresh();
+            } else {
+                const json = await res.json();
+                alert('❌ Silinemedi: ' + (json.error || 'Bilinmeyen Hata'));
+            }
+        } catch (e) {
+            alert('❌ Bağlantı hatası.');
+        }
     }
 
     if (groups.length === 0) return (
