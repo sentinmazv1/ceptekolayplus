@@ -17,8 +17,19 @@ export async function POST(req: NextRequest) {
         const body: Partial<Customer> = await req.json();
 
         // Validation
-        if (!body.ad_soyad || !body.telefon || !body.tc_kimlik) {
-            return NextResponse.json({ success: false, message: 'Ad Soyad, Telefon ve TC Kimlik zorunludur.' }, { status: 400 });
+        // TC is optional for preliminary requests (TALEP_BEKLEYEN) or manual quick entry
+        const isRequest = body.durum === 'TALEP_BEKLEYEN';
+
+        if (!body.ad_soyad || !body.telefon) {
+            return NextResponse.json({ success: false, message: 'Ad Soyad ve Telefon zorunludur.' }, { status: 400 });
+        }
+
+        if (!isRequest && !body.tc_kimlik) {
+            // For full applications, TC might be required, but let's relax it generally for Admin manual entry if needed.
+            // But strict for Web Application form.
+            // Currently, let's just make it required unless it's a Request.
+            // Actually, seeing as this API is general, let's keep it required strictly ONLY if it's NOT a request.
+            return NextResponse.json({ success: false, message: 'TC Kimlik zorunludur.' }, { status: 400 });
         }
 
         // Add Defaults

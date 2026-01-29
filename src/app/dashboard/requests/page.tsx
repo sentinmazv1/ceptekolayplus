@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Customer } from '@/lib/types';
-import { Loader2, Inbox, Phone, Globe, HelpCircle, CheckCircle, XCircle, ChevronRight, UserPlus, Trash2 } from 'lucide-react';
+import { Loader2, Inbox, Phone, Globe, HelpCircle, CheckCircle, XCircle, ChevronRight, UserPlus, Trash2, Plus } from 'lucide-react';
 import { CustomerCard } from '@/components/CustomerCard';
 
 export default function RequestsPage() {
@@ -13,6 +13,7 @@ export default function RequestsPage() {
     const [requests, setRequests] = useState<Customer[]>([]);
     const [activeTab, setActiveTab] = useState<'ALL' | 'Aranma Talebi' | 'Web Başvuru' | 'Durum Sorgulama' | 'HISTORY'>('ALL');
     const [selectedRequest, setSelectedRequest] = useState<Customer | null>(null);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     // Fetch Requests
     useEffect(() => {
@@ -139,9 +140,12 @@ export default function RequestsPage() {
                     <Button variant="outline" onClick={() => router.push('/dashboard')}>
                         Geri Dön
                     </Button>
-                    <Button onClick={fetchData} disabled={loading}>
-                        <CheckCircle className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                        Yenile
+                    <Button onClick={() => setIsAddModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Yeni Talep
+                    </Button>
+                    <Button onClick={fetchData} disabled={loading} variant="ghost">
+                        <CheckCircle className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                     </Button>
                 </div>
             </div>
@@ -290,6 +294,94 @@ export default function RequestsPage() {
                 </div>
             )}
 
+            {/* Modal for Adding New Request */}
+            {isAddModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsAddModalOpen(false)} />
+                    <div className="relative bg-white rounded-xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                            <h3 className="font-bold text-gray-900">Yeni Talep Ekle</h3>
+                            <button onClick={() => setIsAddModalOpen(false)}><XCircle className="w-5 h-5 text-gray-400 hover:text-gray-600" /></button>
+                        </div>
+                        <AddRequestForm
+                            onClose={() => setIsAddModalOpen(false)}
+                            onSuccess={(newReq) => {
+                                setIsAddModalOpen(false);
+                                setRequests([newReq, ...requests]);
+                            }}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
+    );
+}
+
+function AddRequestForm({ onClose, onSuccess }: { onClose: () => void, onSuccess: (req: Customer) => void }) {
+    const [loading, setLoading] = useState(false);
+
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault();
+        setLoading(true);
+        const formData = new FormData(e.currentTarget);
+        const data = {
+            ad_soyad: formData.get('ad_soyad'),
+            telefon: formData.get('telefon'),
+            basvuru_kanali: formData.get('basvuru_kanali'),
+            aciklama_uzun: formData.get('aciklama_uzun') || '',
+            durum: 'TALEP_BEKLEYEN'
+        };
+
+        try {
+            const res = await fetch('/api/leads/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const json = await res.json();
+            if (json.success) {
+                onSuccess(json.lead);
+            } else {
+                alert(json.message || 'Hata oluştu');
+            }
+        } catch (error) {
+            alert('Bağlantı hatası');
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    return (
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ad Soyad</label>
+                <input name="ad_soyad" required className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Müşteri Adı" />
+            </div>
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
+                <input name="telefon" required className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="05XX..." />
+            </div>
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Kaynak / Kanal</label>
+                <select name="basvuru_kanali" className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="Aranma Talebi">Aranma Talebi</option>
+                    <option value="Web Başvuru">Web Başvuru</option>
+                    <option value="Durum Sorgulama">Durum Sorgulama</option>
+                    <option value="Whatsapp">Whatsapp</option>
+                    <option value="Telefon">Telefon (Gelen Arama)</option>
+                    <option value="Mağaza">Mağaza Ziyareti</option>
+                </select>
+            </div>
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Not / Açıklama</label>
+                <textarea name="aciklama_uzun" className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 h-20" placeholder="Kısa not..." />
+            </div>
+            <div className="flex gap-3 pt-2">
+                <Button type="button" variant="outline" onClick={onClose} className="w-full">İptal</Button>
+                <Button type="submit" disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">
+                    {loading ? 'Kaydediliyor...' : 'Kaydet'}
+                </Button>
+            </div>
+        </form>
     );
 }
