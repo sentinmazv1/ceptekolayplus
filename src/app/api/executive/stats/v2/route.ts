@@ -65,6 +65,49 @@ export async function GET(req: Request) {
             .gte('created_at', startIso)
             .lte('created_at', endIso);
 
+        // C. OPERATIONAL (Logs)
+        const { count: callCount } = await supabaseAdmin.from('activity_logs').select('id', { count: 'exact', head: true })
+            .eq('action', 'CLICK_CALL').gte('timestamp', startIso).lte('timestamp', endIso);
+
+        const { count: smsCount } = await supabaseAdmin.from('activity_logs').select('id', { count: 'exact', head: true })
+            .in('action', ['SEND_SMS', 'CLICK_SMS']).gte('timestamp', startIso).lte('timestamp', endIso);
+
+        const { count: waCount } = await supabaseAdmin.from('activity_logs').select('id', { count: 'exact', head: true })
+            .in('action', ['SEND_WHATSAPP', 'CLICK_WHATSAPP']).gte('timestamp', startIso).lte('timestamp', endIso);
+
+        const { count: backOfficeCount } = await supabaseAdmin.from('activity_logs').select('id', { count: 'exact', head: true })
+            .in('action', ['UPDATE_STATUS', 'UPDATE_FIELDS', 'SET_NEXT_CALL']).gte('timestamp', startIso).lte('timestamp', endIso);
+
+        // D. LIVE FEED (Recent Logs)
+        const { data: recentLogs } = await supabaseAdmin
+            .from('activity_logs')
+            .select('timestamp, user_email, action, note, customer_id')
+            .order('timestamp', { ascending: false })
+            .limit(20);
+
+        // E. INVENTORY (Stok)
+        const { data: inventoryData } = await supabaseAdmin
+            .from('inventory')
+            .select('marka, model, durum');
+
+        const stockLevels: Record<string, number> = {};
+        let totalStock = 0;
+
+        if (inventoryData) {
+            inventoryData.forEach((item: any) => {
+                if (item.durum === 'STOKTA') {
+                    totalStock++;
+                    const name = `${item.marka} ${item.model}`;
+                    stockLevels[name] = (stockLevels[name] || 0) + 1;
+                }
+            });
+        }
+
+        const topStock = Object.entries(stockLevels)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([name, count]) => ({ name, count }));
+
 
         // --- 3. PROCESSING (The "Robust" Engine) ---
         const bucket: StatBucket = {
@@ -150,6 +193,15 @@ export async function GET(req: Request) {
 
         // --- 4. FORMATTING FOR UI ---
 
+        // Calculate Days Elapsed
+        const oneDay = 24 * 60 * 60 * 1000;
+        const daysDiff = Math.round(Math.abs((Math.min(new Date().getTime(), endDateObj) - startDateObj) / oneDay)) || 1;
+        const dailyAverage = bucket.totalRevenue / daysDiff;
+
+        // Projected Month End
+        const daysInMonth = new Date(new Date(startIso).getFullYear(), new Date(startIso).getMonth() + 1, 0).getDate();
+        const projectedRevenue = dailyAverage * daysInMonth;
+
         // Convert Maps to Arrays
         const teamPerformance = Object.values(bucket.salesByRep)
             .sort((a, b) => b.revenue - a.revenue)
@@ -184,8 +236,19 @@ export async function GET(req: Request) {
                 salesCount: bucket.totalSales,
                 leadCount: bucket.totalLeads,
                 conversion: conversionRate,
-                avgDealSize: bucket.totalSales > 0 ? Math.round(bucket.totalRevenue / bucket.totalSales) : 0
+                avgDealSize: bucket.totalSales > 0 ? Math.round(bucket.totalRevenue / bucket.totalSales) : 0,
+                dailyAverage: Math.round(dailyAverage),
+                projectedRevenue: Math.round(projectedRevenue)
             },
+            ops: {
+                calls: callCount || 0,
+                sms: smsCount || 0,
+                whatsapp: waCount || 0,
+                backoffice: backOfficeCount || 0,
+                totalStock: totalStock,
+                topStock: topStock
+            },
+            liveFeed: recentLogs || [],
             charts: {
                 dailyTrend,
                 teamPerformance,

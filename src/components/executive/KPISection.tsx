@@ -10,6 +10,8 @@ interface KPIProps {
         leadCount: number;
         conversion: number;
         avgDealSize: number;
+        dailyAverage: number;
+        projectedRevenue: number;
     };
     loading: boolean;
 }
@@ -55,13 +57,31 @@ export function KPISection({ data, loading }: KPIProps) {
             color: 'text-purple-400',
             bg: 'bg-purple-500/10',
             border: 'border-purple-500/20'
+        },
+        {
+            label: 'Günlük Ort.',
+            value: formatCurrency(data.dailyAverage),
+            sub: 'Ciro Ortalaması',
+            icon: TrendingUp,
+            color: 'text-amber-400',
+            bg: 'bg-amber-500/10',
+            border: 'border-amber-500/20'
+        },
+        {
+            label: 'Ay Sonu Tahmini',
+            value: formatCurrency(data.projectedRevenue),
+            sub: 'Hedeflenen Kapanış',
+            icon: TrendingDown,
+            color: 'text-rose-400',
+            bg: 'bg-rose-500/10',
+            border: 'border-rose-500/20'
         }
     ];
 
     if (loading) {
         return (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                {[1, 2, 3, 4].map(i => (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+                {[1, 2, 3, 4, 5, 6].map(i => (
                     <div key={i} className="h-32 rounded-2xl bg-white/5 animate-pulse border border-white/5"></div>
                 ))}
             </div>
@@ -69,7 +89,7 @@ export function KPISection({ data, loading }: KPIProps) {
     }
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
             {items.map((item, idx) => (
                 <motion.div
                     key={item.label}
