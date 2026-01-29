@@ -2301,6 +2301,7 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                                     <div class="field"><span class="label">Ünvan / Firma</span> <span class="value">${customer.is_yeri_unvani || '-'}</span></div>
                                     <div class="field"><span class="label">Meslek</span> <span class="value">${customer.meslek_is || customer.meslek || '-'}</span></div>
                                     <div class="field"><span class="label">Gelir (Ort.)</span> <span class="value font-bold">${customer.maas_ortalama || 0} TL</span></div>
+                                    <div class="field"><span class="label">Geçmiş Maaşlar</span> <span class="value" style="font-size:7px; max-width:100%">${[customer.maas_1, customer.maas_2, customer.maas_3, customer.maas_4, customer.maas_5, customer.maas_6].filter(m => m && m != '0').join(', ') || '-'}</span></div>
                                     <div class="field"><span class="label">Çalışma Süresi</span> <span class="value">${customer.ayni_isyerinde_sure_ay || '-'} Ay</span></div>
                                     <div class="field"><span class="label">Hizmet Dökümü</span> <span class="value">${customer.hizmet_dokumu_varmi || '-'}</span></div>
                                     <div class="field"><span class="label">İş Adresi</span> <span class="value" style="font-size:8px;">${customer.is_adresi || customer.is_yeri_bilgisi || '-'}</span></div>
