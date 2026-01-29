@@ -735,7 +735,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                             {/* Verification Badge/Button */}
                             {data.telefon_onayli ? (
                                 <span className="flex items-center gap-1 bg-emerald-500/20 text-emerald-200 px-2 py-0.5 rounded border border-emerald-500/30 text-[10px] uppercase font-bold tracking-wider">
-                                    <ShieldCheck className="w-3 h-3" /> Doğurlandı
+                                    <ShieldCheck className="w-3 h-3" /> Doğrulandı
                                 </span>
                             ) : (
                                 <button
