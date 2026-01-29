@@ -255,6 +255,9 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
     const [whatsAppMessage, setWhatsAppMessage] = useState('');
     const [whatsAppLoading, setWhatsAppLoading] = useState(false);
 
+    // Verify Modal State
+    const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
+
     // Multi-Product State
     const [multiProducts, setMultiProducts] = useState<any[]>([]);
     const [showManualAdd, setShowManualAdd] = useState(false);
@@ -728,6 +731,20 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                 logUserAction('CLICK_CALL', 'Header Call Click');
                                 window.open(`tel:${tel}`);
                             }}><Phone className="w-3 h-3" /> {data.telefon}</span>
+
+                            {/* Verification Badge/Button */}
+                            {data.telefon_onayli ? (
+                                <span className="flex items-center gap-1 bg-emerald-500/20 text-emerald-200 px-2 py-0.5 rounded border border-emerald-500/30 text-[10px] uppercase font-bold tracking-wider">
+                                    <ShieldCheck className="w-3 h-3" /> Doğurlandı
+                                </span>
+                            ) : (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setIsVerifyModalOpen(true); }}
+                                    className="flex items-center gap-1 bg-indigo-500 hover:bg-indigo-400 text-white px-2 py-0.5 rounded border border-indigo-400/50 text-[10px] uppercase font-bold tracking-wider transition-colors shadow-sm"
+                                >
+                                    <ShieldAlert className="w-3 h-3" /> Doğrula
+                                </button>
+                            )}
                             <span className='hidden md:flex items-center gap-1 text-slate-400'> <Calendar className="w-3 h-3" /> {new Date(data.created_at || new Date()).toLocaleDateString('tr-TR')}</span>
                         </div>
                     </div>
@@ -2448,6 +2465,123 @@ function ApprovalSummaryModal({ isOpen, onClose, customer }: { isOpen: boolean; 
                     </div>
                 </div>
             </div>
+            {/* Verify Modal */}
+            {isVerifyModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsVerifyModalOpen(false)} />
+                    <div className="relative bg-white rounded-xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                            <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                                <ShieldCheck className="w-5 h-5 text-indigo-600" />
+                                Telefon Doğrulama
+                            </h3>
+                            <button onClick={() => setIsVerifyModalOpen(false)}><X className="w-5 h-5 text-gray-400 hover:text-gray-600" /></button>
+                        </div>
+                        <VerifyModalContent
+                            customerId={data.id}
+                            phone={data.telefon || ''}
+                            onSuccess={() => {
+                                setIsVerifyModalOpen(false);
+                                setData(prev => ({ ...prev, telefon_onayli: true }));
+                                alert('Telefon numarası başarıyla doğrulandı!');
+                            }}
+                        />
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function VerifyModalContent({ customerId, phone, onSuccess }: { customerId: string, phone: string, onSuccess: () => void }) {
+    const [step, setStep] = useState<'SEND' | 'VERIFY'>('SEND');
+    const [loading, setLoading] = useState(false);
+    const [code, setCode] = useState('');
+
+    const handleSend = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch('/api/sms/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'SEND', customerId, phone })
+            });
+            const json = await res.json();
+            if (res.ok && json.success) {
+                setStep('VERIFY');
+            } else {
+                alert('Hata: ' + json.message);
+            }
+        } catch (e) {
+            alert('Bağlantı hatası');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleVerify = async () => {
+        if (!code) return;
+        setLoading(true);
+        try {
+            const res = await fetch('/api/sms/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'VERIFY', customerId, code })
+            });
+            const json = await res.json();
+            if (res.ok && json.success) {
+                onSuccess();
+            } else {
+                alert('Hata: ' + json.message);
+            }
+        } catch (e) {
+            alert('Bağlantı hatası');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="p-6">
+            {step === 'SEND' ? (
+                <div className="space-y-4 text-center">
+                    <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto">
+                        <Smartphone className="w-8 h-8 text-indigo-600" />
+                    </div>
+                    <div>
+                        <p className="text-sm text-gray-500 mb-1">Doğrulanacak Numara</p>
+                        <p className="text-lg font-bold text-gray-900">{phone}</p>
+                    </div>
+                    <p className="text-xs text-gray-400">
+                        Bu numaraya geçici bir doğrulama kodu (SMS) gönderilecektir.
+                    </p>
+                    <Button onClick={handleSend} disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">
+                        {loading ? 'Gönderiliyor...' : 'Kodu Gönder'}
+                    </Button>
+                </div>
+            ) : (
+                <div className="space-y-4 text-center">
+                    <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto">
+                        <ShieldCheck className="w-8 h-8 text-indigo-600" />
+                    </div>
+                    <p className="text-sm text-gray-600">
+                        Lütfen telefonunuza gelen 6 haneli kodu giriniz.
+                    </p>
+                    <input
+                        className="text-center text-2xl tracking-widest font-mono w-full border rounded-lg py-3 outline-none focus:ring-2 focus:ring-indigo-500 uppercase"
+                        placeholder="CODE"
+                        value={code}
+                        onChange={e => setCode(e.target.value)}
+                        maxLength={6}
+                    />
+                    <Button onClick={handleVerify} disabled={loading || code.length < 4} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
+                        {loading ? 'Doğrulanıyor...' : 'Doğrula'}
+                    </Button>
+                    <button onClick={() => setStep('SEND')} className="text-xs text-gray-400 hover:text-gray-600 underline">
+                        Tekrar Gönder
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

@@ -162,6 +162,7 @@ export interface Customer {
   gorsel_2?: string;
   is_yeri_bilgisi?: string;
   meslek?: string;
+  telefon_onayli?: boolean;
 }
 
 export interface SoldItem {
