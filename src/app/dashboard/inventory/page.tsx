@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { InventoryItem, InventoryStatus } from '@/lib/types';
-import { Package, Plus, Search, Smartphone, Printer, ClipboardCheck, ArrowRight, User, TrendingUp, Calculator, Tag, X, FileText } from 'lucide-react';
+import { Package, Plus, Search, Smartphone, Printer, ClipboardCheck, ArrowRight, User, TrendingUp, Calculator, Tag, X, FileText, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { StockReportModal } from '@/components/StockReportModal';
+import { PricingConfigModal } from '@/components/PricingConfigModal';
 
 export default function InventoryPage() {
     const { data: session } = useSession();
@@ -32,6 +33,15 @@ export default function InventoryPage() {
     // Report Modal State
     const [showReportModal, setShowReportModal] = useState(false);
 
+    // Pricing Config State
+    const [showPricingConfigModal, setShowPricingConfigModal] = useState(false);
+    const [pricingConfig, setPricingConfig] = useState({
+        multiplier_15: 2.60,
+        divisor_12: 1.05,
+        divisor_6: 1.10,
+        divisor_3: 1.10
+    });
+
     // Form State
     const [formData, setFormData] = useState({
         kategori: 'Cihaz',
@@ -51,7 +61,25 @@ export default function InventoryPage() {
     useEffect(() => {
         console.log('Inventory Page Loaded v3 (Fix)');
         fetchInventory();
+        fetchPricingConfig();
     }, []);
+
+    const fetchPricingConfig = async () => {
+        try {
+            const res = await fetch('/api/admin/pricing-config');
+            if (res.ok) {
+                const data = await res.json();
+                setPricingConfig({
+                    multiplier_15: data.multiplier_15 || 2.60,
+                    divisor_12: data.divisor_12 || 1.05,
+                    divisor_6: data.divisor_6 || 1.10,
+                    divisor_3: data.divisor_3 || 1.10
+                });
+            }
+        } catch (error) {
+            console.error('Failed to fetch pricing config', error);
+        }
+    };
 
     const fetchInventory = async () => {
         try {
@@ -188,13 +216,22 @@ export default function InventoryPage() {
 
                 <div className="flex items-center gap-2">
                     {session?.user.role === 'ADMIN' && (
-                        <button
-                            onClick={() => setStockCountMode(!stockCountMode)}
-                            className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 font-medium border ${stockCountMode ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}
-                        >
-                            <ClipboardCheck className="w-4 h-4" />
-                            {stockCountMode ? 'Sayım Modunu Kapat' : 'Sayım Modu'}
-                        </button>
+                        <>
+                            <button
+                                onClick={() => setShowPricingConfigModal(true)}
+                                className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-200 transition-colors flex items-center gap-2 font-medium"
+                                title="Fiyatlandırma Ayarları"
+                            >
+                                <Settings className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => setStockCountMode(!stockCountMode)}
+                                className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 font-medium border ${stockCountMode ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}
+                            >
+                                <ClipboardCheck className="w-4 h-4" />
+                                {stockCountMode ? 'Sayım Modunu Kapat' : 'Sayım Modu'}
+                            </button>
+                        </>
                     )}
 
 
@@ -234,6 +271,12 @@ export default function InventoryPage() {
                     )}
                 </div>
             </div>
+
+            <PricingConfigModal
+                isOpen={showPricingConfigModal}
+                onClose={() => setShowPricingConfigModal(false)}
+                onUpdate={fetchPricingConfig}
+            />
 
             {/* Print Header only (Details) */}
             <div className="hidden print:block mb-4">
@@ -562,14 +605,14 @@ export default function InventoryPage() {
                                                     const alis = parseFloat((formData as any).alis_fiyati);
                                                     if (!alis) return alert('Lütfen önce alış fiyatı giriniz');
 
-                                                    // 15 Ay = Alış x 2.6
-                                                    const f15 = Math.ceil(alis * 2.6);
-                                                    // 12 Ay = 15 Ay / 1.05
-                                                    const f12 = Math.ceil(f15 / 1.05);
-                                                    // 6 Ay = 12 Ay / 1.10
-                                                    const f6 = Math.ceil(f12 / 1.10);
-                                                    // 3 Ay = 6 Ay / 1.10
-                                                    const f3 = Math.ceil(f6 / 1.10);
+                                                    // 15 Ay = Alış x Multiplier
+                                                    const f15 = Math.ceil(alis * pricingConfig.multiplier_15);
+                                                    // 12 Ay = 15 Ay / Divisor
+                                                    const f12 = Math.ceil(f15 / pricingConfig.divisor_12);
+                                                    // 6 Ay = 12 Ay / Divisor 
+                                                    const f6 = Math.ceil(f12 / pricingConfig.divisor_6);
+                                                    // 3 Ay = 6 Ay / Divisor
+                                                    const f3 = Math.ceil(f6 / pricingConfig.divisor_3);
 
                                                     setFormData(prev => ({
                                                         ...prev,
@@ -588,7 +631,12 @@ export default function InventoryPage() {
 
                                     {formData.kategori !== 'Aksesuar' && (
                                         <div className="mb-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
-                                            <label className="block text-xs font-bold text-blue-800 mb-1">Alış Fiyatı (Maliyet)</label>
+                                            <div className="flex justify-between items-start mb-1">
+                                                <label className="block text-xs font-bold text-blue-800">Alış Fiyatı (Maliyet)</label>
+                                                <div className="text-[10px] text-blue-600 font-mono bg-blue-100 px-1 rounded">
+                                                    x{pricingConfig.multiplier_15}
+                                                </div>
+                                            </div>
                                             <input
                                                 type="number"
                                                 className="w-full border border-blue-200 rounded-lg p-2 text-right font-bold text-blue-900 bg-white"
@@ -597,7 +645,7 @@ export default function InventoryPage() {
                                                 onChange={(e) => setFormData({ ...formData, alis_fiyati: e.target.value } as any)}
                                             />
                                             <p className="text-[10px] text-blue-600 mt-1">
-                                                * Satış fiyatları bu tutar üzerinden hesaplanır (15 Ay = x2.6 çarpanı)
+                                                * Satış fiyatları ayarlar sekmesindeki oranlara göre hesaplanır.
                                             </p>
                                         </div>
                                     )}
