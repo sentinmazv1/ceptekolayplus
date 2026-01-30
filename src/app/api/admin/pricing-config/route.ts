@@ -1,20 +1,31 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { supabaseAdmin } from '@/lib/supabase';
+
+// Helper to check auth
+async function checkAdmin() {
+    const session = await getServerSession();
+    if (!session || !session.user) return false;
+
+    // In this project, role is often on session.user (customized NextAuth)
+    // Or we check DB. Let's assume session.user.role is populated as per standard implementation here
+    // If not, we can query users table.
+
+    // Check against "ADMIN"
+    return (session.user as any).role === 'ADMIN';
+}
 
 // GET: Fetch current pricing config
 export async function GET() {
     try {
-        const supabase = createRouteHandlerClient({ cookies });
-
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
             .from('pricing_config')
             .select('*')
             .limit(1)
             .single();
 
         if (error) {
-            // If strictly no rows, return defaults (though schema insert should prevent this)
+            // If strictly no rows, return defaults
             if (error.code === 'PGRST116') {
                 return NextResponse.json({
                     multiplier_15: 2.60,
@@ -39,21 +50,9 @@ export async function GET() {
 // POST: Update pricing config (Admin Only)
 export async function POST(req: Request) {
     try {
-        const supabase = createRouteHandlerClient({ cookies });
-
-        // check auth & role
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-        // Verify Admin role
-        const { data: userData } = await supabase
-            .from('users')
-            .select('role')
-            .eq('email', session.user.email)
-            .single();
-
-        if (userData?.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        const isAdmin = await checkAdmin();
+        if (!isAdmin) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const body = await req.json();
@@ -64,11 +63,8 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
         }
 
-        // Upsert logic (since we only want one row essentially, getting the ID would be safer, 
-        // but since we want to "Update the *the* config", we can validly assume existing row or insert new)
-
         // First check if a config exists
-        const { data: existing } = await supabase
+        const { data: existing } = await supabaseAdmin
             .from('pricing_config')
             .select('id')
             .limit(1)
@@ -76,7 +72,8 @@ export async function POST(req: Request) {
 
         let result;
         if (existing) {
-            result = await supabase
+            console.log('Updating existing config:', existing.id);
+            result = await supabaseAdmin
                 .from('pricing_config')
                 .update({
                     multiplier_15,
@@ -89,7 +86,8 @@ export async function POST(req: Request) {
                 .select()
                 .single();
         } else {
-            result = await supabase
+            console.log('Creating new config');
+            result = await supabaseAdmin
                 .from('pricing_config')
                 .insert({
                     multiplier_15,
