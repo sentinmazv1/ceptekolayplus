@@ -7,6 +7,7 @@ import { ChartsSection } from '@/components/executive/ChartsSection';
 import { OpsGrid } from '@/components/executive/OpsGrid';
 import { LiveFeed } from '@/components/executive/LiveFeed';
 import { InventoryWidget } from '@/components/executive/InventoryWidget';
+import { CurrentMonthBar } from '@/components/executive/CurrentMonthBar';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ExecutiveDashboard() {
@@ -97,81 +98,102 @@ export default function ExecutiveDashboard() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
+                            className="space-y-12"
                         >
-                            {/* KPI CARDS */}
-                            <KPISection data={data?.kpi || { turnover: 0, salesCount: 0, leadCount: 0, conversion: 0, avgDealSize: 0 }} loading={loading} />
+                            {/* --- GRUP 1: AYLIK MEVCUT DURUM (MONTHLY STATUS) --- */}
+                            <section>
+                                <div className="flex items-center gap-3 mb-6">
+                                    <h2 className="text-2xl font-bold text-white tracking-tight">Aylık Mevcut Durum</h2>
+                                    <div className="h-px flex-1 bg-gradient-to-r from-indigo-500/50 to-transparent"></div>
+                                </div>
 
-                            {/* CHARTS */}
-                            <ChartsSection
-                                dailyTrend={data?.charts?.dailyTrend || []}
-                                teamPerformance={data?.charts?.teamPerformance || []}
-                                loading={loading}
-                            />
+                                <CurrentMonthBar data={data} loading={loading} />
 
-                            {/* OPERATIONAL & INVENTORY GRID */}
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                                <div className="lg:col-span-2 space-y-6">
-                                    <OpsGrid
-                                        data={data?.ops || { calls: 0, sms: 0, whatsapp: 0, backoffice: 0, totalStock: 0 }}
+                                <KPISection data={data?.kpi || { turnover: 0, salesCount: 0, leadCount: 0, conversion: 0, avgDealSize: 0 }} loading={loading} />
+                            </section>
+
+
+                            {/* --- GRUP 2: GÜNLÜK PERFORMANS & ANALİZ (DAILY PERFORMANCE) --- */}
+                            <section>
+                                <div className="flex items-center gap-3 mb-6">
+                                    <h2 className="text-2xl font-bold text-white tracking-tight">Günlük Performans & Analiz</h2>
+                                    <div className="h-px flex-1 bg-gradient-to-r from-emerald-500/50 to-transparent"></div>
+                                </div>
+
+                                {/* CHARTS */}
+                                <div className="mb-6">
+                                    <ChartsSection
+                                        dailyTrend={data?.charts?.dailyTrend || []}
+                                        teamPerformance={data?.charts?.teamPerformance || []}
                                         loading={loading}
                                     />
+                                </div>
 
-                                    {/* SOURCE & TABLE (Moved here) */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="bg-[#1e293b]/50 border border-white/5 rounded-3xl p-6 backdrop-blur-md">
-                                            <h3 className="text-white font-bold text-lg mb-4">Kaynak Verimliliği</h3>
-                                            <div className="space-y-3">
-                                                {data?.charts?.sourcePerformance?.map((item: any, idx: number) => (
-                                                    <div key={idx} className="flex items-center gap-3">
-                                                        <div className="w-24 text-xs text-slate-400 truncate text-right">{item.name}</div>
-                                                        <div className="flex-1 h-2 bg-slate-700/50 rounded-full overflow-hidden">
-                                                            <div
-                                                                className="h-full bg-blue-500 rounded-full"
-                                                                style={{ width: `${(item.value / (data.kpi.salesCount || 1)) * 100}%` }}
-                                                            ></div>
-                                                        </div>
-                                                        <div className="w-12 text-xs font-bold text-white text-right">{item.value}</div>
-                                                    </div>
-                                                ))}
-                                                {(!data?.charts?.sourcePerformance?.length && !loading) && (
-                                                    <div className="text-center text-slate-500 text-xs py-10">Veri bulunamadı</div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <InventoryWidget
-                                            totalStock={data?.ops?.totalStock || 0}
-                                            topStock={data?.ops?.topStock || []}
+                                {/* OPERATIONAL & INVENTORY GRID */}
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                                    <div className="lg:col-span-2 space-y-6">
+                                        <OpsGrid
+                                            data={data?.ops || { calls: 0, sms: 0, whatsapp: 0, backoffice: 0, totalStock: 0 }}
                                             loading={loading}
                                         />
-                                    </div>
-                                </div>
 
-                                {/* LIVE FEED SIDEBAR */}
-                                <div className="lg:col-span-1">
-                                    <LiveFeed
-                                        logs={data?.liveFeed || []}
-                                        loading={loading}
-                                    />
-
-                                    <div className="mt-6 bg-[#1e293b]/50 border border-white/5 rounded-3xl p-6 backdrop-blur-md">
-                                        <h3 className="text-white font-bold text-lg mb-4">Top Ürünler</h3>
-                                        <div className="space-y-3">
-                                            {data?.charts?.topProducts?.map((item: any, idx: number) => (
-                                                <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="flex items-center justify-center w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 text-[10px] font-bold">
-                                                            {idx + 1}
+                                        {/* SOURCE & TABLE */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="bg-[#1e293b]/50 border border-white/5 rounded-3xl p-6 backdrop-blur-md">
+                                                <h3 className="text-white font-bold text-lg mb-4">Kaynak Verimliliği</h3>
+                                                <div className="space-y-3">
+                                                    {data?.charts?.sourcePerformance?.map((item: any, idx: number) => (
+                                                        <div key={idx} className="flex items-center gap-3">
+                                                            <div className="w-24 text-xs text-slate-400 truncate text-right">{item.name}</div>
+                                                            <div className="flex-1 h-2 bg-slate-700/50 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className="h-full bg-blue-500 rounded-full"
+                                                                    style={{ width: `${(item.value / (data.kpi.salesCount || 1)) * 100}%` }}
+                                                                ></div>
+                                                            </div>
+                                                            <div className="w-12 text-xs font-bold text-white text-right">{item.value}</div>
                                                         </div>
-                                                        <span className="text-xs text-slate-200 font-medium truncate max-w-[120px]">{item.name}</span>
-                                                    </div>
-                                                    <span className="text-xs font-bold text-white bg-slate-700 px-2 py-1 rounded-md">{item.value}</span>
+                                                    ))}
+                                                    {(!data?.charts?.sourcePerformance?.length && !loading) && (
+                                                        <div className="text-center text-slate-500 text-xs py-10">Veri bulunamadı</div>
+                                                    )}
                                                 </div>
-                                            ))}
+                                            </div>
+
+                                            <InventoryWidget
+                                                totalStock={data?.ops?.totalStock || 0}
+                                                topStock={data?.ops?.topStock || []}
+                                                loading={loading}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* LIVE FEED SIDEBAR */}
+                                    <div className="lg:col-span-1">
+                                        <LiveFeed
+                                            logs={data?.liveFeed || []}
+                                            loading={loading}
+                                        />
+
+                                        <div className="mt-6 bg-[#1e293b]/50 border border-white/5 rounded-3xl p-6 backdrop-blur-md">
+                                            <h3 className="text-white font-bold text-lg mb-4">Top Ürünler</h3>
+                                            <div className="space-y-3">
+                                                {data?.charts?.topProducts?.map((item: any, idx: number) => (
+                                                    <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="flex items-center justify-center w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 text-[10px] font-bold">
+                                                                {idx + 1}
+                                                            </div>
+                                                            <span className="text-xs text-slate-200 font-medium truncate max-w-[120px]">{item.name}</span>
+                                                        </div>
+                                                        <span className="text-xs font-bold text-white bg-slate-700 px-2 py-1 rounded-md">{item.value}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            </section>
 
                         </motion.div>
                     ) : null}
