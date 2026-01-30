@@ -1,23 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { RefreshCcw, Calendar, ChevronDown } from 'lucide-react';
-import { KPISection } from '@/components/executive/KPISection';
-import { ChartsSection } from '@/components/executive/ChartsSection';
-import { OpsGrid } from '@/components/executive/OpsGrid';
-import { LiveFeed } from '@/components/executive/LiveFeed';
-import { InventoryWidget } from '@/components/executive/InventoryWidget';
-import { CurrentMonthBar } from '@/components/executive/CurrentMonthBar';
+import { RefreshCcw, Calendar } from 'lucide-react';
+import { DashboardTabs } from '@/components/executive/DashboardTabs';
+import { GeneralView } from '@/components/executive/GeneralView';
+import { DailyView } from '@/components/executive/DailyView';
+import { StockView } from '@/components/executive/StockView';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ExecutiveDashboard() {
-    // Dates (Default: This Month)
+    // Dates (Default: This Month for Daily View to start with)
     const [startDate, setStartDate] = useState(() => {
         const now = new Date();
         return new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('en-CA');
     });
     const [endDate, setEndDate] = useState(() => new Date().toLocaleDateString('en-CA'));
 
+    const [activeTab, setActiveTab] = useState<'general' | 'daily' | 'stock'>('general');
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<any>(null);
 
@@ -31,7 +30,7 @@ export default function ExecutiveDashboard() {
                 setData(json);
             }
         } catch (error) {
-            console.error('Executive V2 Error:', error);
+            console.error('Executive V3 Error:', error);
         } finally {
             setLoading(false);
         }
@@ -39,7 +38,7 @@ export default function ExecutiveDashboard() {
 
     useEffect(() => {
         fetchData();
-    }, [startDate, endDate]);
+    }, [startDate, endDate]); // Refetch when dates change (Only impacts Daily View really, but API handles it)
 
     return (
         <div className="min-h-screen bg-[#0f172a] text-white font-sans selection:bg-indigo-500/30 overflow-x-hidden">
@@ -51,152 +50,70 @@ export default function ExecutiveDashboard() {
 
             <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 py-8">
                 {/* HEADER */}
-                <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-6 mb-10">
+                <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-6 mb-8">
                     <div>
                         <div className="flex items-center gap-2 mb-1">
                             <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-[10px] font-bold text-indigo-300 uppercase tracking-widest">
-                                Versiyon 2.0
+                                Versiyon 3.0
                             </span>
                         </div>
                         <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-1">Patron Paneli</h1>
                         <p className="text-slate-400 text-sm">Finansal Durum & Operasyonel Analiz</p>
                     </div>
 
-                    {/* CONTROLS */}
-                    <div className="flex items-center gap-3 bg-white/5 p-1.5 rounded-2xl border border-white/5 backdrop-blur-md">
-                        <div className="flex items-center gap-2 px-3 py-1.5 border-r border-white/10">
-                            <Calendar className="w-4 h-4 text-slate-400" />
-                            <input
-                                type="date"
-                                value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                                className="bg-transparent text-white text-xs font-bold outline-none [&::-webkit-calendar-picker-indicator]:invert cursor-pointer w-24"
-                            />
-                            <span className="text-slate-500">-</span>
-                            <input
-                                type="date"
-                                value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                className="bg-transparent text-white text-xs font-bold outline-none [&::-webkit-calendar-picker-indicator]:invert cursor-pointer w-24"
-                            />
-                        </div>
+                    {/* CONTROLS (Only visible for Daily View) */}
+                    <div className="flex items-center gap-3">
+                        {activeTab === 'daily' && (
+                            <motion.div
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="flex items-center gap-3 bg-white/5 p-1.5 rounded-2xl border border-white/5 backdrop-blur-md"
+                            >
+                                <div className="flex items-center gap-2 px-3 py-1.5 border-r border-white/10">
+                                    <Calendar className="w-4 h-4 text-slate-400" />
+                                    <input
+                                        type="date"
+                                        value={startDate}
+                                        onChange={(e) => setStartDate(e.target.value)}
+                                        className="bg-transparent text-white text-xs font-bold outline-none [&::-webkit-calendar-picker-indicator]:invert cursor-pointer w-24"
+                                    />
+                                    <span className="text-slate-500">-</span>
+                                    <input
+                                        type="date"
+                                        value={endDate}
+                                        onChange={(e) => setEndDate(e.target.value)}
+                                        className="bg-transparent text-white text-xs font-bold outline-none [&::-webkit-calendar-picker-indicator]:invert cursor-pointer w-24"
+                                    />
+                                </div>
+                            </motion.div>
+                        )}
+
                         <button
                             onClick={fetchData}
                             disabled={loading}
-                            className={`p-2 rounded-xl transition-all ${loading ? 'opacity-50' : 'hover:bg-white/10 active:scale-95'}`}
+                            className={`p-3 bg-white/5 border border-white/10 rounded-2xl transition-all ${loading ? 'opacity-50' : 'hover:bg-white/10 active:scale-95'}`}
                         >
                             <RefreshCcw className={`w-4 h-4 text-white ${loading ? 'animate-spin' : ''}`} />
                         </button>
                     </div>
                 </div>
 
+                {/* TABS */}
+                <DashboardTabs activeTab={activeTab} onChange={setActiveTab} />
+
                 {/* CONTENT */}
                 <AnimatePresence mode="wait">
-                    {data || loading ? (
-                        <motion.div
-                            key="content"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="space-y-12"
-                        >
-                            {/* --- GRUP 1: AYLIK MEVCUT DURUM (MONTHLY STATUS) --- */}
-                            <section>
-                                <div className="flex items-center gap-3 mb-6">
-                                    <h2 className="text-2xl font-bold text-white tracking-tight">Aylık Mevcut Durum</h2>
-                                    <div className="h-px flex-1 bg-gradient-to-r from-indigo-500/50 to-transparent"></div>
-                                </div>
-
-                                <CurrentMonthBar data={data} loading={loading} />
-
-                                <KPISection data={data?.kpi || { turnover: 0, salesCount: 0, leadCount: 0, conversion: 0, avgDealSize: 0 }} loading={loading} />
-                            </section>
-
-
-                            {/* --- GRUP 2: GÜNLÜK PERFORMANS & ANALİZ (DAILY PERFORMANCE) --- */}
-                            <section>
-                                <div className="flex items-center gap-3 mb-6">
-                                    <h2 className="text-2xl font-bold text-white tracking-tight">Günlük Performans & Analiz</h2>
-                                    <div className="h-px flex-1 bg-gradient-to-r from-emerald-500/50 to-transparent"></div>
-                                </div>
-
-                                {/* CHARTS */}
-                                <div className="mb-6">
-                                    <ChartsSection
-                                        dailyTrend={data?.charts?.dailyTrend || []}
-                                        teamPerformance={data?.charts?.teamPerformance || []}
-                                        loading={loading}
-                                    />
-                                </div>
-
-                                {/* OPERATIONAL & INVENTORY GRID */}
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                                    <div className="lg:col-span-2 space-y-6">
-                                        <OpsGrid
-                                            data={data?.ops || { calls: 0, sms: 0, whatsapp: 0, backoffice: 0, totalStock: 0 }}
-                                            loading={loading}
-                                        />
-
-                                        {/* SOURCE & TABLE */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="bg-[#1e293b]/50 border border-white/5 rounded-3xl p-6 backdrop-blur-md">
-                                                <h3 className="text-white font-bold text-lg mb-4">Kaynak Verimliliği</h3>
-                                                <div className="space-y-3">
-                                                    {data?.charts?.sourcePerformance?.map((item: any, idx: number) => (
-                                                        <div key={idx} className="flex items-center gap-3">
-                                                            <div className="w-24 text-xs text-slate-400 truncate text-right">{item.name}</div>
-                                                            <div className="flex-1 h-2 bg-slate-700/50 rounded-full overflow-hidden">
-                                                                <div
-                                                                    className="h-full bg-blue-500 rounded-full"
-                                                                    style={{ width: `${(item.value / (data.kpi.salesCount || 1)) * 100}%` }}
-                                                                ></div>
-                                                            </div>
-                                                            <div className="w-12 text-xs font-bold text-white text-right">{item.value}</div>
-                                                        </div>
-                                                    ))}
-                                                    {(!data?.charts?.sourcePerformance?.length && !loading) && (
-                                                        <div className="text-center text-slate-500 text-xs py-10">Veri bulunamadı</div>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            <InventoryWidget
-                                                totalStock={data?.ops?.totalStock || 0}
-                                                topStock={data?.ops?.topStock || []}
-                                                loading={loading}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* LIVE FEED SIDEBAR */}
-                                    <div className="lg:col-span-1">
-                                        <LiveFeed
-                                            logs={data?.liveFeed || []}
-                                            loading={loading}
-                                        />
-
-                                        <div className="mt-6 bg-[#1e293b]/50 border border-white/5 rounded-3xl p-6 backdrop-blur-md">
-                                            <h3 className="text-white font-bold text-lg mb-4">Top Ürünler</h3>
-                                            <div className="space-y-3">
-                                                {data?.charts?.topProducts?.map((item: any, idx: number) => (
-                                                    <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="flex items-center justify-center w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 text-[10px] font-bold">
-                                                                {idx + 1}
-                                                            </div>
-                                                            <span className="text-xs text-slate-200 font-medium truncate max-w-[120px]">{item.name}</span>
-                                                        </div>
-                                                        <span className="text-xs font-bold text-white bg-slate-700 px-2 py-1 rounded-md">{item.value}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </section>
-
-                        </motion.div>
-                    ) : null}
+                    <motion.div
+                        key={activeTab}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        {activeTab === 'general' && <GeneralView data={data} loading={loading} />}
+                        {activeTab === 'daily' && <DailyView data={data} loading={loading} />}
+                        {activeTab === 'stock' && <StockView data={data} loading={loading} />}
+                    </motion.div>
                 </AnimatePresence>
             </div>
         </div>
