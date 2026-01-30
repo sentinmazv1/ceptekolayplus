@@ -9,18 +9,29 @@ import { StockView } from '@/components/executive/StockView';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ExecutiveDashboard() {
-    // Dates (Default: This Month for Daily View to start with)
-    const [startDate, setStartDate] = useState(() => {
-        const now = new Date();
-        return new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('en-CA');
-    });
-    const [endDate, setEndDate] = useState(() => new Date().toLocaleDateString('en-CA'));
+    const [mounted, setMounted] = useState(false);
+
+    // Dates 
+    // Initialize with empty/safe values to avoid hydration mismatch
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
 
     const [activeTab, setActiveTab] = useState<'general' | 'daily' | 'stock'>('general');
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<any>(null);
 
+    // Hydration Fix: Set dates only on client
+    useEffect(() => {
+        const now = new Date();
+        // Use 'en-CA' for YYYY-MM-DD format consistency
+        setStartDate(new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('en-CA'));
+        setEndDate(now.toLocaleDateString('en-CA'));
+        setMounted(true);
+    }, []);
+
     const fetchData = async () => {
+        if (!startDate || !endDate) return; // Wait for dates to be set
+
         setLoading(true);
         try {
             const params = new URLSearchParams({ startDate, endDate });
@@ -37,8 +48,17 @@ export default function ExecutiveDashboard() {
     };
 
     useEffect(() => {
-        fetchData();
-    }, [startDate, endDate]); // Refetch when dates change (Only impacts Daily View really, but API handles it)
+        if (mounted) fetchData();
+    }, [startDate, endDate, mounted]);
+
+    // PREVENT HYDRATION MISMATCH
+    // Render a loading state or nothing on server
+    if (!mounted) return <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-8">
+        <div className="animate-pulse w-full max-w-7xl space-y-8">
+            <div className="h-12 w-1/3 bg-white/5 rounded-2xl"></div>
+            <div className="h-96 w-full bg-white/5 rounded-3xl"></div>
+        </div>
+    </div>;
 
     return (
         <div className="min-h-screen bg-[#0f172a] text-white font-sans selection:bg-indigo-500/30 overflow-x-hidden">
