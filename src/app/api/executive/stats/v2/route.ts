@@ -55,42 +55,44 @@ export async function GET(req: Request) {
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
         const endOfToday = new Date().toISOString();
 
-        // Use filtered range for "Daily Performance", but "StartOfMonth" for "General/Monthly" view
-        // To be efficient, we might fetch everything from the earliest date needed.
-        // If user selects "Yesterday", earliest is StartOfMonth (for Monthly View).
-        // If user selects "Last Year", earliest is QueryStart.
-
         const filterStartIso = queryStart ? `${queryStart}T00:00:00.000Z` : startOfMonth;
         const filterEndIso = queryEnd ? `${queryEnd}T23:59:59.999Z` : endOfToday;
 
-        const earliestDate = filterStartIso < startOfMonth ? filterStartIso : startOfMonth;
-        const latestDate = filterEndIso > endOfToday ? filterEndIso : endOfToday;
-
         // 1. FETCH EVERYTHING (Optimized)
 
-        // A. LEADS (For Funnel, Demographics, Sales)
-        // Fetching "Risk" indicators and "Demographic" fields
+        // A. ALL SALES (Wide Net)
+        // We need ALL sales from 2023 to catch revenue that happened "Today" even if lead created "Months Ago"
+        // Status matching must be precise based on DB values
+        const { data: salesData, error: salesError } = await supabaseAdmin
+            .from('leads')
+            .select('id, created_at, durum, satilan_urunler, satis_fiyati, talep_edilen_tutar, teslim_tarihi, satis_tarihi, updated_at, sahip_email, basvuru_kanali')
+            .or('durum.eq.Teslim edildi,durum.eq.Satış yapıldı/Tamamlandı,durum.eq.Satış Yapıldı') // Added 'Satış Yapıldı' just in case
+            .gte('created_at', '2023-01-01');
+
+        if (salesError) throw salesError;
+
+        // B. NEW LEADS IN RANGE (For Funnel & Demographics)
+        // Only fetch leads created *recently* (from Start of Month or Filter Start)
+        // This is for "New Inflow" analysis
+        const earliestForLeads = filterStartIso < startOfMonth ? filterStartIso : startOfMonth;
+
         const { data: leadsData, error: leadsError } = await supabaseAdmin
             .from('leads')
             .select('id, created_at, durum, avukat_sorgu_sonuc, avukat_sorgu_durumu, onay_durumu, meslek, meslek_is, sehir, dogum_tarihi, maas_ortalama, satilan_urunler, satis_fiyati, talep_edilen_tutar, teslim_tarihi, satis_tarihi, updated_at, sahip_email, basvuru_kanali')
-            .gte('created_at', earliestDate); // Fetch from earliest needed
+            .gte('created_at', earliestForLeads);
 
         if (leadsError) throw leadsError;
 
-        // B. LOGS (For Staff Performance & Ops)
-        // We filter logs strictly by the Filtered Range (Daily View context) to save bandwidth
-        // But user might want "Monthly Staff Performance"? 
-        // Request said: "Daily detail... staff scorecards".
-        // Let's fetch logs for the Filtered Range only.
+        // C. LOGS (For Staff Performance & Ops)
         const { data: logsData, error: logsError } = await supabaseAdmin
             .from('activity_logs')
-            .select('user_email, action, timestamp, user_id') // Added user_email
+            .select('user_email, action, timestamp, user_id')
             .gte('timestamp', filterStartIso)
             .lte('timestamp', filterEndIso);
 
         if (logsError) throw logsError;
 
-        // C. INVENTORY (Snapshot - independent of date)
+        // D. INVENTORY (Snapshot - independent of date)
         const { data: inventoryData } = await supabaseAdmin
             .from('inventory')
             .select('marka, model, durum, satis_fiyati');
@@ -132,9 +134,10 @@ export async function GET(req: Request) {
         };
 
         const leads = (leadsData as Lead[]) || [];
+        const sales = (salesData as Lead[]) || [];
         const logs = logsData || [];
 
-        // 2. PROCESS LEADS (Monthly & Demographics)
+        // 2. PROCESS MONTHLY INFLOW (Funnel & Demographics)
         leads.forEach(lead => {
             const createdAt = new Date(lead.created_at).getTime();
             const startMonthTime = new Date(startOfMonth).getTime();
@@ -170,42 +173,45 @@ export async function GET(req: Request) {
                 */
                 // For now, let's skip complex age parsing to avoid errors, or try simple ISO check
             }
+        });
 
-            // SALES PROCESSING (For Turnover & Rep Performance)
-            // Use Waterfall Date Logic
-            const saleDateStr = lead.teslim_tarihi || lead.satis_tarihi || (lead.durum.includes('Teslim') ? lead.updated_at : null);
+        // 3. PROCESS SALES (Revenue & Rep Performance)
+        // We iterate over ALL sales candidates (since 2023) and check if their "Sale Date" falls in range
+        sales.forEach(sale => {
+            // Waterfall Date Logic
+            const saleDateStr = sale.teslim_tarihi || sale.satis_tarihi || (sale.durum.includes('Teslim') ? sale.updated_at : null);
+            if (!saleDateStr) return;
 
-            if (saleDateStr) {
-                const saleDate = new Date(saleDateStr).getTime();
-                let revenue = parsePrice(lead.satis_fiyati || lead.talep_edilen_tutar || 0);
-                // Hard fix for empty revenue on delivered items logic can be added here
+            const saleDate = new Date(saleDateStr).getTime();
+            const startMonthTime = new Date(startOfMonth).getTime();
+            let revenue = parsePrice(sale.satis_fiyati || sale.talep_edilen_tutar || 0);
+            // Hard fix for empty revenue on delivered items logic can be added here
 
-                // Monthly Turnover (Fixed Scope)
-                if (saleDate >= startMonthTime) {
-                    monthly.turnover += revenue;
-                    monthly.salesCount++;
-                }
+            // Monthly Turnover (Fixed Scope: This Month)
+            if (saleDate >= startMonthTime) {
+                monthly.turnover += revenue;
+                monthly.salesCount++;
+            }
 
-                // Filtered Range (Daily View Scope)
-                const filterStart = new Date(filterStartIso).getTime();
-                const filterEnd = new Date(filterEndIso).getTime();
+            // Filtered Range (Daily View Scope)
+            const filterStart = new Date(filterStartIso).getTime();
+            const filterEnd = new Date(filterEndIso).getTime();
 
-                if (saleDate >= filterStart && saleDate <= filterEnd) {
-                    // Rep Stats
-                    const rep = (lead.sahip_email || 'Bilinmeyen').split('@')[0];
-                    if (!filtered.salesByRep[rep]) filtered.salesByRep[rep] = { revenue: 0, count: 0, name: rep };
-                    filtered.salesByRep[rep].revenue += revenue;
-                    filtered.salesByRep[rep].count++;
+            if (saleDate >= filterStart && saleDate <= filterEnd) {
+                // Rep Stats
+                const rep = (sale.sahip_email || 'Bilinmeyen').split('@')[0];
+                if (!filtered.salesByRep[rep]) filtered.salesByRep[rep] = { revenue: 0, count: 0, name: rep };
+                filtered.salesByRep[rep].revenue += revenue;
+                filtered.salesByRep[rep].count++;
 
-                    // Daily Trend
-                    const dayKey = new Date(saleDateStr).toISOString().split('T')[0];
-                    filtered.dailyTrend[dayKey] = (filtered.dailyTrend[dayKey] || 0) + revenue;
-                }
+                // Daily Trend
+                const dayKey = new Date(saleDateStr).toISOString().split('T')[0];
+                filtered.dailyTrend[dayKey] = (filtered.dailyTrend[dayKey] || 0) + revenue;
             }
         });
 
 
-        // 3. PROCESS LOGS (Staff Scorecards - Filtered Range)
+        // 4. PROCESS LOGS (Staff Scorecards - Filtered Range)
         logs.forEach(log => {
             const rep = (log.user_email || 'Sistem').split('@')[0];
 
@@ -227,7 +233,7 @@ export async function GET(req: Request) {
             filtered.logsByRep[rep].total++;
         });
 
-        // 4. INVENTORY STATS
+        // 5. INVENTORY STATS
         const stockStats = {
             total: 0,
             value: 0,
@@ -250,7 +256,7 @@ export async function GET(req: Request) {
             .map(([name, count]) => ({ name, count }));
 
 
-        // 5. FORMAT RESPONSE
+        // 6. FORMAT RESPONSE
         // Monthly Projections
         const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
         const daysElapsed = now.getDate();
