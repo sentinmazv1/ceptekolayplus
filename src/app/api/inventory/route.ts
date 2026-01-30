@@ -19,18 +19,34 @@ export async function PUT(req: NextRequest) {
             return NextResponse.json({ message: 'Missing item ID' }, { status: 400 });
         }
 
+        // Sanitize Payload (Convert empty strings to null for numeric fields)
+        const sanitizedUpdates: any = { ...updates };
+        const numericFields = [
+            'fiyat_3_taksit', 'fiyat_6_taksit', 'fiyat_12_taksit', 'fiyat_15_taksit',
+            'alis_fiyati', 'satis_fiyati', 'stok_adedi'
+        ];
+
+        numericFields.forEach(field => {
+            if (field in sanitizedUpdates) {
+                if (sanitizedUpdates[field] === '') {
+                    sanitizedUpdates[field] = null;
+                } else if (sanitizedUpdates[field] !== null && sanitizedUpdates[field] !== undefined) {
+                    sanitizedUpdates[field] = Number(sanitizedUpdates[field]);
+                }
+            }
+        });
+
         // Bulk Update Logic
         if (applyToAll && updates.marka && updates.model) {
             // Fields to sync across same models
             const bulkUpdates = {
-                fiyat_3_taksit: updates.fiyat_3_taksit,
-                fiyat_6_taksit: updates.fiyat_6_taksit,
-                fiyat_12_taksit: updates.fiyat_12_taksit,
-                fiyat_15_taksit: updates.fiyat_15_taksit,
-                alis_fiyati: updates.alis_fiyati
+                fiyat_3_taksit: sanitizedUpdates.fiyat_3_taksit,
+                fiyat_6_taksit: sanitizedUpdates.fiyat_6_taksit,
+                fiyat_12_taksit: sanitizedUpdates.fiyat_12_taksit,
+                fiyat_15_taksit: sanitizedUpdates.fiyat_15_taksit,
+                alis_fiyati: sanitizedUpdates.alis_fiyati
             };
 
-            const { getInventoryItems } = await import('@/lib/inventory-service');
             const { supabaseAdmin } = await import('@/lib/supabase');
 
             // Update ALL items with same Brand/Model that are IN STOCK
@@ -43,17 +59,20 @@ export async function PUT(req: NextRequest) {
 
             if (bulkError) throw bulkError;
 
-            // Also update the specific item being edited (in case it wasn't caught or to ensure ID specific fields)
-            const updatedItem = await updateInventoryItem(id, updates);
+            // Also update the specific item being edited
+            const updatedItem = await updateInventoryItem(id, sanitizedUpdates);
             return NextResponse.json({ item: updatedItem, message: "Bulk update successful" });
         }
 
         // Single Update
-        const updatedItem = await updateInventoryItem(id, updates);
+        const updatedItem = await updateInventoryItem(id, sanitizedUpdates);
         return NextResponse.json({ item: updatedItem });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Inventory Update Error:', error);
-        return NextResponse.json({ message: 'Failed to update item' }, { status: 500 });
+        return NextResponse.json({
+            message: 'Failed to update item',
+            details: error.message || error
+        }, { status: 500 });
     }
 }
 
