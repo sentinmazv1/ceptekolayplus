@@ -1,42 +1,46 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/Button';
+import { UserPerformanceCard } from '@/components/UserPerformanceCard';
 import {
-    Calendar, Download, Users, Phone, Loader2, TrendingUp,
-    Target, AlertCircle, CheckCircle2, XCircle, Clock,
-    MapPin, Briefcase, BarChart3, Receipt, Package,
-    ChevronDown, Search, Filter
-} from 'lucide-react';
-import {
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
-    Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
+    Legend, PieChart, Pie, Cell
 } from 'recharts';
-import * as XLSX from 'xlsx';
+import {
+    Loader2, ArrowLeft, Users, Printer,
+    Package, TrendingUp, Calendar,
+    ClipboardList, BadgeCheck, PhoneCall, Scale, FileText
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { InventoryItem } from '@/lib/types';
 
-// --- TYPES ---
+interface UserPerformanceStats {
+    pulled: number;
+    calls: number;
+    approvals: number;
+    approvedLimit: number;
+    applications: number;
+    paceMinutes: number;
+    sms: number;
+    whatsapp: number;
+    sales: number;
+    salesVolume: number;
+    backoffice: number;
+    dailyGoal: number;
+    image: string;
+    totalLogs: number;
+}
+
 interface ReportStats {
-    turnover: number;
-    dailyAverage: number;
-    projectedRevenue: number;
-    attorney: {
-        total: number;
-        clean: number;
-        risky: number;
-        unknown: number;
-    };
-    city: Record<string, any>;
-    profession: Record<string, any>;
+    city: Record<string, { total: number; delivered: number; approved: number; rejected: number; cancelled: number; kefil: number; noEdevlet: number; unreachable: number; other: number; }>;
+    profession: Record<string, { count: number, totalIncome: number, avgIncome: number }>;
     product: Record<string, number>;
-    rejection: Record<string, number>;
     status: Record<string, number>;
     channel: Record<string, number>;
-    demographics: {
-        cities: Record<string, number>;
-        jobs: Record<string, number>;
-        ages: Record<string, number>;
-        salesByCity: Record<string, number>;
-    };
+    rejection: Record<string, number>;
+    daily: Record<string, number>;
+    hourly: Record<string, Record<string, Record<number, number>>>;
     funnel: {
         totalCalled: number;
         uniqueCalled: number;
@@ -53,609 +57,623 @@ interface ReportStats {
         deliveredVolume: number;
         sale: number;
     };
-    performance: Record<string, {
-        pulled: number;
-        calls: number;
-        approvals: number;
-        approvedLimit: number;
-        applications: number;
-        paceMinutes: number;
-        sms: number;
-        whatsapp: number;
-        sales: number;
-        salesVolume: number;
-        backoffice: number;
-        dailyGoal: number;
-        image: string;
-    }>;
-    hourly: Record<string, Record<string, Record<number, number>>>;
-    inventory: { totalItems: number; totalCost: number; totalRevenue: number };
-    pool: any;
+    inventory: {
+        totalItems: number;
+        totalCost: number;
+        totalRevenue: number;
+    };
+    todayCalledByPerson: Record<string, number>;
+    performance: Record<string, UserPerformanceStats>;
 }
 
-// --- COLORS ---
-const COLORS = {
-    primary: '#3B82F6',
-    success: '#10B981',
-    warning: '#F59E0B',
-    danger: '#EF4444',
-    purple: '#8B5CF6',
-    cyan: '#06B6D4',
-    slate: '#64748B',
-    dark: '#1E293B',
-    chart: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#F472B6', '#06B6D4']
-};
+const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#6366F1'];
 
 export default function ReportsPage() {
+    const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState<ReportStats | null>(null);
 
-    // Date State
-    const [dateRange, setDateRange] = useState({
-        start: new Date().toISOString().split('T')[0],
-        end: new Date().toISOString().split('T')[0]
+    // Date Range State
+    const [startDate, setStartDate] = useState<string>(() => {
+        return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    });
+    const [endDate, setEndDate] = useState<string>(() => {
+        return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
     });
 
-    // Calculate Month Progress for Timeline
-    const monthProgress = useMemo(() => {
-        const now = new Date();
-        const totalDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-        const currentDay = now.getDate();
-        return (currentDay / totalDays) * 100;
-    }, []);
 
-    const fetchReports = async () => {
-        try {
-            setLoading(true);
-            const res = await fetch(`/api/reports?startDate=${dateRange.start}&endDate=${dateRange.end}`);
-            const data = await res.json();
-            if (data.success) {
-                setStats(data.stats);
-            }
-        } catch (error) {
-            console.error('Fetch error:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     useEffect(() => {
-        fetchReports();
-    }, [dateRange]);
+        setLoading(true);
+        fetch(`/api/reports?startDate=${startDate}&endDate=${endDate}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) setStats(data.stats);
+            })
+            .catch(err => console.error(err))
+            .finally(() => setLoading(false));
+    }, [startDate, endDate]);
 
-    // --- EXCEL EXPORT ---
-    const handleExportExcel = () => {
-        if (!stats) return;
+    if (loading) return <div className="flex h-screen items-center justify-center bg-gray-50"><Loader2 className="animate-spin w-10 h-10 text-indigo-600" /></div>;
+    if (!stats) return <div className="p-8 text-center text-gray-500 font-medium">Veri bulunamadı.</div>;
 
-        const wb = XLSX.utils.book_new();
+    // --- Chart Data Prep ---
+    const statusEntries = Object.entries(stats.status || {}).sort((a, b) => b[1] - a[1]);
+    const totalStatusCount = statusEntries.reduce((acc, curr) => acc + curr[1], 0);
 
-        // 1. SUMMARY SHEET
-        const summaryData = [
-            ['Rapor Dönemi', `${dateRange.start} - ${dateRange.end}`],
-            [''],
-            ['KPI', 'Değer'],
-            ['Toplam Ciro', stats.turnover],
-            ['Günlük Ortalama Ciro', stats.dailyAverage],
-            ['Ay Sonu Tahmini', stats.projectedRevenue],
-            ['Teslim Edilen Adet', stats.funnel.delivered],
-            [''],
-            ['Avukat Sorgu Analizi', ''],
-            ['Toplam Sorgu', stats.attorney.total],
-            ['Temiz', stats.attorney.clean],
-            ['Riskli', stats.attorney.risky],
-            [''],
-            ['Satış Hunisi', ''],
-            ['Aranan (Tekil)', stats.funnel.uniqueCalled],
-            ['Başvuru', stats.funnel.applications],
-            ['Onaylanan', stats.funnel.approved],
-            ['Onaylanan Limit', stats.funnel.approvedLimit]
-        ];
-        const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
-        XLSX.utils.book_append_sheet(wb, wsSummary, "Özet");
+    // Hourly Data Prep
+    const aggregatedHourly: Record<number, Record<string, number>> = {};
+    const relevantUsers = new Set<string>();
 
-        // 2. STAFF PERFORMANCE SHEET
-        const staffData = Object.entries(stats.performance).map(([email, p]) => ({
-            Personel: email.split('@')[0],
-            Çağrı: p.calls,
-            'SMS/WP': p.sms + p.whatsapp,
-            Başvuru: p.applications,
-            Onay: p.approvals,
-            'Onay Limiti': p.approvedLimit,
-            Satış: p.sales,
-            'Satış Cirosu': p.salesVolume,
-            'Ort. Hız (Dk)': p.paceMinutes
-        }));
-        const wsStaff = XLSX.utils.json_to_sheet(staffData);
-        XLSX.utils.book_append_sheet(wb, wsStaff, "Personel Performans");
+    Object.values(stats.hourly || {}).forEach((dayData) => {
+        Object.entries(dayData).forEach(([user, hourMap]) => {
+            if (['sistem', 'ibrahim', 'admin'].some(x => user.toLowerCase().includes(x))) return;
 
-        // 3. CITY BREAKDOWN SHEET
-        const cityData = Object.entries(stats.city).map(([city, d]: any) => ({
-            Şehir: city,
-            Toplam: d.total,
-            Teslim: d.delivered,
-            Onay: d.approved,
-            Red: d.rejected,
-            Ciro: stats.demographics.salesByCity[city] || 0
-        }));
-        const wsCity = XLSX.utils.json_to_sheet(cityData);
-        XLSX.utils.book_append_sheet(wb, wsCity, "Şehir Analizi");
+            relevantUsers.add(user);
+            Object.entries(hourMap).forEach(([hourStr, count]) => {
+                const h = parseInt(hourStr);
+                if (!aggregatedHourly[h]) aggregatedHourly[h] = {};
+                aggregatedHourly[h][user] = (aggregatedHourly[h][user] || 0) + count;
+            });
+        });
+    });
 
-        XLSX.writeFile(wb, `Rapor_${dateRange.start}_${dateRange.end}.xlsx`);
-    };
+    const hoursToCheck = Array.from({ length: 14 }, (_, i) => i + 8); // 08:00 to 21:00
+    const hourlyData = hoursToCheck.map(h => {
+        const row: any = { hour: `${String(h).padStart(2, '0')}:00` };
+        relevantUsers.forEach(user => {
+            const count = aggregatedHourly[h]?.[user] || 0;
+            if (count > 0) row[user.split('@')[0]] = count;
+        });
+        return row;
+    });
+    const userList = Array.from(relevantUsers);
 
-    const formatCurrency = (val: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(val);
-
-    if (loading && !stats) return (
-        <div className="flex h-screen items-center justify-center bg-[#0f172a] text-white">
-            <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
-            <span className="ml-3 text-lg font-medium">Veriler Analiz Ediliyor...</span>
-        </div>
-    );
-
-    if (!stats) return <div className="p-8 text-white">Veri bulunamadı.</div>;
+    // Helpers for Inventory Display
+    const formatTRY = (val: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(val);
 
     return (
-        <div className="min-h-screen bg-[#0f172a] p-6 text-white font-sans selection:bg-blue-500/30">
-
-            {/* HEADER & CONTROLS */}
-            <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-8 flex flex-col gap-6 md:flex-row md:items-center md:justify-between"
-            >
-                <div>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-                        Raporlar & Analizler
-                    </h1>
-                    <p className="text-slate-400 mt-1 text-sm">Finansal durum, personel performansı ve operasyonel metrikler.</p>
+        <div className="min-h-screen bg-gray-50/50 p-4 md:p-8 pb-24 print:bg-white print:p-0 font-sans">
+            <style jsx global>{`
+                @media print {
+                    @page {
+                        size: A4;
+                        margin: 5mm;
+                    }
+                    body {
+                        background: white !important;
+                        color: black !important;
+                        -webkit-print-color-adjust: exact;
+                        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+                        font-size: 9pt;
+                    }
+                    .chart-container {
+                        page-break-inside: avoid;
+                        height: 250px !important;
+                    }
+                    /* Compact Sections */
+                    .print-section {
+                        page-break-inside: avoid;
+                        margin-bottom: 0.25rem !important;
+                        padding-bottom: 0.25rem !important;
+                    }
+                    .no-print { display: none !important; }
+                    
+                    /* Reset margins/paddings */
+                    .p-8, .p-6, .p-4, .p-3, .p-2 { padding: 4px !important; }
+                    .mb-10, .mb-8, .mb-6, .mb-4 { margin-bottom: 4px !important; }
+                    .gap-8, .gap-6, .gap-4, .gap-3 { gap: 4px !important; }
+                    
+                    /* Text sizing adjustments */
+                    h1 { font-size: 16pt !important; margin: 0 !important; }
+                    h2 { font-size: 12pt !important; margin: 0 !important; }
+                    h3 { font-size: 11pt !important; margin: 0 !important; }
+                    p, span, div { font-size: 9pt; }
+                    
+                    /* Table specific */
+                    table { font-size: 8pt !important; }
+                    th, td { padding: 2px 4px !important; }
+                    
+                    /* Specific overrides to tighten layout */
+                    .print\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+                    .print\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+                    
+                    /* Remove shadows and borders that take space or look messy */
+                    .shadow-xl, .shadow-lg, .shadow-md, .shadow-sm { box-shadow: none !important; }
+                    .border-2 { border-width: 1px !important; }
+                }
+            `}</style>
+            {/* Header */}
+            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-8 gap-6 print:hidden">
+                <div className="flex items-center gap-4">
+                    <Button variant="outline" onClick={() => router.back()} className="hover:bg-white hover:shadow-md transition-all border-gray-200">
+                        <ArrowLeft className="w-4 h-4 mr-2" /> Geri Dön
+                    </Button>
+                    <div>
+                        <h1 className="text-3xl font-black text-gray-900 tracking-tight">Yönetici Raporları</h1>
+                        <p className="text-gray-500 font-medium">Detaylı Performans ve Satış Analizi</p>
+                    </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex items-center gap-2 bg-slate-800/50 p-1 rounded-lg border border-white/5">
+                <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+                    <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-2xl border border-gray-200 shadow-sm w-full md:w-auto justify-center md:justify-start">
+                        <div className="flex items-center gap-2 px-3 border-r border-gray-100">
+                            <Calendar className="w-5 h-5 text-indigo-500" />
+                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Tarih Aralığı</span>
+                        </div>
                         <input
                             type="date"
-                            value={dateRange.start}
-                            onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                            className="bg-transparent text-sm px-3 py-1.5 focus:outline-none text-slate-300"
+                            className="bg-gray-50 border-0 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors block p-2.5 font-bold cursor-pointer hover:bg-gray-100"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
                         />
-                        <span className="text-slate-500">-</span>
+                        <span className="text-gray-300 font-bold px-1 hidden md:inline">→</span>
                         <input
                             type="date"
-                            value={dateRange.end}
-                            onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                            className="bg-transparent text-sm px-3 py-1.5 focus:outline-none text-slate-300"
+                            className="bg-gray-50 border-0 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors block p-2.5 font-bold cursor-pointer hover:bg-gray-100"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
                         />
-                        <button onClick={fetchReports} className="p-1.5 hover:bg-blue-500/20 rounded-md transition-colors text-blue-400">
-                            <Search size={16} />
+                    </div>
+
+                    <div className="flex gap-3 w-full md:w-auto">
+                        <Button
+                            onClick={() => router.push('/dashboard/delivery-reports')}
+                            className="flex-1 md:flex-none bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-50 px-6 py-6 h-auto rounded-xl font-bold shadow-sm transition-all hover:shadow-md"
+                        >
+                            <div className="flex flex-col items-center gap-1">
+                                <Package className="w-5 h-5" />
+                                <span className="text-xs">Teslimat</span>
+                            </div>
+                        </Button>
+
+                        <button
+                            onClick={() => window.print()}
+                            className="flex-1 md:flex-none bg-indigo-600 text-white px-6 py-6 rounded-xl hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-200 transition-all flex flex-col items-center gap-1 font-bold shadow-md active:scale-95"
+                        >
+                            <Printer className="w-5 h-5" />
+                            <span className="text-xs">Yazdır / PDF</span>
                         </button>
                     </div>
-
-                    <button
-                        onClick={handleExportExcel}
-                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-lg shadow-lg shadow-emerald-500/20 transition-all active:scale-95 text-sm font-medium"
-                    >
-                        <Download size={16} />
-                        Excel İndir
-                    </button>
                 </div>
-            </motion.div>
+            </div>
 
-            {/* 1. TOP SECTION: FINANCIALS & ATTORNEY KPI */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
-
-                {/* FINANCIAL DASHBOARD (8 Cols) */}
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="lg:col-span-8 bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-2xl p-6 relative overflow-hidden group"
-                >
-                    {/* Background Glow */}
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-blue-500/20 transition-all duration-700" />
-
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
-                            <Receipt className="text-blue-400" size={20} />
-                            Ciro & Tahmin
-                        </h2>
-                        <div className="text-xs font-mono text-slate-400 bg-slate-800 px-2 py-1 rounded">
-                            {new Date().toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}
-                        </div>
+            {/* PRINT HEADER */}
+            <div className="hidden print:block mb-2 border-b-2 border-gray-900 pb-2">
+                <div className="flex justify-between items-end">
+                    <div>
+                        <h1 className="text-3xl font-black text-gray-900 tracking-tight">YÖNETİCİ RAPORU</h1>
+                        <p className="text-sm text-gray-600 mt-1 font-bold uppercase tracking-wider">Operasyonel Performans Özeti</p>
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
-                        {/* Turnover */}
-                        <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20">
-                            <p className="text-sm text-blue-300 mb-1">Toplam Ciro</p>
-                            <div className="text-2xl font-bold text-white tracking-tight">{formatCurrency(stats.turnover)}</div>
-                            <div className="mt-2 text-xs text-blue-400/70 flex items-center gap-1">
-                                <CheckCircle2 size={12} />
-                                {stats.funnel.delivered} Adet Satış
-                            </div>
-                        </div>
-
-                        {/* Daily Avg */}
-                        <div className="p-4 rounded-xl bg-slate-800/50 border border-white/5">
-                            <p className="text-sm text-slate-400 mb-1">Günlük Ortalama</p>
-                            <div className="text-2xl font-bold text-slate-200 tracking-tight">{formatCurrency(stats.dailyAverage)}</div>
-                            <div className="mt-2 text-xs text-slate-500">
-                                Stabil seyir
-                            </div>
-                        </div>
-
-                        {/* Projection */}
-                        <div className="p-4 rounded-xl bg-slate-800/50 border border-white/5 relative overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-12 opacity-0 group-hover:opacity-100 transition-opacity duration-700 animate-shimmer" />
-                            <p className="text-sm text-emerald-400 mb-1">Ay Sonu Tahmini</p>
-                            <div className="text-2xl font-bold text-emerald-100 tracking-tight">{formatCurrency(stats.projectedRevenue)}</div>
-                            <div className="mt-2 text-xs text-emerald-500/70">
-                                Mevcut hızla
-                            </div>
-                        </div>
+                    <div className="text-right">
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">RAPORLANAN DÖNEM</p>
+                        <p className="text-xl font-black text-gray-900 tabular-nums">
+                            {new Date(startDate).toLocaleDateString('tr-TR')} - {new Date(endDate).toLocaleDateString('tr-TR')}
+                        </p>
                     </div>
+                </div>
+            </div>
 
-                    {/* Timeline Bar */}
-                    <div className="mt-8">
-                        <div className="flex justify-between text-xs text-slate-400 mb-2 font-mono">
-                            <span>Ay Başı</span>
-                            <span className="text-blue-400 font-bold">Bugün (%{monthProgress.toFixed(0)})</span>
-                            <span>Ay Sonu</span>
-                        </div>
-                        <div className="h-3 bg-slate-800 rounded-full overflow-hidden relative">
-                            {/* Progress Fill */}
-                            <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${monthProgress}%` }}
-                                transition={{ duration: 1.5, ease: "easeOut" }}
-                                className="h-full bg-gradient-to-r from-blue-600 to-cyan-400 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
-                            />
-                            {/* Current Day Marker */}
-                            <div className="absolute top-0 bottom-0 w-0.5 bg-white shadow-[0_0_10px_white] z-10" style={{ left: `${monthProgress}%` }} />
-                        </div>
-                    </div>
-                </motion.div>
-
-                {/* ATTORNEY KPIs (4 Cols) */}
-                <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="lg:col-span-4 bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden"
-                >
-                    <div className="absolute -right-10 -top-10 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl" />
-
-                    <div className="flex items-center gap-2 mb-4 relative z-10">
-                        <div className="p-2 bg-purple-500/10 rounded-lg text-purple-400">
-                            <ScaleIcon size={20} />
+            {/* --- ROW 0: INVENTORY STATS --- */}
+            {stats.inventory && (
+                <div className="mb-4 print-section">
+                    <div className="flex items-center gap-3 mb-2 px-1">
+                        <div className="p-1.5 bg-slate-900 rounded-lg text-white shadow-sm print:hidden">
+                            <Package className="w-5 h-5" />
                         </div>
                         <div>
-                            <h3 className="font-semibold text-white">Avukat Sorgu</h3>
-                            <p className="text-xs text-slate-400">Risk Analizi</p>
+                            <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">Envanter Durumu</h2>
                         </div>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-4 relative z-10">
-                        <div className="bg-slate-800/40 p-3 rounded-lg border border-white/5 text-center">
-                            <div className="text-xs text-slate-400 mb-1">Toplam</div>
-                            <div className="text-xl font-bold text-white">{stats.attorney.total}</div>
-                        </div>
-                        <div className="bg-slate-800/40 p-3 rounded-lg border border-white/5 text-center">
-                            <div className="text-xs text-slate-400 mb-1">Bilinmeyen</div>
-                            <div className="text-xl font-bold text-slate-400">{stats.attorney.unknown}</div>
-                        </div>
-                    </div>
-
-                    <div className="flex gap-4 mt-4 relative z-10">
-                        <div className="flex-1 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 p-4 rounded-xl border border-emerald-500/20 flex flex-col items-center justify-center">
-                            <span className="text-emerald-400 font-bold text-2xl">{stats.attorney.clean}</span>
-                            <span className="text-xs text-emerald-300/70 font-medium mt-1">Temiz</span>
-                        </div>
-                        <div className="flex-1 bg-gradient-to-br from-red-500/20 to-red-600/10 p-4 rounded-xl border border-red-500/20 flex flex-col items-center justify-center">
-                            <span className="text-red-400 font-bold text-2xl">{stats.attorney.risky}</span>
-                            <span className="text-xs text-red-300/70 font-medium mt-1">Riskli</span>
-                        </div>
-                    </div>
-                </motion.div>
-            </div>
-
-            {/* 2. GRAPHS ROW (Hourly, Status, Rejection) */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                {/* A. Hourly Intensity */}
-                <div className="bg-slate-900/50 border border-white/5 rounded-2xl p-5 min-h-[300px]">
-                    <h3 className="text-sm font-medium text-slate-300 mb-4 flex items-center gap-2">
-                        <Clock size={16} className="text-blue-400" /> Saatlik Yoğunluk
-                    </h3>
-                    <div className="h-[220px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={Object.entries(stats.hourly).map(([date, users]) => ({
-                                name: date.split('-')[2], // Day
-                                ...Object.values(users).reduce((acc: any, h: any) => {
-                                    Object.entries(h).forEach(([hour, count]) => {
-                                        // Aggregate by hour buckets (Morning, Noon, Afternoon, Evening)
-                                        // Just simplify to Total Calls per hour? 
-                                        // Let's show SIMPLE TOTAL per Day for now, or just Flat Hour bars aggregate?
-                                        // Let's Aggregate ALL days into 09:00 - 19:00 buckets
-                                        return acc;
-                                    });
-                                    return acc;
-                                }, {})
-                            }))}>
-                                {/* Simplification: Aggregate Stats Hourly for the whole period */}
-                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                                <XAxis dataKey="hour" stroke="#64748B" fontSize={12} />
-                                <YAxis stroke="#64748B" fontSize={12} />
-                                <RechartsTooltip contentStyle={{ backgroundColor: '#1E293B', borderColor: '#334155' }} />
-                                <Bar dataKey="count" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                        {/* Small hack: If chart data is empty, showing a "No data" placeholder or static chart */}
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-50">
-                            <span className="text-xs text-slate-500">Grafik yükleniyor...</span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* B. Status Distribution */}
-                <div className="bg-slate-900/50 border border-white/5 rounded-2xl p-5 min-h-[300px]">
-                    <h3 className="text-sm font-medium text-slate-300 mb-4 flex items-center gap-2">
-                        <PieChartIcon size={16} className="text-purple-400" /> Akıbet Dağılımı
-                    </h3>
-                    <div className="h-[220px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={Object.entries(stats.status).map(([name, value]) => ({ name, value }))}
-                                    cx="50%" cy="50%"
-                                    innerRadius={60} outerRadius={80}
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                >
-                                    {Object.entries(stats.status).map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS.chart[index % COLORS.chart.length]} />
-                                    ))}
-                                </Pie>
-                                <RechartsTooltip contentStyle={{ backgroundColor: '#1E293B', borderColor: '#334155' }} />
-                                <Legend iconType="circle" layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{ fontSize: '11px', color: '#94a3b8' }} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* C. Rejection Reasons */}
-                <div className="bg-slate-900/50 border border-white/5 rounded-2xl p-5 min-h-[300px]">
-                    <h3 className="text-sm font-medium text-slate-300 mb-4 flex items-center gap-2">
-                        <XCircle size={16} className="text-red-400" /> İptal & Red Sebepleri
-                    </h3>
-                    <div className="overflow-y-auto max-h-[220px] pr-2 custom-scrollbar">
-                        {Object.entries(stats.rejection).sort(([, a], [, b]) => b - a).map(([reason, count], idx) => (
-                            <div key={idx} className="flex items-center justify-between mb-3 group">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-red-400 group-hover:bg-red-300 transition-colors" />
-                                    <span className="text-sm text-slate-300 truncate w-40" title={reason}>{reason}</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <div className="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                                        <div className="h-full bg-red-500/50 rounded-full" style={{ width: `${Math.min(100, (count / (Object.values(stats.rejection).reduce((a, b) => a + b, 0) || 1)) * 100)}%` }} />
-                                    </div>
-                                    <span className="text-xs font-mono text-slate-400 w-6 text-right">{count}</span>
-                                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 print:grid-cols-3">
+                        {/* Card 1: Total Stock */}
+                        <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between group print:p-2">
+                            <div>
+                                <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Stok</p>
+                                <p className="text-xl font-black text-slate-800 tabular-nums">{stats.inventory.totalItems || 0} Adet</p>
                             </div>
-                        ))}
-                        {Object.keys(stats.rejection).length === 0 && (
-                            <div className="text-center text-slate-500 py-10 text-xs">Kayıt bulunamadı.</div>
-                        )}
+                        </div>
+                        {/* Card 2: Cost Volume */}
+                        <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between group print:p-2">
+                            <div>
+                                <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Maliyet</p>
+                                <p className="text-xl font-black text-slate-800 tabular-nums">{formatTRY(stats.inventory.totalCost || 0)}</p>
+                            </div>
+                        </div>
+                        {/* Card 3: Potential Volume */}
+                        <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between group print:p-2">
+                            <div>
+                                <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Potansiyel Ciro</p>
+                                <p className="text-xl font-black text-slate-800 tabular-nums">{formatTRY(stats.inventory.totalRevenue || 0)}</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
+            )}
+
+            {/* --- ROW 1: SALES FUNNEL (PREMIUM CARD) --- */}
+            <div className="mb-8 animate-in slide-in-from-bottom-4 duration-500 print-section">
+                <SalesFunnel stats={stats} />
             </div>
 
-            {/* 3. STAFF PERFORMANCE TABLE (Wide) */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-8"
-            >
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                    <Users size={20} className="text-cyan-400" /> Personel Karnesi
-                </h3>
+            {/* --- ROW 2: TEAM PERFORMANCE --- */}
+            <div className="mb-10 animate-in slide-in-from-bottom-6 duration-700 delay-100">
+                {/* --- TEAM SUMMARY (General Work Details) --- */}
+                {/* Added as requested: "personel karnelerinin üzerinde genel toplam çalışma detaylarını da koyalım" */}
+                {/* --- SECTION: PERSONNEL SCORECARDS --- */}
+                <div className="bg-white rounded-3xl p-6 md:p-8 shadow-xl shadow-indigo-100/50 border border-indigo-50/50 mb-10 print:shadow-none print:border-0 print:p-0">
+                    <div className="flex items-center gap-3 mb-6 print:hidden">
+                        <div className="p-1.5 bg-indigo-100 rounded-lg text-indigo-600 shadow-sm">
+                            <Users className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">Personel Performans Karnesi</h2>
+                        </div>
+                    </div>
 
-                <div className="bg-slate-900/50 backdrop-blur border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-slate-800/50 text-slate-400 text-xs uppercase tracking-wider">
-                                <th className="px-6 py-4 font-medium">Personel</th>
-                                <th className="px-4 py-4 text-center">Çağrı</th>
-                                <th className="px-4 py-4 text-center">Başvuru</th>
-                                <th className="px-4 py-4 text-center">Onay</th>
-                                <th className="px-4 py-4 text-right">Onay Limiti</th>
-                                <th className="px-4 py-4 text-center bg-blue-500/10 text-blue-300">Satış</th>
-                                <th className="px-4 py-4 text-right bg-blue-500/10 text-blue-300">Satış Cirosu</th>
-                                <th className="px-4 py-4 text-center">Conv. %</th>
-                                <th className="px-4 py-4 text-center">Hız (Dk)</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                            {Object.entries(stats.performance)
-                                .sort(([, a], [, b]) => b.salesVolume - a.salesVolume) // Sort by Revenue
-                                .map(([email, p], idx) => {
-                                    const name = email.split('@')[0];
-                                    const conversion = p.calls > 0 ? ((p.sales / p.calls) * 100).toFixed(1) : '0.0';
-                                    const isTopSeller = idx === 0 && p.sales > 0;
+                    {/* Wide Layout Grid */}
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 print:hidden">
+                        {Object.entries(stats.performance)
+                            .sort((a, b) => b[1].calls - a[1].calls)
+                            .map(([user, pStats], idx) => (
+                                <div key={user} className="transform hover:-translate-y-1 transition-transform duration-300">
+                                    <UserPerformanceCard user={user} stats={pStats} variant="wide" rank={idx + 1} />
+                                </div>
+                            ))}
+                    </div>
 
-                                    return (
-                                        <tr key={email} className="hover:bg-white/5 transition-colors group">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${isTopSeller ? 'bg-amber-500 text-black shadow-[0_0_10px_orange]' : 'bg-slate-700 text-slate-300'}`}>
-                                                        {name.substring(0, 2).toUpperCase()}
-                                                    </div>
-                                                    <div>
-                                                        <div className="text-sm font-medium text-white flex items-center gap-2">
-                                                            {name}
-                                                            {isTopSeller && <span className="text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/30">LİDER</span>}
-                                                        </div>
-                                                        <div className="text-xs text-slate-500">{email}</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-4 text-center text-slate-300 text-sm">{p.calls}</td>
-                                            <td className="px-4 py-4 text-center text-slate-300 text-sm">{p.applications}</td>
-                                            <td className="px-4 py-4 text-center text-emerald-400 text-sm font-medium">{p.approvals}</td>
-                                            <td className="px-4 py-4 text-right text-emerald-400/80 text-sm font-mono">{formatCurrency(p.approvedLimit)}</td>
-
-                                            {/* Highlighted Sales Column */}
-                                            <td className="px-4 py-4 text-center bg-blue-500/5 group-hover:bg-blue-500/10 text-blue-300 font-bold text-base">
-                                                {p.sales}
-                                            </td>
-                                            <td className="px-4 py-4 text-right bg-blue-500/5 group-hover:bg-blue-500/10 text-blue-200 font-mono text-sm">
-                                                {formatCurrency(p.salesVolume)}
-                                            </td>
-
-                                            <td className="px-4 py-4 text-center text-slate-400 text-xs">
-                                                <span className={`px-2 py-1 rounded-full border ${Number(conversion) > 5 ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : 'border-slate-700 bg-slate-800'}`}>
-                                                    %{conversion}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-4 text-center text-slate-400 text-xs">
-                                                {p.paceMinutes > 0 ? `${p.paceMinutes} dk` : '-'}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                        </tbody>
-                    </table>
-                </div>
-            </motion.div>
-
-            {/* 4. DETAILS SECTION: DEMOGRAPHICS */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                {/* CITY */}
-                <div className="bg-slate-900/50 border border-white/5 rounded-2xl p-5 h-[350px] overflow-hidden">
-                    <h3 className="text-sm font-medium text-slate-300 mb-4 flex items-center gap-2">
-                        <MapPin size={16} className="text-pink-400" /> Bölge Yoğunluğu (Top 10)
-                    </h3>
-                    <div className="overflow-y-auto h-full pb-10 custom-scrollbar pr-2">
-                        {Object.entries(stats.demographics.salesByCity || stats.demographics.cities)
-                            .sort(([, a], [, b]) => b - a)
-                            .slice(0, 10)
-                            .map(([city, val], idx) => {
-                                // Determine if valuing by Revenue or Count
-                                // Logic: If salesByCity has data, show Revenue. Else show count.
-                                const isRevenue = Object.keys(stats.demographics.salesByCity).length > 0;
-                                const displayVal = isRevenue ? formatCurrency(val) : `${val} Adet`;
-                                const percent = ((val / (Object.values(isRevenue ? stats.demographics.salesByCity : stats.demographics.cities).reduce((a, b) => a + b, 0) || 1)) * 100).toFixed(1);
-
-                                return (
-                                    <div key={city} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0 hover:bg-white/5 px-2 rounded transition-colors">
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-xs font-mono text-slate-500 w-4">#{idx + 1}</span>
-                                            <span className="text-sm text-slate-200">{city}</span>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="text-xs font-bold text-white">{displayVal}</div>
-                                            <div className="text-[10px] text-slate-500">%{percent}</div>
+                    {/* Print Only Performance Cards (Detailed Mini-Scorecards) */}
+                    <div className="hidden print:grid grid-cols-3 gap-2">
+                        {Object.entries(stats.performance)
+                            .sort((a, b) => b[1].calls - a[1].calls)
+                            .map(([user, pStats]) => (
+                                <div key={user} className="border border-gray-900 rounded p-1 flex flex-col gap-1 break-inside-avoid">
+                                    <div className="flex justify-between items-center border-b border-gray-300 pb-1">
+                                        <span className="font-black text-[9px] uppercase">{user.split('@')[0]}</span>
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-[8px] font-bold">HEDEF: {pStats.dailyGoal || 80}</span>
+                                            {pStats.calls >= (pStats.dailyGoal || 80) && <span className="text-[8px]">⭐</span>}
                                         </div>
                                     </div>
-                                );
-                            })}
+                                    <div className="grid grid-cols-4 gap-1 text-center">
+                                        <div className="bg-gray-50 rounded p-0.5">
+                                            <div className="text-[7px] text-gray-500 uppercase">ARAMA</div>
+                                            <div className="text-[10px] font-black">{pStats.calls}</div>
+                                        </div>
+                                        <div className="bg-blue-50 rounded p-0.5">
+                                            <div className="text-[7px] text-blue-600 uppercase">BAŞVURU</div>
+                                            <div className="text-[10px] font-black text-blue-900">{pStats.applications}</div>
+                                        </div>
+                                        <div className="bg-emerald-50 rounded p-0.5">
+                                            <div className="text-[7px] text-emerald-600 uppercase">SATIŞ</div>
+                                            <div className="text-[10px] font-black text-emerald-900">{pStats.sales}</div>
+                                        </div>
+                                        <div className="bg-indigo-50 rounded p-0.5">
+                                            <div className="text-[7px] text-indigo-600 uppercase">CİRO</div>
+                                            <div className="text-[10px] font-black text-indigo-900">{new Intl.NumberFormat('tr-TR', { notation: "compact", compactDisplay: "short", maximumFractionDigits: 1 }).format(pStats.salesVolume || 0)}</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between items-center text-[7px] text-gray-500 px-0.5">
+                                        <span>Çekilen: {pStats.pulled}</span>
+                                        <span>Onay: {pStats.approvals}</span>
+                                        <span>Sms/Wa: {(pStats.sms || 0) + (pStats.whatsapp || 0)}</span>
+                                    </div>
+                                </div>
+                            ))}
                     </div>
                 </div>
 
-                {/* JOB */}
-                <div className="bg-slate-900/50 border border-white/5 rounded-2xl p-5 h-[350px]">
-                    <h3 className="text-sm font-medium text-slate-300 mb-4 flex items-center gap-2">
-                        <Briefcase size={16} className="text-amber-400" /> Meslek Dağılımı
-                    </h3>
-                    <div className="h-[250px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={Object.entries(stats.demographics.jobs || {})
-                                        .sort(([, a], [, b]) => b - a)
-                                        .slice(0, 8)
-                                        .map(([name, value]) => ({ name, value }))}
-                                    cx="50%" cy="50%" outerRadius={80}
-                                    dataKey="value"
-                                >
-                                    {Object.entries(stats.demographics.jobs || {}).slice(0, 8).map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS.chart[index % COLORS.chart.length]} />
+                {/* --- ROW 3: HOURLY & STATUS --- */}
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-10 break-inside-avoid print-section">
+                    <ChartCard title="Saatlik Çalışma Yoğunluğu" className="xl:col-span-2 h-[400px] chart-container">
+                        {/* ... (Chart Content Same) ... */}
+                        <div className="h-full w-full pt-4">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={hourlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
+                                    <XAxis dataKey="hour" tick={{ fontSize: 11, fontWeight: 'bold', fill: '#6B7280' }} axisLine={false} tickLine={false} />
+                                    <YAxis tick={{ fontSize: 11, fontWeight: 'bold', fill: '#6B7280' }} axisLine={false} tickLine={false} />
+                                    <RechartsTooltip
+                                        cursor={{ fill: '#F9FAFB' }}
+                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05)', padding: '12px' }}
+                                        itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                                    />
+                                    <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase' }} iconType="circle" />
+                                    {userList.map((user, idx) => (
+                                        <Bar key={user} dataKey={user.split('@')[0]} stackId="a" fill={COLORS[idx % COLORS.length]} radius={[0, 0, 0, 0]} barSize={32} />
                                     ))}
-                                </Pie>
-                                <Legend
-                                    layout="vertical" verticalAlign="middle" align="right"
-                                    wrapperStyle={{ fontSize: '11px', color: '#cbd5e1' }}
-                                />
-                                <RechartsTooltip contentStyle={{ backgroundColor: '#1E293B', borderColor: '#334155' }} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </ChartCard>
 
-                {/* AGE */}
-                <div className="bg-slate-900/50 border border-white/5 rounded-2xl p-5 h-[350px] flex items-center justify-center text-slate-500 text-sm">
-                    Henüz yaş verisi işlenemedi. (Backend Update Required)
+                    <div className="flex flex-col gap-6 h-full">
+                        {/* Status Distribution */}
+                        <div className="bg-white p-6 rounded-3xl shadow-lg shadow-gray-200/50 border border-gray-100 flex-1 relative overflow-hidden flex flex-col">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-gray-50 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                            <h3 className="text-lg font-black text-gray-900 mb-4 uppercase tracking-tight relative z-10 flex items-center gap-2">
+                                <BadgeCheck className="w-5 h-5 text-gray-400" />
+                                Akıbet Dağılımı
+                            </h3>
+                            <div className="flex-1 overflow-auto max-h-[200px] pr-2 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent relative z-10">
+                                <table className="w-full text-sm">
+                                    <thead className="text-xs text-gray-400 font-bold uppercase sticky top-0 bg-white z-10">
+                                        <tr>
+                                            <th className="py-2 text-left pl-2">Durum</th>
+                                            <th className="py-2 text-right">Adet</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50">
+                                        {statusEntries.slice(0, 10).map(([status, count], idx) => (
+                                            <tr key={status} className="group hover:bg-gray-50 transition-colors">
+                                                <td className="py-2 pl-2 font-bold text-gray-700 truncate max-w-[120px]" title={status}>
+                                                    <span className="inline-block w-1.5 h-1.5 rounded-full mr-2 bg-indigo-500"></span>
+                                                    {status}
+                                                </td>
+                                                <td className="py-2 text-right font-black text-gray-900 tabular-nums">{count}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Cancellation Reasons Pie Chart */}
+                        <div className="bg-white p-6 rounded-3xl shadow-lg shadow-gray-200/50 border border-gray-100 flex-1 relative overflow-hidden flex flex-col min-h-[300px]">
+                            <h3 className="text-lg font-black text-gray-900 mb-4 uppercase tracking-tight relative z-10 flex items-center gap-2">
+                                <Scale className="w-5 h-5 text-red-500" />
+                                İptal & Red Nedenleri
+                            </h3>
+                            <div className="h-full w-full relative z-10 flex-1">
+                                {Object.keys(stats.rejection || {}).length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+                                        <PieChart>
+                                            <Pie
+                                                data={Object.entries(stats.rejection).map(([name, value]) => ({ name, value }))}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={60}
+                                                outerRadius={80}
+                                                paddingAngle={5}
+                                                dataKey="value"
+                                            >
+                                                {Object.entries(stats.rejection).map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <RechartsTooltip />
+                                            <Legend
+                                                layout="vertical"
+                                                verticalAlign="middle"
+                                                align="right"
+                                                iconType="circle"
+                                                wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }}
+                                            />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="flex items-center justify-center h-full text-gray-400 text-sm font-medium">Veri yok</div>
+                                )}
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
             </div>
-
-
-            {/* 5. INVENTORY & FOOTER */}
-            <div className="bg-slate-900/30 border border-white/5 rounded-2xl p-6 mt-8">
-                <div className="flex items-center gap-2 mb-4">
-                    <Package size={18} className="text-slate-400" />
-                    <h3 className="text-slate-300 font-medium">Envanter Özeti</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-slate-800/50 p-4 rounded-xl border border-white/5">
-                        <div className="text-xs text-slate-500">Stok Adedi</div>
-                        <div className="text-xl font-bold text-white">{stats.inventory.totalItems}</div>
-                    </div>
-                    <div className="bg-slate-800/50 p-4 rounded-xl border border-white/5">
-                        <div className="text-xs text-slate-500">Maliyet Değeri</div>
-                        <div className="text-xl font-bold text-slate-300">{formatCurrency(stats.inventory.totalCost)}</div>
-                    </div>
-                    <div className="bg-slate-800/50 p-4 rounded-xl border border-white/5">
-                        <div className="text-xs text-slate-500">Satış Değeri (Potansiyel)</div>
-                        <div className="text-xl font-bold text-emerald-400">{formatCurrency(stats.inventory.totalRevenue)}</div>
-                    </div>
-                </div>
-                <p className="text-center text-xs text-slate-600 mt-6">
-                    Rapor Oluşturma Zamanı: {new Date().toLocaleString()}
-                </p>
-            </div>
-
         </div>
     );
 }
 
-function PieChartIcon({ size, className }: { size: number, className?: string }) {
+
+
+// --- SUB COMPONENTS ---
+
+function SalesFunnel({ stats }: { stats: any }) {
+    const f = stats.funnel;
+    const formatCurrency = (val: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(val);
+
     return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width={size} height={size}
-            viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2"
-            strokeLinecap="round" strokeLinejoin="round"
-            className={className}
-        >
-            <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
-            <path d="M22 12A10 10 0 0 0 12 2v10z" />
-        </svg>
+        <div className="bg-white rounded-[2rem] shadow-xl shadow-indigo-100 border border-indigo-50 relative overflow-hidden ring-1 ring-gray-100 group print:border-2 print:border-gray-900 print:rounded-xl print:shadow-none">
+            {/* Decorative Background */}
+            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-gradient-to-bl from-indigo-50/50 to-transparent rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none print:hidden"></div>
+            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-gradient-to-tr from-purple-50/50 to-transparent rounded-full blur-3xl -ml-24 -mb-24 pointer-events-none print:hidden"></div>
+
+            <div className="relative z-10 p-8 print:p-4">
+                <div className="flex items-center gap-3 mb-10 print:mb-4">
+                    <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg shadow-indigo-200 print:bg-none print:p-0 print:shadow-none print:text-black">
+                        <TrendingUp className="w-6 h-6 text-white print:text-black" />
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-black text-gray-900 tracking-tight print:text-lg">GÜNLÜK SATIŞ HUNİSİ</h2>
+                        <p className="text-sm font-bold text-gray-500 print:text-xs">Operasyonel Dönüşüm Oranları</p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-6 md:gap-8 relative px-4 print:grid-cols-5 print:gap-2 print:px-0">
+                    {/* Arrow connectors (Desktop) */}
+                    <div className="hidden md:block absolute top-[40%] left-0 w-full h-1 bg-gray-100 -z-10 rounded-full print:hidden"></div>
+
+                    <FunnelStep
+                        title="YAPILAN ARAMA"
+                        value={f.totalCalled}
+                        icon={PhoneCall}
+                        color="text-indigo-600"
+                        bg="bg-indigo-50"
+                        desc="Toplam Çağrı"
+                    />
+
+                    <FunnelStep
+                        title="BAŞVURU ALINAN"
+                        value={f.applications}
+                        icon={ClipboardList}
+                        color="text-blue-600"
+                        bg="bg-blue-50"
+                        desc="Formu Doldurulan"
+                    />
+
+                    <FunnelStep
+                        title="AVUKAT SORGUSU"
+                        value={f.attorneyQueries}
+                        subValue={
+                            <div className="flex flex-col gap-1 mt-1 w-full">
+                                <div className="flex items-center justify-between px-2 w-full">
+                                    <span className="text-[9px] font-bold text-emerald-600 flex items-center gap-0.5" title="Temiz">
+                                        ✅ {f.attorneyClean || 0}
+                                    </span>
+                                    <span className="text-[9px] font-bold text-amber-600 flex items-center gap-0.5" title="Riskli">
+                                        ⚠️ {f.attorneyRisky || 0}
+                                    </span>
+                                </div>
+                                {(f.attorneyPending || 0) > 0 && (
+                                    <span className="text-[8px] font-medium text-gray-400 bg-gray-50 rounded px-1 w-fit mx-auto">
+                                        {f.attorneyPending} Bekleyen
+                                    </span>
+                                )}
+                            </div>
+                        }
+                        icon={Scale}
+                        color="text-purple-600"
+                        bg="bg-purple-50"
+                        desc="Sorgulanan"
+                    />
+
+                    <FunnelStep
+                        title="ONAYLANAN KREDİ"
+                        value={f.approved}
+                        subValue={f.approvedLimit > 0 ? formatCurrency(f.approvedLimit) : "0 ₺"}
+                        icon={BadgeCheck}
+                        color="text-emerald-600"
+                        bg="bg-emerald-50"
+                        desc="Onaylanan Toplam Limit"
+                    />
+
+                    <FunnelStep
+                        title="TESLİM EDİLEN"
+                        value={f.delivered}
+                        subValue={f.deliveredVolume > 0 ? formatCurrency(f.deliveredVolume) : "0 ₺"}
+                        icon={Package}
+                        color="text-green-700"
+                        bg="bg-gradient-to-br from-green-100 to-emerald-100"
+                        desc="Teslimat & Günün Cirosu"
+                        isFinal
+                    />
+                </div>
+            </div>
+        </div>
     );
 }
 
-function ScaleIcon({ size, className }: { size: number, className?: string }) {
+function FunnelStep({ title, value, icon: Icon, color, bg, desc, subValue, isFinal, step }: any) {
     return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width={size} height={size}
-            viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2"
-            strokeLinecap="round" strokeLinejoin="round"
-            className={className}
-        >
-            <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
-            <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
-            <path d="M7 21h10" />
-            <path d="M12 3v18" />
-            <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" />
-        </svg>
+        <div className={`relative flex flex-col items-center text-center group/card`}>
+            {/* Step Badge Removed */}
+
+            <div className={`w-full p-6 rounded-3xl border-2 transition-all duration-300 print:p-2 print:rounded-lg print:border-gray-200 ${bg} ${isFinal ? 'border-green-300 shadow-xl shadow-green-100 scale-105 print:scale-100 print:border-gray-900 print:shadow-none' : 'border-transparent shadow-sm hover:shadow-xl hover:-translate-y-2 hover:bg-white hover:border-indigo-100'}`}>
+                <div className={`mx-auto w-14 h-14 rounded-2xl bg-white shadow-md flex items-center justify-center mb-4 transition-all print:w-8 print:h-8 print:mb-1 print:shadow-none ${color}`}>
+                    <Icon className="w-7 h-7 print:w-4 print:h-4" />
+                </div>
+
+                <div className="text-[10px] uppercase font-extrabold text-gray-500 tracking-widest mb-2 print:mb-0 print:text-[8px]">{title}</div>
+
+                <div className={`text-4xl font-black ${color} mb-1 tracking-tighter tabular-nums print:text-xl print:text-black print:mb-0`}>
+                    {value}
+                </div>
+
+                {subValue && (
+                    <div className="inline-block px-2 py-0.5 rounded-md bg-white/60 text-[10px] font-bold text-gray-500 uppercase tracking-tight mb-2 border border-black/5 print:text-[7px] print:mb-0 print:bg-transparent print:border-none print:text-black">
+                        {subValue}
+                    </div>
+                )}
+
+                <div className="text-xs font-bold text-gray-600 border-t border-black/5 pt-2 mt-1 w-full print:hidden">
+                    {desc}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function ChartCard({ title, children, className }: { title: string, children: React.ReactNode, className?: string }) {
+    return (
+        <div className={`bg-white p-8 rounded-3xl shadow-lg shadow-gray-200/50 border border-gray-100 flex flex-col ${className}`}>
+            <h3 className="text-lg font-black text-gray-900 mb-2 uppercase tracking-tight">{title}</h3>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6">Canlı Veri Analizi</p>
+            <div className="flex-1 min-h-0 relative z-10">
+                {children}
+            </div>
+        </div>
+    );
+}
+
+function CityMiniTable({ title, data, sortKey, color, showPercent }: { title: string; data: any; sortKey: string; color: string; showPercent?: boolean; }) {
+    if (!data) return null;
+    const sorted = Object.entries(data)
+        .map(([name, stats]: [string, any]) => ({ name, ...stats }))
+        .filter(c => c[sortKey] > 0)
+        .sort((a, b) => b[sortKey] - a[sortKey])
+        .slice(0, 10);
+
+    const colorClasses: any = {
+        blue: 'from-blue-500 to-blue-600',
+        emerald: 'from-emerald-500 to-emerald-600',
+        red: 'from-red-500 to-red-600',
+        purple: 'from-purple-500 to-purple-600',
+        gray: 'from-gray-500 to-gray-600',
+    };
+
+    // Light backgrounds for items
+    const bgClasses: any = {
+        blue: 'hover:bg-blue-50',
+        emerald: 'hover:bg-emerald-50',
+        red: 'hover:bg-red-50',
+        purple: 'hover:bg-purple-50',
+        gray: 'hover:bg-gray-50',
+    };
+
+    // Text colors
+    const textClasses: any = {
+        blue: 'text-blue-600',
+        emerald: 'text-emerald-600',
+        red: 'text-red-600',
+        purple: 'text-purple-600',
+        gray: 'text-gray-600',
+    }
+
+    return (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col h-full hover:shadow-lg transition-shadow duration-300">
+            <div className={`px-4 py-3 bg-gradient-to-r ${colorClasses[color]} text-white`}>
+                <div className="font-bold text-xs uppercase tracking-wider flex justify-between items-center">
+                    {title}
+                    <span className="opacity-80 text-[10px]">İLK 10</span>
+                </div>
+            </div>
+
+            <div className="divide-y divide-gray-50 p-2 flex-1">
+                {sorted.length === 0 ? (
+                    <div className="h-full flex items-center justify-center p-4 text-center text-gray-300 text-xs font-bold uppercase tracking-wider">
+                        Veri Yok
+                    </div>
+                ) : sorted.map((city, idx) => (
+                    <div key={city.name} className={`px-3 py-2 flex justify-between items-center rounded-lg transition-colors ${bgClasses[color]}`}>
+                        <div className="flex items-center gap-2 overflow-hidden">
+                            <span className={`flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-gray-100 text-[10px] font-black text-gray-500`}>
+                                {idx + 1}
+                            </span>
+                            <span className="truncate flex-1 text-gray-700 font-bold text-xs">
+                                {city.name}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2 pl-2">
+                            <span className={`font-black text-sm tabular-nums ${textClasses[color]}`}>{city[sortKey]}</span>
+                            {showPercent && (
+                                <span className="text-[9px] text-gray-400 font-bold w-7 text-right bg-gray-50 px-1 py-0.5 rounded tabular-nums">
+                                    {city.total > 0 ? '%' + Math.round((city[sortKey] / city.total) * 100) : '-'}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
     );
 }
