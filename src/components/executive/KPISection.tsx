@@ -1,30 +1,40 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, DollarSign, Users, Activity, BarChart3, CreditCard } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Activity, BarChart3, CreditCard } from 'lucide-react';
 
 interface KPIProps {
     data: {
-        turnover: number;
-        salesCount: number;
-        leadCount: number;
-        conversion: number;
-        avgDealSize: number;
-        dailyAverage: number;
-        projectedRevenue: number;
-    };
+        turnover?: number;
+        salesCount?: number;
+        leadCount?: number;
+        conversion?: number;
+        avgDealSize?: number;
+        dailyAverage?: number;
+        projectedRevenue?: number;
+    } | undefined; // Allow undefined
     loading: boolean;
 }
 
 export function KPISection({ data, loading }: KPIProps) {
     const formatCurrency = (val: number) => {
-        return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(val);
+        return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(val || 0);
+    };
+
+    // Safe access with defaults
+    const safeData = {
+        turnover: data?.turnover || 0,
+        salesCount: data?.salesCount || 0,
+        conversion: data?.conversion || 0,
+        avgDealSize: data?.avgDealSize || 0,
+        dailyAverage: data?.dailyAverage || 0,
+        projectedRevenue: data?.projectedRevenue || 0
     };
 
     const items = [
         {
             label: 'Toplam Ciro',
-            value: formatCurrency(data.turnover),
+            value: formatCurrency(safeData.turnover),
             sub: 'Onaylı Satışlar',
             icon: DollarSign,
             color: 'text-emerald-400',
@@ -33,7 +43,7 @@ export function KPISection({ data, loading }: KPIProps) {
         },
         {
             label: 'Net Satış',
-            value: data.salesCount,
+            value: safeData.salesCount,
             sub: 'Adet',
             icon: CreditCard,
             color: 'text-indigo-400',
@@ -42,7 +52,7 @@ export function KPISection({ data, loading }: KPIProps) {
         },
         {
             label: 'Dönüşüm',
-            value: `%${data.conversion.toFixed(1)}`,
+            value: `%${safeData.conversion.toFixed(1)}`,
             sub: 'Satış / Toplam Veri',
             icon: Activity,
             color: 'text-blue-400',
@@ -51,7 +61,7 @@ export function KPISection({ data, loading }: KPIProps) {
         },
         {
             label: 'Ort. Sepet',
-            value: formatCurrency(data.avgDealSize),
+            value: formatCurrency(safeData.avgDealSize),
             sub: 'Satış Başına',
             icon: BarChart3,
             color: 'text-purple-400',
@@ -60,7 +70,7 @@ export function KPISection({ data, loading }: KPIProps) {
         },
         {
             label: 'Günlük Ort.',
-            value: formatCurrency(data.dailyAverage),
+            value: formatCurrency(safeData.dailyAverage),
             sub: 'Ciro Ortalaması',
             icon: TrendingUp,
             color: 'text-amber-400',
@@ -69,7 +79,7 @@ export function KPISection({ data, loading }: KPIProps) {
         },
         {
             label: 'Ay Sonu Tahmini',
-            value: formatCurrency(data.projectedRevenue),
+            value: formatCurrency(safeData.projectedRevenue),
             sub: 'Hedeflenen Kapanış',
             icon: TrendingDown,
             color: 'text-rose-400',
@@ -102,7 +112,6 @@ export function KPISection({ data, loading }: KPIProps) {
                         <div className={`p-2 rounded-xl bg-white/5 ${item.color}`}>
                             <item.icon className="w-6 h-6" />
                         </div>
-                        {/* Sparkline placeholder or trend could go here */}
                     </div>
                     <div>
                         <h3 className="text-2xl md:text-3xl font-black text-white tracking-tight">{item.value}</h3>
