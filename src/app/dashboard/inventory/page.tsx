@@ -511,6 +511,8 @@ export default function InventoryPage() {
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Marka</label>
                                         <select
+                                            name="marka"
+                                            id="marka"
                                             className="w-full border rounded-lg p-2"
                                             value={formData.marka}
                                             onChange={(e) => setFormData({ ...formData, marka: e.target.value })}
@@ -539,6 +541,9 @@ export default function InventoryPage() {
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
                                         <input
+                                            name="model"
+                                            id="model"
+                                            autoComplete="off"
                                             className="w-full border rounded-lg p-2"
                                             placeholder={formData.kategori === 'Aksesuar' ? "Örn: Galaxy Buds 2 Pro" : "Örn: iPhone 15 Pro 128GB"}
                                             value={formData.model}
@@ -554,6 +559,8 @@ export default function InventoryPage() {
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">Stok Adedi</label>
                                                 <input
                                                     type="number"
+                                                    name="stok_adedi"
+                                                    id="stok_adedi"
                                                     className="w-full border rounded-lg p-2"
                                                     placeholder="1"
                                                     value={formData.stok_adedi}
@@ -570,6 +577,9 @@ export default function InventoryPage() {
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">IMEI (15 Hane)</label>
                                                 <input
+                                                    name="imei"
+                                                    id="imei"
+                                                    autoComplete="off"
                                                     className="w-full border rounded-lg p-2"
                                                     placeholder="123456789012345"
                                                     value={formData.imei}
@@ -581,6 +591,9 @@ export default function InventoryPage() {
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">Seri No</label>
                                                 <input
+                                                    name="seri_no"
+                                                    id="seri_no"
+                                                    autoComplete="off"
                                                     className="w-full border rounded-lg p-2"
                                                     placeholder="Seri Numarası"
                                                     value={formData.seri_no}
