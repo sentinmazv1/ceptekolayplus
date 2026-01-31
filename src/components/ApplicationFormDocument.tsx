@@ -19,8 +19,7 @@ export function ApplicationFormDocument({ customer }: { customer: Customer }) {
             {/* LOGO Header */}
             <div className="flex justify-between items-center border-b-2 border-black pb-4 mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold uppercase tracking-widest">Başvuru Formu</h1>
-                    <p className="text-sm mt-1">Cihaz Kiralama & Satış Ön Başvurusu</p>
+                    <h1 className="text-3xl font-bold uppercase tracking-widest">CEPTE KOLAY<br />ÖN BAŞVURU FORMU</h1>
                 </div>
                 <div className="text-right text-xs">
                     <div className="font-bold text-lg">CEPTE KOLAY</div>
@@ -53,20 +52,20 @@ export function ApplicationFormDocument({ customer }: { customer: Customer }) {
                         <span className="font-bold w-32 shrink-0">Ev Adresi:</span>
                         <span className="uppercase flex-1">{customer.ev_adresi || '................................................................................................................................'}</span>
                     </div>
+                    <div className="col-span-2 flex border-b border-dotted border-gray-400 pb-1">
+                        <span className="font-bold w-32 shrink-0">Mülkiyet Durumu:</span>
+                        <span className="uppercase flex-1">{customer.mulkiyet_durumu || '..........................................'}</span>
+                    </div>
                 </div>
             </section>
 
             {/* 2. Job Information */}
             <section className="mb-6">
-                <h3 className="bg-gray-200 px-3 py-1 font-bold border border-black mb-3">2. ÇALIŞMA & GELİR BİLGİLERİ</h3>
+                <h3 className="bg-gray-200 px-3 py-1 font-bold border border-black mb-3">2. ÇALIŞMA BİLGİLERİ</h3>
                 <div className="grid grid-cols-2 gap-x-8 gap-y-3 px-2">
-                    <div className="flex border-b border-dotted border-gray-400 pb-1">
+                    <div className="col-span-2 flex border-b border-dotted border-gray-400 pb-1">
                         <span className="font-bold w-32 shrink-0">Meslek:</span>
-                        <span className="uppercase">{customer.meslek || customer.meslek_is || '................................'}</span>
-                    </div>
-                    <div className="flex border-b border-dotted border-gray-400 pb-1">
-                        <span className="font-bold w-32 shrink-0">Aylık Gelir:</span>
-                        <span>{customer.maas_ortalama ? `${customer.maas_ortalama} TL` : '................................'}</span>
+                        <span className="uppercase flex-1">{customer.meslek || customer.meslek_is || '................................'}</span>
                     </div>
                     <div className="col-span-2 flex border-b border-dotted border-gray-400 pb-1">
                         <span className="font-bold w-32 shrink-0">İş Yeri Adı:</span>
@@ -86,7 +85,7 @@ export function ApplicationFormDocument({ customer }: { customer: Customer }) {
                         </span>
                     </div>
                     <div className="flex justify-between items-center">
-                        <span className="font-bold">Öngörülen Tutar / Taksit:</span>
+                        <span className="font-bold">Öngörülen Tutar:</span>
                         <span className="text-lg font-mono border-b-2 border-dashed border-black min-w-[300px] text-center">
                             {productDetails.price > 0 ? new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(productDetails.price) : '..........................'}
                         </span>
@@ -100,7 +99,7 @@ export function ApplicationFormDocument({ customer }: { customer: Customer }) {
                 <p className="text-justify text-sm leading-6 mb-4">
                     Yukarıda beyan ettiğim kişisel, iletişim ve gelir bilgilerinin tamamen doğru olduğunu, eksik veya yanıltıcı bilgi vermediğimi kabul ve taahhüt ederim.
                     Şahsıma yapılacak olan istihbarat ve finansal sorgulamalara (KKB, Findeks, e-Devlet vb.) açık rızam ile onay veriyorum.
-                    İşbu başvuru formunun bir sözleşme niteliği taşımadığını, yalnızca ön değerlendirme amacı taşıdığını, başvurumun onaylanması durumunda ayrıca "Kiralama/Satış Sözleşmesi" imzalanacağını biliyorum.
+                    İşbu başvuru formunun bir sözleşme niteliği taşımadığını, yalnızca ön değerlendirme amacı taşıdığını, başvurumun onaylanması durumunda ayrıca "Satış Sözleşmesi" imzalanacağını biliyorum.
                     Başvurumun olumlu sonuçlanması halinde, talep ettiğim cihazı teslim alacağımı beyan ederim.
                 </p>
                 <div className="flex items-start gap-2 text-sm">
