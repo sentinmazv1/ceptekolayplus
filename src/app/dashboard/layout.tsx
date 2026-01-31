@@ -66,7 +66,7 @@ export default function DashboardLayout({
     return (
         <div className="min-h-screen bg-gray-100 flex flex-col">
             {/* Persistent Header */}
-            <header className="bg-white shadow-sm sticky top-0 z-20">
+            <header className="bg-white shadow-sm sticky top-0 z-20 print:hidden">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="h-16 flex items-center justify-between">
                         <div className="flex items-center gap-8">
@@ -353,7 +353,7 @@ export default function DashboardLayout({
             {/* <ActiveNotifications /> */}
 
             {/* Page Content */}
-            <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+            <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full print:p-0 print:max-w-none print:w-full">
                 {children}
             </main>
         </div >
