@@ -784,6 +784,25 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                         >
                             <Printer className="w-4 h-4 mr-2" /> Sözleşme Yazdır
                         </Button>
+
+                        {data.telefon_onayli && (
+                            <Button
+                                variant="secondary"
+                                onClick={() => window.open(`/dashboard/application-form/${data.id}`, '_blank')}
+                                className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 text-xs shadow-sm font-bold animate-in fade-in zoom-in duration-300"
+                                title="Onaylı Başvuru Formu Yazdır"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <path d="M14 2v6h6"></path>
+                                    <path d="M16 13H8"></path>
+                                    <path d="M16 17H8"></path>
+                                    <path d="M10 9H8"></path>
+                                </svg>
+                                Başvuru Al
+                            </Button>
+                        )}
+
                         <Button
                             variant="secondary"
                             onClick={handleLegalRequest}
