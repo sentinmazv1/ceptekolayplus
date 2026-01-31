@@ -257,6 +257,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
 
     // Verify Modal State
     const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
+    const [isApplicationModalOpen, setIsApplicationModalOpen] = useState(false); // Application Form Modal
 
     // Multi-Product State
     const [multiProducts, setMultiProducts] = useState<any[]>([]);
@@ -480,6 +481,16 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
         const message = `Müşteri: ${data.ad_soyad}\nTC: ${data.tc_kimlik}`;
         const url = `https://wa.me/905541665347?text=${encodeURIComponent(message)}`;
         window.open(url, '_blank');
+    };
+
+    const handleCreateApplication = async () => {
+        if (!data.basvuru_kanali) {
+            alert('Lütfen Başvuru Kanalını seçiniz.');
+            return;
+        }
+        await handleSave(); // Persist changes first
+        window.open(`/dashboard/application-form/${data.id}`, '_blank');
+        setIsApplicationModalOpen(false);
     };
 
     const handleSave = async () => {
@@ -788,7 +799,7 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                         {data.telefon_onayli && (
                             <Button
                                 variant="secondary"
-                                onClick={() => window.open(`/dashboard/application-form/${data.id}`, '_blank')}
+                                onClick={() => setIsApplicationModalOpen(true)}
                                 className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 text-xs shadow-sm font-bold animate-in fade-in zoom-in duration-300"
                                 title="Onaylı Başvuru Formu Yazdır"
                             >
@@ -1690,6 +1701,20 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                             onChange={(e) => handleChange('kredi_limiti', e.target.value)}
                                             className="border-green-200 bg-green-50"
                                         />
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <Select
+                                                label="Taksit Sayısı"
+                                                value={data.taksit_sayisi?.toString() || ''}
+                                                onChange={(e) => handleChange('taksit_sayisi', parseInt(e.target.value))}
+                                                options={[
+                                                    { value: '', label: 'Seçiniz...' },
+                                                    { value: '3', label: '3 Taksit' },
+                                                    { value: '6', label: '6 Taksit' },
+                                                    { value: '12', label: '12 Taksit' },
+                                                    { value: '15', label: '15 Taksit' },
+                                                ]}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2142,7 +2167,66 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                 customer={data}
             />
 
-            {/* Verify Modal */}
+            {/* Application Modal */}
+            {isApplicationModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsApplicationModalOpen(false)} />
+                    <div className="relative bg-white rounded-xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="bg-indigo-600 px-6 py-4 flex justify-between items-center text-white">
+                            <h3 className="font-bold flex items-center gap-2">
+                                <FileText className="w-5 h-5" />
+                                Başvuru Oluştur
+                            </h3>
+                            <button onClick={() => setIsApplicationModalOpen(false)}><X className="w-5 h-5 opacity-80 hover:opacity-100" /></button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                <p className="text-xs text-blue-800 flex gap-2">
+                                    <Info className="w-4 h-4 shrink-0" />
+                                    Başvuru formunu oluşturmadan önce lütfen kanal ve taksit bilgilerini doğrulayın.
+                                </p>
+                            </div>
+
+                            <Select
+                                label="Başvuru Kanalı (Nereden Geldi?)"
+                                value={data.basvuru_kanali || ''}
+                                onChange={(e) => handleChange('basvuru_kanali', e.target.value)}
+                                options={[
+                                    { value: '', label: 'Seçiniz...' },
+                                    { value: 'Sosyal Medya', label: 'Sosyal Medya (Facebook/Instagram)' },
+                                    { value: 'Whatsapp', label: 'WhatsApp' },
+                                    { value: 'Google / Web', label: 'Google / Web Site' },
+                                    { value: 'Mağaza / Fiziksel', label: 'Mağaza Ziyareti' },
+                                    { value: 'Tavsiye / Referans', label: 'Tavsiye / Referans' },
+                                    { value: 'Sabit Hat / Telefon', label: 'Telefon Araması' },
+                                ]}
+                            />
+
+                            <Select
+                                label="Taksit Sayısı"
+                                value={data.taksit_sayisi?.toString() || ''}
+                                onChange={(e) => handleChange('taksit_sayisi', parseInt(e.target.value))}
+                                options={[
+                                    { value: '', label: 'Seçiniz...' },
+                                    { value: '3', label: '3 Taksit' },
+                                    { value: '6', label: '6 Taksit' },
+                                    { value: '12', label: '12 Taksit' },
+                                    { value: '15', label: '15 Taksit' },
+                                ]}
+                            />
+
+                            <div className="pt-2 flex gap-2">
+                                <Button variant="secondary" onClick={() => setIsApplicationModalOpen(false)} className="w-full">İptal</Button>
+                                <Button onClick={handleCreateApplication} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">
+                                    Formu Oluştur & Yazdır
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Verify Modal */}{/* Verify Modal */}
             {isVerifyModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsVerifyModalOpen(false)} />

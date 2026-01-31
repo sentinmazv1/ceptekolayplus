@@ -478,6 +478,7 @@ export async function updateLead(customer: Customer, userEmail: string): Promise
         talep_edilen_urun: customer.talep_edilen_urun,
         talep_edilen_tutar: customer.talep_edilen_tutar,
         renk: customer.renk,
+        taksit_sayisi: customer.taksit_sayisi,
         // New Financial & VIP Fields
         ozel_musteri_mi: customer.ozel_musteri_mi,
         calisma_sekli: customer.calisma_sekli,
@@ -650,7 +651,8 @@ export async function addLead(customer: Partial<Customer>, userEmail: string): P
         e_devlet_sifre: customer.e_devlet_sifre, // Map E-Devlet password
         aciklama_uzun: customer.aciklama_uzun,
         sinif: customer.sinif || 'Normal',
-        tahsilat_durumu: customer.tahsilat_durumu
+        tahsilat_durumu: customer.tahsilat_durumu,
+        taksit_sayisi: customer.taksit_sayisi
     };
     const { data, error } = await supabaseAdmin.from('leads').insert(dbRow).select().single();
     if (error) throw error;

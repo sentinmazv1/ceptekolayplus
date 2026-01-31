@@ -8,9 +8,16 @@ export function ApplicationFormDocument({ customer }: { customer: Customer }) {
     const today = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
 
     // Parse product if possible
+    // Parse product if possible
+    const rawPrice = customer.kredi_limiti ? parseFloat(customer.kredi_limiti.toString()) : 0;
+    const installments = customer.taksit_sayisi || 0;
+    const monthlyPayment = installments > 0 ? rawPrice / installments : 0;
+
     let productDetails = {
         name: customer.talep_edilen_urun || customer.model || 'Belirtilmemiş',
-        price: customer.talep_edilen_tutar || (customer.kredi_limiti ? parseFloat(customer.kredi_limiti) : 0) || 0
+        price: rawPrice,
+        installments: installments,
+        monthly: monthlyPayment
     };
 
     return (
@@ -85,39 +92,37 @@ export function ApplicationFormDocument({ customer }: { customer: Customer }) {
                         </span>
                     </div>
                     <div className="flex justify-between items-center">
-                        <span className="font-bold">Öngörülen Tutar:</span>
+                        <span className="font-bold">Toplam Tutar:</span>
                         <span className="text-lg font-mono border-b-2 border-dashed border-black min-w-[200px] text-center">
                             {productDetails.price > 0 ? new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(productDetails.price) : '..........................'}
                         </span>
                     </div>
                 </div>
+                {productDetails.installments > 0 && (
+                    <div className="flex justify-between items-center mt-2 px-3 text-sm font-bold bg-gray-50 border border-black border-t-0 py-1">
+                        <span>{productDetails.installments} Taksit</span>
+                        <span>Aylık: {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(productDetails.monthly)}</span>
+                    </div>
+                )}
             </section>
 
             {/* 4. Declaration */}
             <section className="mb-8 mt-4">
-                <h3 className="font-bold border-b border-black mb-1 pb-0.5 text-xs">BEYAN VE TAAHHÜT</h3>
-                <p className="text-justify text-[11px] leading-4 mb-2">
+                <h3 className="font-bold border-b border-black mb-1 pb-0.5 text-xs">4. BEYAN VE TAAHHÜT</h3>
+                <p className="text-justify text-[11px] leading-5 mb-2 font-medium">
+                    {productDetails.installments > 0
+                        ? `Yukarıda özellikleri belirtilen cihazı, ${productDetails.installments} taksit ile, aylık ${new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(productDetails.monthly)} ödeme planıyla, toplam ${new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(productDetails.price)} bedel karşılığında satın almayı talep ediyorum.`
+                        : `Yukarıda özellikleri belirtilen cihazı, toplam ${new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(productDetails.price)} bedel karşılığında satın almayı talep ediyorum.`
+                    }
+                    <br /><br />
                     Yukarıda beyan ettiğim kişisel, iletişim ve gelir bilgilerinin tamamen doğru olduğunu, eksik veya yanıltıcı bilgi vermediğimi kabul ve taahhüt ederim.
                     Şahsıma yapılacak olan istihbarat ve finansal sorgulamalara (KKB, Findeks, e-Devlet vb.) açık rızam ile onay veriyorum.
                     İşbu başvuru formunun bir sözleşme niteliği taşımadığını, yalnızca ön değerlendirme amacı taşıdığını, başvurumun onaylanması durumunda ayrıca "Satış Sözleşmesi" imzalanacağını biliyorum.
-                    Başvurumun olumlu sonuçlanması halinde, talep ettiğim cihazı teslim alacağımı beyan ederim.
                 </p>
-                <div className="flex items-start gap-2 text-[10px]">
-                    <div className="w-3 h-3 border border-black mt-0.5 inline-block shrink-0"></div>
-                    <p>KVKK Aydınlatma Metni'ni okudum, kişisel verilerimin işlenmesine onay veriyorum.</p>
-                </div>
             </section>
 
             {/* Signatures */}
-            <section className="flex justify-between mt-12 px-8 text-sm">
-                <div className="text-center">
-                    <h4 className="font-bold mb-8 text-xs">YETKİLİ PERSONEL</h4>
-                    <div className="border-t border-black w-40 pt-1">
-                        CEPTE KOLAY<br />
-                        <span className="text-[10px]">Kaşe / İmza</span>
-                    </div>
-                </div>
-
+            <section className="flex justify-end mt-16 px-8 text-sm">
                 <div className="text-center">
                     <h4 className="font-bold mb-8 text-xs">MÜŞTERİ (BAŞVURU SAHİBİ)</h4>
                     <div className="border-t border-black w-40 pt-1">
