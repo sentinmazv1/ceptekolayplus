@@ -108,7 +108,7 @@ export default function ReportsPageV2() {
 
     Object.values(stats.hourly || {}).forEach((dayData) => {
         Object.entries(dayData).forEach(([user, hourMap]) => {
-            if (['sistem', 'ibrahim', 'admin'].some(x => user.toLowerCase().includes(x))) return;
+            if (['sistem'].some(x => user.toLowerCase().includes(x))) return;
 
             relevantUsers.add(user);
             Object.entries(hourMap).forEach(([hourStr, count]) => {
