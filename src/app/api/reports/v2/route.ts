@@ -70,9 +70,9 @@ export async function GET(req: NextRequest) {
 
         const { data: logsData, error: logsError } = await supabaseAdmin
             .from('activity_logs')
-            .select('user_email, action, timestamp, lead_id, new_value, note, old_value')
-            .gte('timestamp', historyStart)
-            .lte('timestamp', endIso);
+            .select('user_email, action, created_at, lead_id, new_value, note, old_value')
+            .gte('created_at', historyStart)
+            .lte('created_at', endIso);
 
         if (logsError) throw logsError;
 
@@ -161,13 +161,13 @@ export async function GET(req: NextRequest) {
         const userPastCalls: Record<string, number> = {};
 
         // Sort logs for Pace calculation
-        logs.sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        logs.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
         // Pace Helpers
         const userLogTimes: Record<string, number[]> = {};
 
         logs.forEach((log: any) => {
-            const ts = new Date(log.timestamp).getTime();
+            const ts = new Date(log.created_at).getTime();
             const rawUser = log.user_email;
             if (!rawUser || ['sistem'].some(x => rawUser.toLowerCase().includes(x))) return;
 
@@ -189,7 +189,7 @@ export async function GET(req: NextRequest) {
 
                 // Hourly Heatmap
                 // Fix: Ensure Turkey Time for hourly distribution
-                const trDate = new Date(new Date(log.timestamp).toLocaleString("en-US", { timeZone: "Europe/Istanbul" }));
+                const trDate = new Date(new Date(log.created_at).toLocaleString("en-US", { timeZone: "Europe/Istanbul" }));
                 const trHour = trDate.getHours();
                 const trDateKey = trDate.toISOString().split('T')[0];
 
