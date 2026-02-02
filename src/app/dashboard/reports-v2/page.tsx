@@ -193,7 +193,7 @@ export default function ReportsPageV2() {
         XLSX.utils.book_append_sheet(wb, wsHourly, "Saatlik Yoğunluk");
 
         // 4. İptal Nedenleri (Rejections)
-        const rejectionRows = [["Neden", "Adet"]];
+        const rejectionRows: (string | number)[][] = [["Neden", "Adet"]];
         Object.entries(stats.rejection || {}).forEach(([reason, count]) => {
             rejectionRows.push([reason, count]);
         });
