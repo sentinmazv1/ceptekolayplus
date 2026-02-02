@@ -242,7 +242,8 @@ export async function GET(req: Request) {
         const modelCounts: Record<string, number> = {};
 
         (inventoryData || []).forEach((item: any) => {
-            if (item.durum === 'STOKTA') {
+            const status = (item.durum || '').toUpperCase();
+            if (status === 'STOKTA' || status === 'MEVCUT' || status.includes('STOK')) {
                 stockStats.total++;
                 stockStats.value += parsePrice(item.satis_fiyati);
                 const name = `${item.marka} ${item.model}`;
@@ -257,7 +258,7 @@ export async function GET(req: Request) {
 
 
         // 6. FORMAT RESPONSE
-        // Monthly Projections
+        // ... (existing helper logic)
         const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
         const daysElapsed = now.getDate();
         const dailyAvg = monthly.turnover / Math.max(daysElapsed, 1);
@@ -293,12 +294,30 @@ export async function GET(req: Request) {
             inventory: stockStats,
             meta: {
                 filterStart: filterStartIso,
-                filterEnd: filterEndIso
+                filterEnd: filterEndIso,
+                debug: {
+                    leadsCount: leads.length,
+                    salesCount: sales.length,
+                    logsCount: logs.length,
+                    inventoryCount: (inventoryData || []).length,
+                    envCheck: {
+                        url: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+                        key: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+                    }
+                }
             }
         });
 
     } catch (e: any) {
         console.error('V3 Stats Error:', e);
-        return NextResponse.json({ success: false, error: e.message }, { status: 500 });
+        return NextResponse.json({
+            success: false,
+            error: e.message,
+            stack: e.stack,
+            debugEnv: {
+                url: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+                key: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+            }
+        }, { status: 200 }); // Return 200 to ensure frontend receives the JSON
     }
 }

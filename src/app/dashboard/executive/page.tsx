@@ -30,7 +30,7 @@ export default function ExecutiveDashboard() {
     }, []);
 
     const fetchData = async () => {
-        if (!startDate || !endDate) return; // Wait for dates to be set
+        if (!startDate || !endDate) return;
 
         setLoading(true);
         try {
@@ -38,7 +38,13 @@ export default function ExecutiveDashboard() {
             const res = await fetch(`/api/executive/stats/v2?${params.toString()}`, { cache: 'no-store' });
             if (res.ok) {
                 const json = await res.json();
-                setData(json);
+                console.log('Executive V3 Response:', json);
+
+                if (json.success === false) {
+                    alert(`Veri Hatası: ${json.error}\nStack: ${json.stack}`); // Simple alert for now
+                } else {
+                    setData(json);
+                }
             }
         } catch (error) {
             console.error('Executive V3 Error:', error);
