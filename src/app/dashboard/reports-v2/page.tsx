@@ -1,0 +1,757 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/Button';
+import { UserPerformanceCard } from '@/components/UserPerformanceCard';
+import {
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
+    Legend, PieChart, Pie, Cell
+} from 'recharts';
+import {
+    Loader2, ArrowLeft, Users, Printer,
+    Package, TrendingUp, Calendar,
+    ClipboardList, BadgeCheck, PhoneCall, Scale, FileText
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { InventoryItem } from '@/lib/types';
+import * as XLSX from 'xlsx';
+
+interface UserPerformanceStats {
+    pulled: number;
+    calls: number;
+    approvals: number;
+    approvedLimit: number;
+    applications: number;
+    paceMinutes: number;
+    sms: number;
+    whatsapp: number;
+    sales: number;
+    salesVolume: number;
+    backoffice: number;
+    dailyGoal: number;
+    image: string;
+    totalLogs: number;
+}
+
+interface ReportStats {
+    city: Record<string, { total: number; delivered: number; approved: number; rejected: number; cancelled: number; kefil: number; noEdevlet: number; unreachable: number; other: number; }>;
+    profession: Record<string, { count: number, totalIncome: number, avgIncome: number }>;
+    product: Record<string, number>;
+    status: Record<string, number>;
+    channel: Record<string, number>;
+    rejection: Record<string, number>;
+    daily: Record<string, number>;
+    hourly: Record<string, Record<string, Record<number, number>>>;
+    funnel: {
+        totalCalled: number;
+        uniqueCalled: number;
+        applications: number;
+        attorneyQueries: number;
+        attorneyPending: number;
+        attorneyClean: number;
+        attorneyRisky: number;
+        attorneyApproved: number;
+        attorneyRejected: number;
+        approved: number;
+        approvedLimit: number;
+        delivered: number;
+        deliveredVolume: number;
+        sale: number;
+    };
+    inventory: {
+        totalItems: number;
+        totalCost: number;
+        totalRevenue: number;
+    };
+    todayCalledByPerson: Record<string, number>;
+    performance: Record<string, UserPerformanceStats>;
+}
+
+const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#6366F1'];
+
+export default function ReportsPageV2() {
+    const router = useRouter();
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState<ReportStats | null>(null);
+
+    // Date Range State
+    const [startDate, setStartDate] = useState<string>(() => {
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(startOfMonth);
+    });
+    const [endDate, setEndDate] = useState<string>(() => {
+        return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    });
+
+    useEffect(() => {
+        setLoading(true);
+        fetch(`/api/reports/v2?startDate=${startDate}&endDate=${endDate}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) setStats(data.stats);
+            })
+            .catch(err => console.error(err))
+            .finally(() => setLoading(false));
+    }, [startDate, endDate]);
+
+    if (loading) return <div className="flex h-screen items-center justify-center bg-gray-50"><Loader2 className="animate-spin w-10 h-10 text-indigo-600" /></div>;
+    if (!stats) return <div className="p-8 text-center text-gray-500 font-medium">Veri bulunamadı.</div>;
+
+    // --- Chart Data Prep ---
+    const statusEntries = Object.entries(stats.status || {}).sort((a, b) => b[1] - a[1]);
+    const totalStatusCount = statusEntries.reduce((acc, curr) => acc + curr[1], 0);
+
+    // Hourly Data Prep
+    const aggregatedHourly: Record<number, Record<string, number>> = {};
+    const relevantUsers = new Set<string>();
+
+    Object.values(stats.hourly || {}).forEach((dayData) => {
+        Object.entries(dayData).forEach(([user, hourMap]) => {
+            if (['sistem', 'ibrahim', 'admin'].some(x => user.toLowerCase().includes(x))) return;
+
+            relevantUsers.add(user);
+            Object.entries(hourMap).forEach(([hourStr, count]) => {
+                const h = parseInt(hourStr);
+                if (!aggregatedHourly[h]) aggregatedHourly[h] = {};
+                aggregatedHourly[h][user] = (aggregatedHourly[h][user] || 0) + count;
+            });
+        });
+    });
+
+    const hoursToCheck = Array.from({ length: 14 }, (_, i) => i + 8); // 08:00 to 21:00
+    const hourlyData = hoursToCheck.map(h => {
+        const row: any = { hour: `${String(h).padStart(2, '0')}:00` };
+        relevantUsers.forEach(user => {
+            const count = aggregatedHourly[h]?.[user] || 0;
+            if (count > 0) row[user.split('@')[0]] = count;
+        });
+        return row;
+    });
+    const userList = Array.from(relevantUsers);
+
+    // Helpers for Inventory Display
+    const formatTRY = (val: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(val);
+
+    // EXPORT FUNCTION
+    const handleExportExcel = () => {
+        if (!stats) return;
+
+        const wb = XLSX.utils.book_new();
+
+        // 1. Ozet Sayfasi (Summary Sheet)
+        const summaryData = [
+            ["Rapor Tarihi", `${startDate} - ${endDate}`],
+            ["", ""],
+            ["GENEL PERFORMANS", ""],
+            ["Toplam Arama", stats.funnel.totalCalled],
+            ["Başvuru Alınan", stats.funnel.applications],
+            ["Avukat Sorgu", stats.funnel.attorneyQueries],
+            ["Onaylanan Kredi", stats.funnel.approved],
+            ["Teslim Edilen", stats.funnel.delivered],
+            ["Teslimat Cirosu", stats.funnel.deliveredVolume],
+            ["", ""],
+            ["ENVANTER DURUMU", ""],
+            ["Stok Adedi", stats.inventory.totalItems],
+            ["Toplam Maliyet", stats.inventory.totalCost],
+            ["Potansiyel Ciro", stats.inventory.totalRevenue]
+        ];
+        const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+        XLSX.utils.book_append_sheet(wb, wsSummary, "Genel Özet");
+
+        // 2. Personel Performans (Team Sheet)
+        const teamData = [
+            ["Personel", "Hedef", "Arama", "Başvuru", "Satış", "Ciro", "Sorgu(Çekilen)", "Onaylanan", "SMS/WP", "Pace(dk)"]
+        ];
+        Object.entries(stats.performance).forEach(([user, p]) => {
+            teamData.push([
+                user,
+                p.dailyGoal?.toString() || "80",
+                p.calls?.toString() || "0",
+                p.applications?.toString() || "0",
+                p.sales?.toString() || "0",
+                p.salesVolume?.toString() || "0",
+                p.pulled?.toString() || "0",
+                p.approvals?.toString() || "0",
+                ((p.sms || 0) + (p.whatsapp || 0)).toString(),
+                (p.paceMinutes || 0).toFixed(1)
+            ]);
+        });
+        const wsTeam = XLSX.utils.aoa_to_sheet(teamData);
+        XLSX.utils.book_append_sheet(wb, wsTeam, "Personel Performans");
+
+        // 3. Saatlik Veri (Hourly Sheet)
+        const hourlyRows = [["Saat", ...userList.map(u => u.split('@')[0])]];
+        hourlyData.forEach((row: any) => {
+            const r = [row.hour];
+            userList.forEach(u => {
+                r.push(row[u.split('@')[0]] || 0);
+            });
+            hourlyRows.push(r);
+        });
+        const wsHourly = XLSX.utils.aoa_to_sheet(hourlyRows);
+        XLSX.utils.book_append_sheet(wb, wsHourly, "Saatlik Yoğunluk");
+
+        // 4. İptal Nedenleri (Rejections)
+        const rejectionRows = [["Neden", "Adet"]];
+        Object.entries(stats.rejection || {}).forEach(([reason, count]) => {
+            rejectionRows.push([reason, count]);
+        });
+        const wsRej = XLSX.utils.aoa_to_sheet(rejectionRows);
+        XLSX.utils.book_append_sheet(wb, wsRej, "İptal Nedenleri");
+
+        // Save
+        XLSX.writeFile(wb, `Rapor_${startDate}_${endDate}.xlsx`);
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-50/50 p-4 md:p-8 pb-24 print:bg-white print:p-0 font-sans">
+            <style jsx global>{`
+                @media print {
+                    @page {
+                        size: A4;
+                        margin: 5mm;
+                    }
+                    body {
+                        background: white !important;
+                        color: black !important;
+                        -webkit-print-color-adjust: exact;
+                        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+                        font-size: 9pt;
+                    }
+                    .chart-container {
+                        page-break-inside: avoid;
+                        height: 250px !important;
+                    }
+                    /* Compact Sections */
+                    .print-section {
+                        page-break-inside: avoid;
+                        margin-bottom: 0.25rem !important;
+                        padding-bottom: 0.25rem !important;
+                    }
+                    .no-print { display: none !important; }
+                    
+                    /* Reset margins/paddings */
+                    .p-8, .p-6, .p-4, .p-3, .p-2 { padding: 4px !important; }
+                    .mb-10, .mb-8, .mb-6, .mb-4 { margin-bottom: 4px !important; }
+                    .gap-8, .gap-6, .gap-4, .gap-3 { gap: 4px !important; }
+                    
+                    /* Text sizing adjustments */
+                    h1 { font-size: 16pt !important; margin: 0 !important; }
+                    h2 { font-size: 12pt !important; margin: 0 !important; }
+                    h3 { font-size: 11pt !important; margin: 0 !important; }
+                    p, span, div { font-size: 9pt; }
+                    
+                    /* Table specific */
+                    table { font-size: 8pt !important; }
+                    th, td { padding: 2px 4px !important; }
+                    
+                    /* Specific overrides to tighten layout */
+                    .print\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+                    .print\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+                    
+                    /* Remove shadows and borders that take space or look messy */
+                    .shadow-xl, .shadow-lg, .shadow-md, .shadow-sm { box-shadow: none !important; }
+                    .border-2 { border-width: 1px !important; }
+                }
+            `}</style>
+            {/* Header */}
+            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-8 gap-6 print:hidden">
+                <div className="flex items-center gap-4">
+                    <Button variant="outline" onClick={() => router.back()} className="hover:bg-white hover:shadow-md transition-all border-gray-200">
+                        <ArrowLeft className="w-4 h-4 mr-2" /> Geri Dön
+                    </Button>
+                    <div>
+                        <h1 className="text-3xl font-black text-gray-900 tracking-tight">Yönetici Raporları V2</h1>
+                        <p className="text-gray-500 font-medium">BETA - Detaylı Performans ve Satış Analizi</p>
+                    </div>
+                </div>
+
+                <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+                    <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-2xl border border-gray-200 shadow-sm w-full md:w-auto justify-center md:justify-start">
+                        <div className="flex items-center gap-2 px-3 border-r border-gray-100">
+                            <Calendar className="w-5 h-5 text-indigo-500" />
+                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Tarih Aralığı</span>
+                        </div>
+                        <input
+                            type="date"
+                            className="bg-gray-50 border-0 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors block p-2.5 font-bold cursor-pointer hover:bg-gray-100"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                        />
+                        <span className="text-gray-300 font-bold px-1 hidden md:inline">→</span>
+                        <input
+                            type="date"
+                            className="bg-gray-50 border-0 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors block p-2.5 font-bold cursor-pointer hover:bg-gray-100"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="flex gap-3 w-full md:w-auto">
+                        <Button
+                            onClick={() => router.push('/dashboard/delivery-reports')}
+                            className="flex-1 md:flex-none bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-50 px-6 py-6 h-auto rounded-xl font-bold shadow-sm transition-all hover:shadow-md"
+                        >
+                            <div className="flex flex-col items-center gap-1">
+                                <Package className="w-5 h-5" />
+                                <span className="text-xs">Teslimat</span>
+                            </div>
+                        </Button>
+
+                        <Button
+                            onClick={handleExportExcel}
+                            className="flex-1 md:flex-none bg-emerald-600 text-white border border-emerald-500 hover:bg-emerald-700 px-6 py-6 h-auto rounded-xl font-bold shadow-sm transition-all hover:shadow-md flex flex-col items-center gap-1"
+                        >
+                            <FileText className="w-5 h-5" />
+                            <span className="text-xs">Excel İndir</span>
+                        </Button>
+
+                        <button
+                            onClick={() => window.print()}
+                            className="flex-1 md:flex-none bg-indigo-600 text-white px-6 py-6 rounded-xl hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-200 transition-all flex flex-col items-center gap-1 font-bold shadow-md active:scale-95"
+                        >
+                            <Printer className="w-5 h-5" />
+                            <span className="text-xs">Yazdır / PDF</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* PRINT HEADER */}
+            <div className="hidden print:block mb-2 border-b-2 border-gray-900 pb-2">
+                <div className="flex justify-between items-end">
+                    <div>
+                        <h1 className="text-3xl font-black text-gray-900 tracking-tight">YÖNETİCİ RAPORU V2</h1>
+                        <p className="text-sm text-gray-600 mt-1 font-bold uppercase tracking-wider">Operasyonel Performans Özeti</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">RAPORLANAN DÖNEM</p>
+                        <p className="text-xl font-black text-gray-900 tabular-nums">
+                            {new Date(startDate).toLocaleDateString('tr-TR')} - {new Date(endDate).toLocaleDateString('tr-TR')}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* --- ROW 0: INVENTORY STATS --- */}
+            {stats.inventory && (
+                <div className="mb-4 print-section">
+                    <div className="flex items-center gap-3 mb-2 px-1">
+                        <div className="p-1.5 bg-slate-900 rounded-lg text-white shadow-sm print:hidden">
+                            <Package className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">Envanter Durumu</h2>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 print:grid-cols-3">
+                        {/* Card 1: Total Stock */}
+                        <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between group print:p-2">
+                            <div>
+                                <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Stok</p>
+                                <p className="text-xl font-black text-slate-800 tabular-nums">{stats.inventory.totalItems || 0} Adet</p>
+                            </div>
+                        </div>
+                        {/* Card 2: Cost Volume */}
+                        <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between group print:p-2">
+                            <div>
+                                <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Maliyet</p>
+                                <p className="text-xl font-black text-slate-800 tabular-nums">{formatTRY(stats.inventory.totalCost || 0)}</p>
+                            </div>
+                        </div>
+                        {/* Card 3: Potential Volume */}
+                        <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between group print:p-2">
+                            <div>
+                                <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Potansiyel Ciro</p>
+                                <p className="text-xl font-black text-slate-800 tabular-nums">{formatTRY(stats.inventory.totalRevenue || 0)}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- ROW 1: SALES FUNNEL (PREMIUM CARD) --- */}
+            <div className="mb-8 animate-in slide-in-from-bottom-4 duration-500 print-section">
+                <SalesFunnel stats={stats} />
+            </div>
+
+            {/* --- ROW 2: TEAM PERFORMANCE --- */}
+            <div className="mb-10 animate-in slide-in-from-bottom-6 duration-700 delay-100">
+                {/* --- TEAM SUMMARY (General Work Details) --- */}
+                {/* Added as requested: "personel karnelerinin üzerinde genel toplam çalışma detaylarını da koyalım" */}
+                {/* --- SECTION: PERSONNEL SCORECARDS --- */}
+                <div className="bg-white rounded-3xl p-6 md:p-8 shadow-xl shadow-indigo-100/50 border border-indigo-50/50 mb-10 print:shadow-none print:border-0 print:p-0">
+                    <div className="flex items-center gap-3 mb-6 print:hidden">
+                        <div className="p-1.5 bg-indigo-100 rounded-lg text-indigo-600 shadow-sm">
+                            <Users className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">Personel Performans Karnesi</h2>
+                        </div>
+                    </div>
+
+                    {/* Wide Layout Grid */}
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 print:hidden">
+                        {Object.entries(stats.performance)
+                            .sort((a, b) => b[1].calls - a[1].calls)
+                            .map(([user, pStats], idx) => (
+                                <div key={user} className="transform hover:-translate-y-1 transition-transform duration-300">
+                                    <UserPerformanceCard user={user} stats={pStats} variant="wide" rank={idx + 1} />
+                                </div>
+                            ))}
+                    </div>
+
+                    {/* Print Only Performance Cards (Detailed Mini-Scorecards) */}
+                    <div className="hidden print:grid grid-cols-3 gap-2">
+                        {Object.entries(stats.performance)
+                            .sort((a, b) => b[1].calls - a[1].calls)
+                            .map(([user, pStats]) => (
+                                <div key={user} className="border border-gray-900 rounded p-1 flex flex-col gap-1 break-inside-avoid">
+                                    <div className="flex justify-between items-center border-b border-gray-300 pb-1">
+                                        <span className="font-black text-[9px] uppercase">{user.split('@')[0]}</span>
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-[8px] font-bold">HEDEF: {pStats.dailyGoal || 80}</span>
+                                            {pStats.calls >= (pStats.dailyGoal || 80) && <span className="text-[8px]">⭐</span>}
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-4 gap-1 text-center">
+                                        <div className="bg-gray-50 rounded p-0.5">
+                                            <div className="text-[7px] text-gray-500 uppercase">ARAMA</div>
+                                            <div className="text-[10px] font-black">{pStats.calls}</div>
+                                        </div>
+                                        <div className="bg-blue-50 rounded p-0.5">
+                                            <div className="text-[7px] text-blue-600 uppercase">BAŞVURU</div>
+                                            <div className="text-[10px] font-black text-blue-900">{pStats.applications}</div>
+                                        </div>
+                                        <div className="bg-emerald-50 rounded p-0.5">
+                                            <div className="text-[7px] text-emerald-600 uppercase">SATIŞ</div>
+                                            <div className="text-[10px] font-black text-emerald-900">{pStats.sales}</div>
+                                        </div>
+                                        <div className="bg-indigo-50 rounded p-0.5">
+                                            <div className="text-[7px] text-indigo-600 uppercase">CİRO</div>
+                                            <div className="text-[10px] font-black text-indigo-900">{new Intl.NumberFormat('tr-TR', { notation: "compact", compactDisplay: "short", maximumFractionDigits: 1 }).format(pStats.salesVolume || 0)}</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between items-center text-[7px] text-gray-500 px-0.5">
+                                        <span>Çekilen: {pStats.pulled}</span>
+                                        <span>Onay: {pStats.approvals}</span>
+                                        <span>Sms/Wa: {(pStats.sms || 0) + (pStats.whatsapp || 0)}</span>
+                                    </div>
+                                </div>
+                            ))}
+                    </div>
+                </div>
+
+                {/* --- ROW 3: HOURLY & STATUS --- */}
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-10 break-inside-avoid print-section">
+                    <ChartCard title="Saatlik Çalışma Yoğunluğu" className="xl:col-span-2 h-[400px] chart-container">
+                        {/* ... (Chart Content Same) ... */}
+                        <div className="h-full w-full pt-4">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={hourlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
+                                    <XAxis dataKey="hour" tick={{ fontSize: 11, fontWeight: 'bold', fill: '#6B7280' }} axisLine={false} tickLine={false} />
+                                    <YAxis tick={{ fontSize: 11, fontWeight: 'bold', fill: '#6B7280' }} axisLine={false} tickLine={false} />
+                                    <RechartsTooltip
+                                        cursor={{ fill: '#F9FAFB' }}
+                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05)', padding: '12px' }}
+                                        itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                                    />
+                                    <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase' }} iconType="circle" />
+                                    {userList.map((user, idx) => (
+                                        <Bar key={user} dataKey={user.split('@')[0]} stackId="a" fill={COLORS[idx % COLORS.length]} radius={[0, 0, 0, 0]} barSize={32} />
+                                    ))}
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </ChartCard>
+
+                    <div className="flex flex-col gap-6 h-full">
+                        {/* Status Distribution */}
+                        <div className="bg-white p-6 rounded-3xl shadow-lg shadow-gray-200/50 border border-gray-100 flex-1 relative overflow-hidden flex flex-col">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-gray-50 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                            <h3 className="text-lg font-black text-gray-900 mb-4 uppercase tracking-tight relative z-10 flex items-center gap-2">
+                                <BadgeCheck className="w-5 h-5 text-gray-400" />
+                                Akıbet Dağılımı
+                            </h3>
+                            <div className="flex-1 overflow-auto max-h-[200px] pr-2 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent relative z-10">
+                                <table className="w-full text-sm">
+                                    <thead className="text-xs text-gray-400 font-bold uppercase sticky top-0 bg-white z-10">
+                                        <tr>
+                                            <th className="py-2 text-left pl-2">Durum</th>
+                                            <th className="py-2 text-right">Adet</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50">
+                                        {statusEntries.slice(0, 10).map(([status, count], idx) => (
+                                            <tr key={status} className="group hover:bg-gray-50 transition-colors">
+                                                <td className="py-2 pl-2 font-bold text-gray-700 truncate max-w-[120px]" title={status}>
+                                                    <span className="inline-block w-1.5 h-1.5 rounded-full mr-2 bg-indigo-500"></span>
+                                                    {status}
+                                                </td>
+                                                <td className="py-2 text-right font-black text-gray-900 tabular-nums">{count}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Cancellation Reasons Pie Chart */}
+                        <div className="bg-white p-6 rounded-3xl shadow-lg shadow-gray-200/50 border border-gray-100 flex-1 relative overflow-hidden flex flex-col min-h-[300px]">
+                            <h3 className="text-lg font-black text-gray-900 mb-4 uppercase tracking-tight relative z-10 flex items-center gap-2">
+                                <Scale className="w-5 h-5 text-red-500" />
+                                İptal & Red Nedenleri
+                            </h3>
+                            <div className="h-full w-full relative z-10 flex-1">
+                                {Object.keys(stats.rejection || {}).length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+                                        <PieChart>
+                                            <Pie
+                                                data={Object.entries(stats.rejection).map(([name, value]) => ({ name, value }))}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={60}
+                                                outerRadius={80}
+                                                paddingAngle={5}
+                                                dataKey="value"
+                                            >
+                                                {Object.entries(stats.rejection).map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <RechartsTooltip />
+                                            <Legend
+                                                layout="vertical"
+                                                verticalAlign="middle"
+                                                align="right"
+                                                iconType="circle"
+                                                wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }}
+                                            />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="flex items-center justify-center h-full text-gray-400 text-sm font-medium">Veri yok</div>
+                                )}
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// --- SUB COMPONENTS ---
+
+function SalesFunnel({ stats }: { stats: any }) {
+    const f = stats.funnel;
+    const formatCurrency = (val: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(val);
+
+    return (
+        <div className="bg-white rounded-[2rem] shadow-xl shadow-indigo-100 border border-indigo-50 relative overflow-hidden ring-1 ring-gray-100 group print:border-2 print:border-gray-900 print:rounded-xl print:shadow-none">
+            {/* Decorative Background */}
+            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-gradient-to-bl from-indigo-50/50 to-transparent rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none print:hidden"></div>
+            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-gradient-to-tr from-purple-50/50 to-transparent rounded-full blur-3xl -ml-24 -mb-24 pointer-events-none print:hidden"></div>
+
+            <div className="relative z-10 p-8 print:p-4">
+                <div className="flex items-center gap-3 mb-10 print:mb-4">
+                    <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg shadow-indigo-200 print:bg-none print:p-0 print:shadow-none print:text-black">
+                        <TrendingUp className="w-6 h-6 text-white print:text-black" />
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-black text-gray-900 tracking-tight print:text-lg">GÜNLÜK SATIŞ HUNİSİ</h2>
+                        <p className="text-sm font-bold text-gray-500 print:text-xs">Operasyonel Dönüşüm Oranları</p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-6 md:gap-8 relative px-4 print:grid-cols-5 print:gap-2 print:px-0">
+                    {/* Arrow connectors (Desktop) */}
+                    <div className="hidden md:block absolute top-[40%] left-0 w-full h-1 bg-gray-100 -z-10 rounded-full print:hidden"></div>
+
+                    <FunnelStep
+                        title="YAPILAN ARAMA"
+                        value={f.totalCalled}
+                        icon={PhoneCall}
+                        color="text-indigo-600"
+                        bg="bg-indigo-50"
+                        desc="Toplam Çağrı"
+                    />
+
+                    <FunnelStep
+                        title="BAŞVURU ALINAN"
+                        value={f.applications}
+                        icon={ClipboardList}
+                        color="text-blue-600"
+                        bg="bg-blue-50"
+                        desc="Formu Doldurulan"
+                    />
+
+                    <FunnelStep
+                        title="AVUKAT SORGUSU"
+                        value={f.attorneyQueries}
+                        subValue={
+                            <div className="flex flex-col gap-1 mt-1 w-full">
+                                <div className="flex items-center justify-between px-2 w-full">
+                                    <span className="text-[9px] font-bold text-emerald-600 flex items-center gap-0.5" title="Temiz">
+                                        ✅ {f.attorneyClean || 0}
+                                    </span>
+                                    <span className="text-[9px] font-bold text-amber-600 flex items-center gap-0.5" title="Riskli">
+                                        ⚠️ {f.attorneyRisky || 0}
+                                    </span>
+                                </div>
+                                {(f.attorneyPending || 0) > 0 && (
+                                    <span className="text-[8px] font-medium text-gray-400 bg-gray-50 rounded px-1 w-fit mx-auto">
+                                        {f.attorneyPending} Bekleyen
+                                    </span>
+                                )}
+                            </div>
+                        }
+                        icon={Scale}
+                        color="text-purple-600"
+                        bg="bg-purple-50"
+                        desc="Sorgulanan"
+                    />
+
+                    <FunnelStep
+                        title="ONAYLANAN KREDİ"
+                        value={f.approved}
+                        subValue={f.approvedLimit > 0 ? formatCurrency(f.approvedLimit) : "0 ₺"}
+                        icon={BadgeCheck}
+                        color="text-emerald-600"
+                        bg="bg-emerald-50"
+                        desc="Onaylanan Toplam Limit"
+                    />
+
+                    <FunnelStep
+                        title="TESLİM EDİLEN"
+                        value={f.delivered}
+                        subValue={f.deliveredVolume > 0 ? formatCurrency(f.deliveredVolume) : "0 ₺"}
+                        icon={Package}
+                        color="text-green-700"
+                        bg="bg-gradient-to-br from-green-100 to-emerald-100"
+                        desc="Teslimat & Günün Cirosu"
+                        isFinal
+                    />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function FunnelStep({ title, value, icon: Icon, color, bg, desc, subValue, isFinal, step }: any) {
+    return (
+        <div className={`relative flex flex-col items-center text-center group/card`}>
+            {/* Step Badge Removed */}
+
+            <div className={`w-full p-6 rounded-3xl border-2 transition-all duration-300 print:p-2 print:rounded-lg print:border-gray-200 ${bg} ${isFinal ? 'border-green-300 shadow-xl shadow-green-100 scale-105 print:scale-100 print:border-gray-900 print:shadow-none' : 'border-transparent shadow-sm hover:shadow-xl hover:-translate-y-2 hover:bg-white hover:border-indigo-100'}`}>
+                <div className={`mx-auto w-14 h-14 rounded-2xl bg-white shadow-md flex items-center justify-center mb-4 transition-all print:w-8 print:h-8 print:mb-1 print:shadow-none ${color}`}>
+                    <Icon className="w-7 h-7 print:w-4 print:h-4" />
+                </div>
+
+                <div className="text-[10px] uppercase font-extrabold text-gray-500 tracking-widest mb-2 print:mb-0 print:text-[8px]">{title}</div>
+
+                <div className={`text-4xl font-black ${color} mb-1 tracking-tighter tabular-nums print:text-xl print:text-black print:mb-0`}>
+                    {value}
+                </div>
+
+                {subValue && (
+                    <div className="inline-block px-2 py-0.5 rounded-md bg-white/60 text-[10px] font-bold text-gray-500 uppercase tracking-tight mb-2 border border-black/5 print:text-[7px] print:mb-0 print:bg-transparent print:border-none print:text-black">
+                        {subValue}
+                    </div>
+                )}
+
+                <div className="text-xs font-bold text-gray-600 border-t border-black/5 pt-2 mt-1 w-full print:hidden">
+                    {desc}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function ChartCard({ title, children, className }: { title: string, children: React.ReactNode, className?: string }) {
+    return (
+        <div className={`bg-white p-8 rounded-3xl shadow-lg shadow-gray-200/50 border border-gray-100 flex flex-col ${className}`}>
+            <h3 className="text-lg font-black text-gray-900 mb-2 uppercase tracking-tight">{title}</h3>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6">Canlı Veri Analizi</p>
+            <div className="flex-1 min-h-0 relative z-10">
+                {children}
+            </div>
+        </div>
+    );
+}
+
+function CityMiniTable({ title, data, sortKey, color, showPercent }: { title: string; data: any; sortKey: string; color: string; showPercent?: boolean; }) {
+    if (!data) return null;
+    const sorted = Object.entries(data)
+        .map(([name, stats]: [string, any]) => ({ name, ...stats }))
+        .filter(c => c[sortKey] > 0)
+        .sort((a, b) => b[sortKey] - a[sortKey])
+        .slice(0, 10);
+
+    const colorClasses: any = {
+        blue: 'from-blue-500 to-blue-600',
+        emerald: 'from-emerald-500 to-emerald-600',
+        red: 'from-red-500 to-red-600',
+        purple: 'from-purple-500 to-purple-600',
+        gray: 'from-gray-500 to-gray-600',
+    };
+
+    // Light backgrounds for items
+    const bgClasses: any = {
+        blue: 'hover:bg-blue-50',
+        emerald: 'hover:bg-emerald-50',
+        red: 'hover:bg-red-50',
+        purple: 'hover:bg-purple-50',
+        gray: 'hover:bg-gray-50',
+    };
+
+    // Text colors
+    const textClasses: any = {
+        blue: 'text-blue-600',
+        emerald: 'text-emerald-600',
+        red: 'text-red-600',
+        purple: 'text-purple-600',
+        gray: 'text-gray-600',
+    }
+
+    return (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col h-full hover:shadow-lg transition-shadow duration-300">
+            <div className={`px-4 py-3 bg-gradient-to-r ${colorClasses[color]} text-white`}>
+                <div className="font-bold text-xs uppercase tracking-wider flex justify-between items-center">
+                    {title}
+                    <span className="opacity-80 text-[10px]">İLK 10</span>
+                </div>
+            </div>
+
+            <div className="divide-y divide-gray-50 p-2 flex-1">
+                {sorted.length === 0 ? (
+                    <div className="h-full flex items-center justify-center p-4 text-center text-gray-300 text-xs font-bold uppercase tracking-wider">
+                        Veri Yok
+                    </div>
+                ) : sorted.map((city, idx) => (
+                    <div key={city.name} className={`px-3 py-2 flex justify-between items-center rounded-lg transition-colors ${bgClasses[color]}`}>
+                        <div className="flex items-center gap-2 overflow-hidden">
+                            <span className={`flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-gray-100 text-[10px] font-black text-gray-500`}>
+                                {idx + 1}
+                            </span>
+                            <span className="truncate flex-1 text-gray-700 font-bold text-xs">
+                                {city.name}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2 pl-2">
+                            <span className={`font-black text-sm tabular-nums ${textClasses[color]}`}>{city[sortKey]}</span>
+                            {showPercent && (
+                                <span className="text-[9px] text-gray-400 font-bold w-7 text-right bg-gray-50 px-1 py-0.5 rounded tabular-nums">
+                                    {city.total > 0 ? '%' + Math.round((city[sortKey] / city.total) * 100) : '-'}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
