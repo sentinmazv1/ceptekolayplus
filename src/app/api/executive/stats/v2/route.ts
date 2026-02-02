@@ -65,7 +65,7 @@ export async function GET(req: Request) {
         // Status matching must be precise based on DB values
         const { data: salesData, error: salesError } = await supabaseAdmin
             .from('leads')
-            .select('id, created_at, durum, satilan_urunler, satis_fiyati, talep_edilen_tutar, teslim_tarihi, satis_tarihi, updated_at, sahip_email, basvuru_kanali')
+            .select('id, created_at, durum, satilan_urunler, talep_edilen_tutar, teslim_tarihi, satis_tarihi, updated_at, sahip_email, basvuru_kanali')
             .or('durum.eq.Teslim edildi,durum.eq.Satış yapıldı/Tamamlandı,durum.eq.Satış Yapıldı') // Added 'Satış Yapıldı' just in case
             .gte('created_at', '2023-01-01');
 
@@ -78,7 +78,7 @@ export async function GET(req: Request) {
 
         const { data: leadsData, error: leadsError } = await supabaseAdmin
             .from('leads')
-            .select('id, created_at, durum, avukat_sorgu_sonuc, avukat_sorgu_durumu, onay_durumu, meslek, meslek_is, sehir, dogum_tarihi, maas_ortalama, satilan_urunler, satis_fiyati, talep_edilen_tutar, teslim_tarihi, satis_tarihi, updated_at, sahip_email, basvuru_kanali')
+            .select('id, created_at, durum, avukat_sorgu_sonuc, avukat_sorgu_durumu, onay_durumu, meslek, meslek_is, sehir, dogum_tarihi, maas_ortalama, satilan_urunler, talep_edilen_tutar, teslim_tarihi, satis_tarihi, updated_at, sahip_email, basvuru_kanali')
             .gte('created_at', earliestForLeads);
 
         if (leadsError) throw leadsError;
