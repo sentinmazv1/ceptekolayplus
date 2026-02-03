@@ -1,23 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Wallet, ShoppingBag, PieChart, TrendingUp, Loader2, PhoneCall, MessageSquare, MonitorSmartphone, FileCheck, Scale, BadgeCheck, PackageCheck, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { Wallet, ShoppingBag, PieChart, TrendingUp, Loader2, PhoneCall, MessageSquare, MonitorSmartphone, FileCheck, Scale, BadgeCheck, PackageCheck, ShieldAlert, ShieldCheck, Users } from 'lucide-react';
 import { ReportHeader } from '@/components/reports/ReportHeader';
 import { KPICard } from '@/components/reports/KPICard';
+import { PersonnelTable } from '@/components/reports/PersonnelTable';
 import { Button } from '@/components/ui/Button';
 
 // Types
-interface ReportStats {
-    funnel: {
-        deliveredVolume: number; // Ciro
-        delivered: number;       // Satış Adeti
-        sale: number;            // Müşteri Bazlı Satış
-        applications: number;    // Başvuru
-        totalCalled: number;     // Arama
-    };
-    daily: Record<string, number>;
-}
-
 interface OverviewStats {
     calls: number;
     sms: number;
@@ -30,6 +20,17 @@ interface OverviewStats {
     approvedLimit: number;
     deliveredCount: number;
     deliveredRevenue: number;
+}
+
+interface ReportStats {
+    funnel: {
+        deliveredVolume: number; // Ciro
+        delivered: number;       // Satış Adeti
+        sale: number;            // Müşteri Bazlı Satış
+        applications: number;    // Başvuru
+        totalCalled: number;     // Arama
+    };
+    daily: Record<string, number>;
 }
 
 export default function ReportsPage() {
@@ -46,12 +47,19 @@ export default function ReportsPage() {
         return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
     });
 
-    // State for Detailed Report
+    // State for Detailed Report (Global KPIs)
     const [detailedStats, setDetailedStats] = useState<ReportStats | null>(null);
     const [detailedLoading, setDetailedLoading] = useState(true);
 
+    // State for Personnel Report
+    const [personnelData, setPersonnelData] = useState<any[]>([]);
+    const [personnelLoading, setPersonnelLoading] = useState(false);
+
     const fetchDetailedData = () => {
         setDetailedLoading(true);
+        setPersonnelLoading(true);
+
+        // Fetch Global Stats
         fetch(`/api/reports?startDate=${startDate}&endDate=${endDate}`)
             .then(res => res.json())
             .then(data => {
@@ -59,15 +67,24 @@ export default function ReportsPage() {
             })
             .catch(err => console.error(err))
             .finally(() => setDetailedLoading(false));
+
+        // Fetch Personnel Stats
+        fetch(`/api/reports/personnel?startDate=${startDate}&endDate=${endDate}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) setPersonnelData(data.data);
+            })
+            .catch(err => console.error(err))
+            .finally(() => setPersonnelLoading(false));
     };
 
     useEffect(() => {
         if (activeTab === 'detailed') {
             fetchDetailedData();
         }
-    }, [startDate, endDate, activeTab]); // Refetch detailed data when dates or tab changes
+    }, [startDate, endDate, activeTab]);
 
-    // Formatters (can be moved to a utility file if used elsewhere)
+    // Formatters
     const formatCurrency = (val: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(val);
     const formatNumber = (val: number) => new Intl.NumberFormat('tr-TR').format(val);
 
@@ -78,23 +95,25 @@ export default function ReportsPage() {
                 <Button
                     variant={activeTab === 'overview' ? 'primary' : 'secondary'}
                     onClick={() => setActiveTab('overview')}
-                    className={activeTab === 'overview' ? 'bg-gray-900 text-white hover:bg-black' : 'bg-white text-gray-500 hover:text-gray-900'}
+                    className={`font-bold rounded-xl shadow-sm border border-transparent ${activeTab === 'overview' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:text-gray-900'}`}
                 >
+                    <MonitorSmartphone className="w-4 h-4 mr-2" />
                     Kuş Bakışı (Bu Ay)
                 </Button>
                 <Button
                     variant={activeTab === 'detailed' ? 'primary' : 'secondary'}
                     onClick={() => setActiveTab('detailed')}
-                    className={activeTab === 'detailed' ? 'bg-gray-900 text-white hover:bg-black' : 'bg-white text-gray-500 hover:text-gray-900'}
+                    className={`font-bold rounded-xl shadow-sm border border-transparent ${activeTab === 'detailed' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-500 hover:text-indigo-600'}`}
                 >
-                    Detaylı Raporlar
+                    <Users className="w-4 h-4 mr-2" />
+                    Personel & Detay
                 </Button>
             </div>
 
             {activeTab === 'overview' && <OverviewTab />}
 
             {activeTab === 'detailed' && (
-                <>
+                <div className="animate-in fade-in duration-500">
                     {/* HEADER */}
                     <ReportHeader
                         startDate={startDate}
@@ -104,52 +123,53 @@ export default function ReportsPage() {
                         onRefresh={fetchDetailedData}
                     />
 
-                    {/* KPI GRID */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                        <KPICard
-                            title="Toplam Ciro"
-                            value={detailedStats ? formatCurrency(detailedStats.funnel.deliveredVolume) : '0 ₺'}
-                            subValue="Net Satış"
-                            icon={Wallet}
-                            loading={detailedLoading}
-                            trend="0%" // Todo: Calculate vs previous period
-                        />
-                        <KPICard
-                            title="Satış Adeti"
-                            value={detailedStats ? formatNumber(detailedStats.funnel.delivered) : '0'}
-                            subValue="Ürün Bazlı"
-                            icon={ShoppingBag}
-                            loading={detailedLoading}
-                        />
-                        <KPICard
-                            title="Dönüşüm"
-                            value={detailedStats && detailedStats.funnel.totalCalled > 0 ? `%${((detailedStats.funnel.sale / detailedStats.funnel.totalCalled) * 100).toFixed(1)}` : '%0'}
-                            subValue="Satış / Arama"
-                            icon={PieChart}
-                            loading={detailedLoading}
-                        />
-                        <KPICard
-                            title="Müșteri"
-                            value={detailedStats ? formatNumber(detailedStats.funnel.sale) : '0'}
-                            subValue="Teslim Edilen Kişi"
-                            icon={TrendingUp}
-                            loading={detailedLoading}
-                        />
+                    {/* Personnel Table */}
+                    <div className="mb-8">
+                        <h3 className="text-lg font-black text-gray-900 mb-4 flex items-center gap-2">
+                            <Users className="w-5 h-5 text-indigo-600" />
+                            PERSONEL PERFORMANS TABLOSU
+                        </h3>
+                        <PersonnelTable data={personnelData} loading={personnelLoading} />
                     </div>
 
-                    {/* EMPTY STATE FOR NEXT STEPS */}
-                    {!detailedLoading && !detailedStats && (
-                        <div className="p-12 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
-                            Veri Yok veya Yüklenemedi
+                    {/* KPI GRID (Global Totals for Context) */}
+                    <div>
+                        <h3 className="text-lg font-black text-gray-900 mb-4 flex items-center gap-2">
+                            <PieChart className="w-5 h-5 text-gray-400" />
+                            GENEL TOPLAM ({startDate} - {endDate})
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                            <KPICard
+                                title="Toplam Ciro"
+                                value={detailedStats ? formatCurrency(detailedStats.funnel.deliveredVolume) : '0 ₺'}
+                                subValue="Net Satış"
+                                icon={Wallet}
+                                loading={detailedLoading}
+                            />
+                            <KPICard
+                                title="Satış Adeti"
+                                value={detailedStats ? formatNumber(detailedStats.funnel.delivered) : '0'}
+                                subValue="Ürün Bazlı"
+                                icon={ShoppingBag}
+                                loading={detailedLoading}
+                            />
+                            <KPICard
+                                title="Dönüşüm"
+                                value={detailedStats && detailedStats.funnel.totalCalled > 0 ? `%${((detailedStats.funnel.sale / detailedStats.funnel.totalCalled) * 100).toFixed(1)}` : '%0'}
+                                subValue="Satış / Arama"
+                                icon={PieChart}
+                                loading={detailedLoading}
+                            />
+                            <KPICard
+                                title="Müşteri"
+                                value={detailedStats ? formatNumber(detailedStats.funnel.sale) : '0'}
+                                subValue="Teslim Edilen Kişi"
+                                icon={TrendingUp}
+                                loading={detailedLoading}
+                            />
                         </div>
-                    )}
-
-                    {detailedLoading && !detailedStats && (
-                        <div className="p-12 flex justify-center text-indigo-500">
-                            <Loader2 className="animate-spin w-8 h-8" />
-                        </div>
-                    )}
-                </>
+                    </div>
+                </div>
             )}
         </div>
     );
