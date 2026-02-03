@@ -86,7 +86,7 @@ export async function GET(req: Request) {
         // C. LOGS (For Staff Performance & Ops)
         const { data: logsData, error: logsError } = await supabaseAdmin
             .from('activity_logs')
-            .select('user_email, action, created_at, user_id')
+            .select('user_email, action, created_at')
             .gte('created_at', filterStartIso)
             .lte('created_at', filterEndIso);
 
