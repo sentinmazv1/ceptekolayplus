@@ -295,30 +295,67 @@ export async function GET(req: NextRequest) {
                 }
             }
 
-            // Sales / Delivered
-            const saleDate = lead.teslim_tarihi || lead.satis_tarihi;
-            const isSold = ['Teslim edildi', 'Satış yapıldı/Tamamlandı', 'Satış Yapıldı'].includes(lead.durum);
+            // Sales / Delivered (Item-Level Logic)
+            const leadSaleDate = lead.teslim_tarihi || lead.satis_tarihi;
+            const isSoldStatus = ['Teslim edildi', 'Satış yapıldı/Tamamlandı', 'Satış Yapıldı'].includes(lead.durum);
 
-            if (isSold && isInRange(saleDate)) {
-                stats.funnel.delivered++;
+            if (isSoldStatus) {
+                let leadRevenue = 0;
+                let leadItemsCount = 0;
+                let hasQualifyingItem = false;
 
-                // Revenue Calc
-                let revenue = 0;
+                // 1. Try Parsing Items (JSON or Array)
+                let items: any[] = [];
                 try {
-                    // Try Parsing Items
-                    if (lead.satilan_urunler && Array.isArray(lead.satilan_urunler)) {
-                        lead.satilan_urunler.forEach((p: any) => revenue += parsePrice(p.satis_fiyati || p.fiyat));
+                    if (Array.isArray(lead.satilan_urunler)) {
+                        items = lead.satilan_urunler;
+                    } else if (typeof lead.satilan_urunler === 'string') {
+                        items = JSON.parse(lead.satilan_urunler);
                     }
-                } catch (e) { }
+                } catch (e) {
+                    console.error('JSON Parse Error for Lead ' + lead.id, e);
+                }
 
-                if (revenue === 0) revenue = parsePrice(lead.kredi_limiti || lead.satis_fiyati || lead.talep_edilen_tutar);
+                // 2. Iterate Items and Check Dates
+                if (Array.isArray(items) && items.length > 0) {
+                    items.forEach((item: any) => {
+                        // Use item date, fallback to lead date, fallback to update date
+                        const itemDate = item.satis_tarihi || item.teslim_tarihi || leadSaleDate;
 
-                stats.funnel.deliveredVolume += revenue;
-                stats.funnel.sale++; // Single Lead Scale
+                        if (isInRange(itemDate)) {
+                            const price = parsePrice(item.satis_fiyati || item.fiyat || 0);
+                            leadRevenue += price;
+                            leadItemsCount++;
+                            hasQualifyingItem = true;
 
-                if (isTrackedUser) {
-                    userStats[owner].sales++;
-                    userStats[owner].salesVolume += revenue;
+                            // Add to Product Breakdown
+                            const pName = item.marka ? `${item.marka} ${item.model}` : (item.urun_adi || 'Bilinmeyen Ürün');
+                            stats.product[pName] = (stats.product[pName] || 0) + 1;
+                        }
+                    });
+                }
+
+                // 3. Fallback: If no items found (Legacy) but Lead Date is in Range
+                if (!hasQualifyingItem && items.length === 0 && isInRange(leadSaleDate)) {
+                    leadRevenue = parsePrice(lead.kredi_limiti || lead.satis_fiyati || lead.talep_edilen_tutar);
+                    leadItemsCount = 1; // Count as 1 unit
+                    hasQualifyingItem = true;
+
+                    // Add legacy product to breakdown
+                    const pName = lead.talep_edilen_urun || 'Bilinmeyen Ürün';
+                    stats.product[pName] = (stats.product[pName] || 0) + 1;
+                }
+
+                // 4. Update Stats
+                if (hasQualifyingItem) {
+                    stats.funnel.delivered += leadItemsCount; // Total Items Sold in Range
+                    stats.funnel.deliveredVolume += leadRevenue; // Total Revenue in Range
+                    stats.funnel.sale++; // Count this Lead as "Active Sale" in this period
+
+                    if (isTrackedUser) {
+                        userStats[owner].sales++; // Or should this be items count? Usually Sale Count = Leads.
+                        userStats[owner].salesVolume += leadRevenue;
+                    }
                 }
             }
 
