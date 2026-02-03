@@ -28,7 +28,7 @@ export function BulkSmsManager() {
     const [selectedTemplateId, setSelectedTemplateId] = useState('');
     const [messageContent, setMessageContent] = useState('');
 
-    const [messageContent, setMessageContent] = useState('');
+
 
     // Status Update Features
     const [enableStatusChange, setEnableStatusChange] = useState(false);
