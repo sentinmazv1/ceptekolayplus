@@ -35,6 +35,7 @@ interface Lead {
     satilan_urunler: any;
     satis_fiyati: any;
     talep_edilen_tutar: any;
+    kredi_limiti?: any;
     teslim_tarihi: string | null;
     satis_tarihi: string | null;
     updated_at: string;
@@ -65,7 +66,7 @@ export async function GET(req: Request) {
         // Status matching must be precise based on DB values
         const { data: salesData, error: salesError } = await supabaseAdmin
             .from('leads')
-            .select('id, created_at, durum, satilan_urunler, talep_edilen_tutar, teslim_tarihi, satis_tarihi, updated_at, sahip_email, basvuru_kanali')
+            .select('id, created_at, durum, satilan_urunler, talep_edilen_tutar, kredi_limiti, teslim_tarihi, satis_tarihi, updated_at, sahip_email, basvuru_kanali')
             .or('durum.eq.Teslim edildi,durum.eq.Satış yapıldı/Tamamlandı,durum.eq.Satış Yapıldı') // Added 'Satış Yapıldı' just in case
             .gte('created_at', '2023-01-01');
 
@@ -186,16 +187,32 @@ export async function GET(req: Request) {
             const saleDate = new Date(saleDateStr).getTime();
             const startMonthTime = new Date(startOfMonth).getTime();
 
-            // Revenue Calculation (Parse JSON)
+            // Revenue Calculation (Robust Sync with Reports V2)
             let revenue = 0;
-            if (Array.isArray(sale.satilan_urunler)) {
-                sale.satilan_urunler.forEach((prod: any) => {
-                    revenue += parsePrice(prod.satis_fiyati || prod.fiyat || 0);
-                });
+            try {
+                // 1. Try JSON Array directly
+                if (Array.isArray(sale.satilan_urunler)) {
+                    sale.satilan_urunler.forEach((prod: any) => {
+                        revenue += parsePrice(prod.satis_fiyati || prod.fiyat || 0);
+                    });
+                }
+                // 2. Try parsing Stringified JSON
+                else if (typeof sale.satilan_urunler === 'string') {
+                    const products = JSON.parse(sale.satilan_urunler);
+                    if (Array.isArray(products)) {
+                        products.forEach((prod: any) => {
+                            revenue += parsePrice(prod.satis_fiyati || prod.fiyat || 0);
+                        });
+                    }
+                }
+            } catch (e) {
+                // Ignore parse errors
             }
-            // Fallback to old scalar columns if JSON parsing yielded 0 (legacy data)
+
+            // 3. Fallback to scalar columns if Item calc failed
             if (revenue === 0) {
-                revenue = parsePrice(sale.talep_edilen_tutar || 0);
+                // Matches Reports Page logic: Credit Limit -> Requested Amount
+                revenue = parsePrice(sale.kredi_limiti || sale.talep_edilen_tutar || 0);
             }
 
             // Monthly Turnover (Fixed Scope: This Month)
