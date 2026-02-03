@@ -15,8 +15,8 @@ export function ReportHeader({ startDate, setStartDate, endDate, setEndDate, onR
     return (
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm print:hidden">
             <div>
-                <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Performans Raporu</h1>
-                <p className="text-sm font-medium text-gray-500">Satış ve operasyonel verilerin detaylı analizi</p>
+                <h1 className="text-2xl font-black text-gray-900 tracking-tight">Performans Raporu</h1>
+                <p className="text-sm font-bold text-gray-500">Satış ve operasyonel verilerin detaylı analizi</p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
@@ -27,14 +27,14 @@ export function ReportHeader({ startDate, setStartDate, endDate, setEndDate, onR
                         type="date"
                         value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
-                        className="bg-transparent border-none focus:ring-0 text-sm font-semibold text-gray-700 p-0 w-28 cursor-pointer"
+                        className="bg-transparent border-none focus:ring-0 text-sm font-bold text-gray-700 p-0 w-28 cursor-pointer"
                     />
-                    <span className="text-gray-300 font-bold">→</span>
+                    <span className="text-gray-300 font-black">→</span>
                     <input
                         type="date"
                         value={endDate}
                         onChange={(e) => setEndDate(e.target.value)}
-                        className="bg-transparent border-none focus:ring-0 text-sm font-semibold text-gray-700 p-0 w-28 cursor-pointer"
+                        className="bg-transparent border-none focus:ring-0 text-sm font-bold text-gray-700 p-0 w-28 cursor-pointer"
                     />
                 </div>
 
@@ -47,6 +47,26 @@ export function ReportHeader({ startDate, setStartDate, endDate, setEndDate, onR
                     title="Yenile"
                 >
                     <RefreshCw className="w-4 h-4" />
+                </Button>
+
+                <Button
+                    variant="outline"
+                    onClick={() => {
+                        if (navigator.share) {
+                            navigator.share({
+                                title: 'CepteKolay Rapor',
+                                text: 'Güncel performans raporunu inceleyin.',
+                                url: window.location.href,
+                            }).catch(console.error);
+                        } else {
+                            window.print();
+                        }
+                    }}
+                    className="h-10 px-4 rounded-xl border border-indigo-100 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 font-black flex items-center gap-2"
+                    title="Paylaş / PDF"
+                >
+                    <Share2 className="w-4 h-4" />
+                    <span className="text-xs hidden md:inline">PAYLAŞ</span>
                 </Button>
 
                 <Button
