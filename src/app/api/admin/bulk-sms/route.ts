@@ -71,7 +71,8 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { userIds, message, templateId, channel, statusUpdate: statusChanges } = body;
+        // Fixed: Use statusUpdate consistently
+        const { userIds, message, templateId, channel, statusUpdate } = body;
 
         if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
             return NextResponse.json({ message: 'No users selected' }, { status: 400 });
@@ -102,9 +103,14 @@ export async function POST(req: NextRequest) {
         const results = [];
 
         for (const user of users) {
-            if (!user.telefon) {
+            let phone = user.telefon;
+            // Ensure correct phone format (remove spaces, leading 0 etc if needed, but assuming DB has it reasonably clean)
+            // Simple basic cleaning
+            if (phone) phone = phone.replace(/\s/g, '').replace(/[\(\)-]/g, '');
+
+            if (!phone || phone.length < 10) {
                 failCount++;
-                results.push({ user: user.ad_soyad, status: 'failed', reason: 'No phone number' });
+                results.push({ user: user.ad_soyad, status: 'failed', reason: 'Invalid phone number' });
                 continue;
             }
 
@@ -122,11 +128,11 @@ export async function POST(req: NextRequest) {
 
             // Send SMS (only if channel is SMS)
             if (channel === 'SMS') {
-                const result = await sendSMS(user.telefon, personalizedMessage);
+                const result = await sendSMS(phone, personalizedMessage);
 
                 if (result.success) {
                     successCount++;
-                    results.push({ user: user.ad_soyad, phone: user.telefon, status: 'sent' });
+                    results.push({ user: user.ad_soyad, phone: phone, status: 'sent' });
 
                     // Log successful send
                     await supabaseAdmin.from('activity_logs').insert({
@@ -138,7 +144,7 @@ export async function POST(req: NextRequest) {
                     });
                 } else {
                     failCount++;
-                    results.push({ user: user.ad_soyad, phone: user.telefon, status: 'failed', reason: result.result });
+                    results.push({ user: user.ad_soyad, phone: phone, status: 'failed', reason: result.result });
                 }
             } else {
                 // WhatsApp - for now just log
@@ -166,6 +172,7 @@ export async function POST(req: NextRequest) {
                 updatePayload.assigned_to = session.user.email; // Keep legacy field sync if needed
             }
 
+            // Use 'data' instead of 'count' to avoid type errors
             const { data, error: updateError } = await supabaseAdmin
                 .from('leads')
                 .update(updatePayload)
@@ -173,13 +180,12 @@ export async function POST(req: NextRequest) {
                 .select('id');
 
             if (!updateError) {
+                // CORRECT LOGIC
                 updatedCount = data?.length || 0;
 
                 // Log the bulk update event
                 await supabaseAdmin.from('activity_logs').insert({
-                    lead_id: null, // Global log or maybe loop individual logs if critical? 
-                    // Loop logging is safer for history, but expensive for 1000 users.
-                    // Let's create a single summary log.
+                    lead_id: null, // Global log
                     action: 'BULK_STATUS_UPDATE',
                     user_email: session.user.email,
                     note: `Bulk update to '${statusUpdate.status}'. Assigned: ${statusUpdate.assignToSender}. Count: ${updatedCount}`,
@@ -189,7 +195,6 @@ export async function POST(req: NextRequest) {
                 console.error('Bulk update error', updateError);
             }
         }
-
 
         // Log bulk action summary
         await supabaseAdmin.from('activity_logs').insert({
