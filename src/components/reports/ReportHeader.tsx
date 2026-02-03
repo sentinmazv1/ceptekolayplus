@@ -41,7 +41,7 @@ export function ReportHeader({ startDate, setStartDate, endDate, setEndDate, onR
                 <div className="h-8 w-px bg-gray-200 mx-1 hidden md:block"></div>
 
                 <Button
-                    variant="timeControl"
+                    variant="outline"
                     onClick={onRefresh}
                     className="h-10 w-10 p-0 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-indigo-600"
                     title="Yenile"
@@ -50,7 +50,7 @@ export function ReportHeader({ startDate, setStartDate, endDate, setEndDate, onR
                 </Button>
 
                 <Button
-                    variant="timeControl" // Using simple style
+                    variant="primary"
                     onClick={() => window.print()}
                     className="h-10 w-10 p-0 rounded-xl bg-gray-900 border border-transparent text-white hover:bg-black hover:text-white shadow-md shadow-gray-200"
                     title="Yazdır"
