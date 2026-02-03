@@ -1841,7 +1841,22 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                                 multiProducts.map((p, idx) => (
                                                     <tr key={idx} className="hover:bg-gray-50/50 transition-colors group">
                                                         <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
-                                                            {p.satis_tarihi ? new Date(p.satis_tarihi).toLocaleDateString('tr-TR') : '-'}
+                                                            {['Yönetici', 'admin', 'Admin', 'yonetici'].includes(session?.user?.role || '') || session?.user?.email === 'ibrahimsentinmaz@gmail.com' ? (
+                                                                <input
+                                                                    type="date"
+                                                                    className="bg-transparent border-b border-transparent hover:border-gray-300 focus:border-indigo-500 focus:outline-none text-gray-700 w-full"
+                                                                    value={p.satis_tarihi ? new Date(p.satis_tarihi).toISOString().split('T')[0] : ''}
+                                                                    onChange={(e) => {
+                                                                        const newDate = e.target.value;
+                                                                        const newList = [...multiProducts];
+                                                                        newList[idx] = { ...newList[idx], satis_tarihi: newDate ? new Date(newDate).toISOString() : null };
+                                                                        setMultiProducts(newList);
+                                                                        handleChange('satilan_urunler', JSON.stringify(newList));
+                                                                    }}
+                                                                />
+                                                            ) : (
+                                                                p.satis_tarihi ? new Date(p.satis_tarihi).toLocaleDateString('tr-TR') : '-'
+                                                            )}
                                                         </td>
                                                         <td className="px-4 py-3">
                                                             <div className="font-bold text-gray-900">{p.marka} {p.model}</div>
