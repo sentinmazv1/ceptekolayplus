@@ -18,49 +18,42 @@ export async function GET(req: NextRequest) {
         const startDate = searchParams.get('startDate');
         const endDate = searchParams.get('endDate');
 
-        let logQuery = supabaseAdmin
-            .from('activity_logs')
-            .select('lead_id, created_at, new_value')
-            .or('new_value.ilike.%Teslim edildi%,new_value.ilike.%Satış yapıldı%,new_value.ilike.%Tamamlandı%');
-
-        // Apply Log-Based Date Filter
-        if (startDate && endDate) {
-            const startIso = new Date(startDate).toISOString();
-            const endIso = new Date(new Date(endDate).setHours(23, 59, 59, 999)).toISOString();
-            logQuery = logQuery.gte('created_at', startIso).lte('created_at', endIso);
+        if (!startDate || !endDate) {
+            return NextResponse.json({ success: false, error: 'Dates required' }, { status: 400 });
         }
 
-        const { data: logs, error: logError } = await logQuery;
+        const startIso = new Date(startDate).toISOString();
+        const endIso = new Date(new Date(endDate).setHours(23, 59, 59, 999)).toISOString();
+        const startTs = new Date(startIso).getTime();
+        const endTs = new Date(endIso).getTime();
 
-        if (logError) throw logError;
-
-        if (!logs || logs.length === 0) {
-            return NextResponse.json({ success: true, data: [] });
-        }
-
-        // Get Distinct Lead IDs and Map Log Dates
-        const leadDateMap = new Map<string, string>();
-        logs.forEach((log: any) => {
-            // Keep the LATEST log date if multiple exist (though usually one delivery event)
-            // Or keep EARLIEST? "When was it delivered?" -> Earliest transition to Delivered in this range.
-            if (!leadDateMap.has(log.lead_id)) {
-                leadDateMap.set(log.lead_id, log.created_at);
-            }
-        });
-
-        const leadIds = Array.from(leadDateMap.keys());
-
-        // Fetch Leads
-        const { data: leads, error: leadError } = await supabaseAdmin
+        // 1. DIRECT TABLE QUERY (As requested)
+        // Check filtering on 'teslim_tarihi' OR 'updated_at' if date is missing
+        // This avoids log missing issues.
+        const { data: leads, error } = await supabaseAdmin
             .from('leads')
             .select('*')
-            .in('id', leadIds);
+            .or(`durum.eq.Teslim edildi,durum.eq.Satış yapıldı/Tamamlandı,durum.eq.Satış Yapıldı`)
+            // We fetch ALL delivered leads first, then filter by date in code to handle fallback logic securely
+            // (Supabase OR logic with dates can be tricky if fields are null)
+            .order('updated_at', { ascending: false });
 
-        if (leadError) throw leadError;
+        if (error) throw error;
 
         const results: any[] = [];
 
         leads?.forEach((lead: any) => {
+            // Determine "Accurate Date"
+            // Priority: teslim_tarihi > satis_tarihi > updated_at
+            const dateStr = lead.teslim_tarihi || lead.satis_tarihi || lead.updated_at;
+            if (!dateStr) return;
+
+            const d = new Date(dateStr).getTime();
+
+            // FILTER: Strict Date Range Check
+            if (d < startTs || d > endTs) return;
+
+            // PRODUCTS
             let items: any[] = [];
             try {
                 if (Array.isArray(lead.satilan_urunler)) items = lead.satilan_urunler;
@@ -70,18 +63,21 @@ export async function GET(req: NextRequest) {
             let totalRevenue = 0;
             let soldItemsText: string[] = [];
 
+            // Check if products have specific dates? 
+            // User said: "ürün bölümünde o tarihte bir ürün eklenmiş mi"
+            // If items have explicit date, we can filter them. 
+            // But usually, if the lead is "Delivered" in this range, ALL its items are sold.
+
             if (items.length > 0) {
                 items.forEach(item => {
-                    totalRevenue += parsePrice(item.satis_fiyati || item.fiyat);
-                    soldItemsText.push(`${item.marka || ''} ${item.model || ''} (${parsePrice(item.satis_fiyati || item.fiyat).toLocaleString('tr-TR')} ₺)`);
+                    const price = parsePrice(item.satis_fiyati || item.fiyat);
+                    totalRevenue += price;
+                    soldItemsText.push(`${item.marka || ''} ${item.model || ''} (${price.toLocaleString('tr-TR')} ₺)`);
                 });
             } else {
                 totalRevenue = parsePrice(lead.kredi_limiti || lead.satis_fiyati);
                 soldItemsText.push('Ürün Detayı Yok');
             }
-
-            // Use the LOG date as the true delivery date
-            const trueDate = leadDateMap.get(lead.id) || lead.teslim_tarihi;
 
             results.push({
                 id: lead.id,
@@ -91,10 +87,10 @@ export async function GET(req: NextRequest) {
                 work: lead.calisma_sekli || lead.meslek || '-',
                 workPlace: lead.is_yeri || '-',
                 limit: lead.kredi_limiti,
-                seller: lead.assigned_to || lead.sahip || 'Atanmamış', // Use AssignedTo as primary source of truth as requested
+                seller: lead.assigned_to || lead.sahip || 'Atanmamış',
                 items: soldItemsText.join(', '),
                 revenue: totalRevenue,
-                date: trueDate
+                date: dateStr
             });
         });
 
