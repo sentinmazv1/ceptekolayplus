@@ -187,6 +187,7 @@ export interface LogEntry {
   old_value?: string;
   new_value?: string;
   note?: string;
+  metadata?: any;
 }
 
 export interface CollectionNote {

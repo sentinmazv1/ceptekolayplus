@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { updateLead, getLeads, getLead } from '@/lib/leads';
 import { Customer } from '@/lib/types';
-import { sendStatusEmail } from '@/lib/email-service';
+import { supabaseAdmin } from '@/lib/supabase'; // Added for direct DB insert
 
 export async function GET(
     request: Request,
@@ -49,16 +49,7 @@ export async function PUT(
         // Update the lead
         const updated = await updateLead(body, session.user.email);
 
-        // Send email if status changed (Legacy Email Logic commented out)
-        /* 
-        if (existing && existing.durum !== updated.durum) {
-            await sendStatusEmail(updated, updated.durum);
-        } 
-        */
-
-        // --- SMS LOGIC ---
-        // Check if status changed
-        // Match logs for Reports (Applications, etc.)
+        // --- SMS LOGIC & REPORTS LOGGING ---
         if (existing && existing.durum !== updated.durum) {
             const { logAction } = await import('@/lib/leads'); // Ensure import
 
@@ -71,23 +62,31 @@ export async function PUT(
                 action: 'UPDATE_STATUS', // Crucial for Reports
                 old_value: existing.durum,
                 new_value: updated.durum,
-                note: 'Status updated via detailed view'
+                note: 'Status updated via detailed view',
+                metadata: {
+                    // Capture Context for "Time Travel" reporting
+                    source: 'detailed_view',
+                    ...(updated.durum === 'Teslim edildi' || updated.durum === 'Satış yapıldı/Tamamlandı' ? {
+                        delivery_snapshot: {
+                            items: updated.satilan_urunler,
+                            total_revenue: updated.talep_edilen_tutar || updated.kredi_limiti,
+                            seller: session.user.email,
+                            date: new Date().toISOString()
+                        }
+                    } : {})
+                }
             });
 
             const status = updated.durum;
             let smsMessage = null;
-
-            // Import dynamically or at top. Using dynamic for now to keep cleaner diff
-            const { SMS_TEMPLATES } = await import('@/lib/sms-templates');
-            const { sendSMS } = await import('@/lib/sms');
+            const { SMS_TEMPLATES } = await import('@/lib/sms-templates'); // Lazy load
+            const { sendSMS } = await import('@/lib/sms'); // Lazy load
 
             if (status === 'Ulaşılamadı' || status === 'Cevap Yok') {
                 smsMessage = SMS_TEMPLATES.UNREACHABLE(updated.ad_soyad);
             } else if (status === 'Kefil bekleniyor' || updated.onay_durumu === 'Kefil İstendi') {
-                // Determine if it was explicit status or approval workflow
                 smsMessage = SMS_TEMPLATES.GUARANTOR_REQUIRED(updated.ad_soyad);
             } else if (status === 'Onaylandı') {
-                // Check if actually approved in workflow
                 const limit = updated.kredi_limiti || '0';
                 smsMessage = SMS_TEMPLATES.APPROVED(updated.ad_soyad, limit);
             } else if (status === 'Eksik evrak bekleniyor') {
@@ -97,28 +96,14 @@ export async function PUT(
             }
 
             if (smsMessage && updated.telefon) {
-                // MANUAL MODE (User Request: Do not send automatically for now)
-                /* 
-                const sent = await sendSMS(updated.telefon, smsMessage);
-                if (sent) {
-                    await logAction({
-                        log_id: crypto.randomUUID(),
-                        timestamp: new Date().toISOString(),
-                        user_email: session.user.email,
-                        customer_id: updated.id,
-                        action: 'SEND_SMS',
-                        note: `Durum: ${status} (Otomatik)`,
-                        new_value: smsMessage
-                    });
-                }
-                */
                 console.log('Skipping Auto-SMS (Manual Mode Active):', smsMessage);
             }
         }
 
-
-        // Detect Attorney Query Updates
+        // --- ATTORNEY HISTORY TRACKING (New WhatsApp-style Flow) ---
+        // 1. Customer Attorney Status
         if (existing && existing.avukat_sorgu_durumu !== updated.avukat_sorgu_durumu) {
+            // Also standard log
             const { logAction } = await import('@/lib/leads');
             await logAction({
                 log_id: crypto.randomUUID(),
@@ -130,9 +115,20 @@ export async function PUT(
                 new_value: updated.avukat_sorgu_durumu || '',
                 note: 'Avukat Sorgu Durumu Updated'
             });
+
+            // Insert into HISTORY table
+            await supabaseAdmin.from('attorney_status_history').insert({
+                lead_id: updated.id,
+                old_status: existing.avukat_sorgu_durumu,
+                new_status: updated.avukat_sorgu_durumu,
+                old_result: existing.avukat_sorgu_sonuc,
+                new_result: updated.avukat_sorgu_sonuc,
+                changed_by: session.user.email,
+                metadata: { type: 'customer' }
+            });
         }
 
-        // Detect Kefil Attorney Query Updates
+        // 2. Guarantor Attorney Status (Kefil)
         if (existing && existing.kefil_avukat_sorgu_durumu !== updated.kefil_avukat_sorgu_durumu) {
             const { logAction } = await import('@/lib/leads');
             await logAction({
@@ -145,6 +141,17 @@ export async function PUT(
                 new_value: updated.kefil_avukat_sorgu_durumu || '',
                 note: 'Kefil Avukat Sorgu Durumu Updated'
             });
+
+            // Insert into HISTORY table
+            await supabaseAdmin.from('attorney_status_history').insert({
+                lead_id: updated.id,
+                old_status: existing.kefil_avukat_sorgu_durumu,
+                new_status: updated.kefil_avukat_sorgu_durumu,
+                old_result: existing.kefil_avukat_sorgu_sonuc,
+                new_result: updated.kefil_avukat_sorgu_sonuc,
+                changed_by: session.user.email,
+                metadata: { type: 'guarantor' }
+            });
         }
 
 
@@ -153,10 +160,8 @@ export async function PUT(
             const { SMS_TEMPLATES } = await import('@/lib/sms-templates');
             const { sendSMS } = await import('@/lib/sms');
             const { logAction } = await import('@/lib/leads');
-
             const msg = SMS_TEMPLATES.GUARANTOR_REQUIRED(updated.ad_soyad);
             if (updated.telefon) {
-                await sendSMS(updated.telefon, msg);
                 await logAction({
                     log_id: crypto.randomUUID(),
                     timestamp: new Date().toISOString(),

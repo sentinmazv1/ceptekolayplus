@@ -677,7 +677,16 @@ export async function deleteCustomer(id: string, userEmail: string) {
 }
 
 export async function logAction(entry: LogEntry) {
-    await supabaseAdmin.from('activity_logs').insert({ id: entry.log_id, user_email: entry.user_email, lead_id: entry.customer_id, action: entry.action, old_value: entry.old_value, new_value: entry.new_value, note: entry.note });
+    await supabaseAdmin.from('activity_logs').insert({
+        id: entry.log_id,
+        user_email: entry.user_email,
+        lead_id: entry.customer_id,
+        action: entry.action,
+        old_value: entry.old_value,
+        new_value: entry.new_value,
+        note: entry.note,
+        metadata: entry.metadata
+    });
 }
 
 export async function getLogs(customerId?: string): Promise<LogEntry[]> {
