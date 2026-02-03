@@ -65,14 +65,28 @@ export async function GET(req: NextRequest) {
             const newVal = String(log.new_value || '').toLowerCase();
             const note = String(log.note || '').toLowerCase();
 
+            // Calls / SMS / WA
             if (action === 'PULL_LEAD') stats.calls++;
             if (action === 'SEND_SMS' || action === 'CLICK_SMS') stats.sms++;
             if (action === 'SEND_WHATSAPP' || action === 'CLICK_WHATSAPP') stats.whatsapp++;
 
+            // Status Transitions
+            // Broaden matching for Attorney to ensure data capture
             if (newVal.includes('başvuru alındı')) stats.applications++;
-            if ((newVal.includes('avukat') && newVal.includes('bekliyor') || newVal.includes('incelemesinde'))) stats.attorneyQuery++;
-            if ((newVal.includes('temiz') || note.includes('temiz')) && newVal.includes('avukat')) stats.attorneyClean++;
-            if ((newVal.includes('riskli') || note.includes('riskli') || newVal.includes('sorunlu')) && newVal.includes('avukat')) stats.attorneyRisky++;
+
+            // Attorney Query: "Avukat" generic or specific "İncelemesinde"/"Bekliyor"
+            if ((newVal.includes('avukat') && (newVal.includes('bekliyor') || newVal.includes('incelemesinde')))) {
+                stats.attorneyQuery++;
+            }
+
+            // Attorney Result: Clean vs Risky
+            // Sometimes it's just "Temiz" or "Riskli" without "Avukat" prefix in logs
+            if (newVal.includes('temiz') || note.includes('temiz')) {
+                stats.attorneyClean++;
+            }
+            if (newVal.includes('riskli') || note.includes('riskli') || newVal.includes('sorunlu')) {
+                stats.attorneyRisky++;
+            }
         });
 
         // --- 2. FETCH LEADS (Financials & List) ---
@@ -86,8 +100,6 @@ export async function GET(req: NextRequest) {
         const deliveredLeadsDetails: any[] = [];
         const deliveredLeadIds = new Set<string>();
 
-        // Identify Candidates for "Delivered" in this period
-        // We'll filter them strictly by Item Date later, but we need their IDs for loose attribution first.
         leads?.forEach((lead: any) => {
             const isDeliveredStatus = ['Teslim edildi', 'Satış yapıldı/Tamamlandı', 'Satış Yapıldı'].includes(lead.durum);
             if (isDeliveredStatus) deliveredLeadIds.add(lead.id);
@@ -97,12 +109,11 @@ export async function GET(req: NextRequest) {
         const salesAttribution = new Map<string, string>(); // LeadID -> Seller Name
 
         if (deliveredLeadIds.size > 0) {
-            // Fetch ALL relevant logs for these leads (not just in date range) to find who converted them
             const { data: attLogs } = await supabaseAdmin
                 .from('activity_logs')
                 .select('lead_id, performed_by, created_at, new_value, action')
                 .in('lead_id', Array.from(deliveredLeadIds))
-                .order('created_at', { ascending: true }); // Oldest first to find first Application pull
+                .order('created_at', { ascending: true }); // Oldest first
 
             const leadLogs = new Map<string, any[]>();
             attLogs?.forEach((log: any) => {
@@ -110,22 +121,21 @@ export async function GET(req: NextRequest) {
                 leadLogs.get(log.lead_id)?.push(log);
             });
 
-            // Determine Seller for each Lead
             deliveredLeadIds.forEach(leadId => {
                 const logs = leadLogs.get(leadId) || [];
                 let seller = null;
 
-                // Priority 1: First person to move to "Başvuru alındı"
+                // Priority 1: "Başvuru alındı"
                 const appLog = logs.find((l: any) => String(l.new_value || '').toLowerCase().includes('başvuru alındı'));
                 if (appLog) seller = appLog.performed_by;
 
-                // Priority 2: Person who moved to "Onaylandı"
+                // Priority 2: "Onaylandı"
                 if (!seller) {
                     const approvedLog = logs.find((l: any) => String(l.new_value || '').toLowerCase().includes('onaylandı'));
                     if (approvedLog) seller = approvedLog.performed_by;
                 }
 
-                // Priority 3: Person who moved to "Teslim edildi"
+                // Priority 3: "Teslim edildi"
                 if (!seller) {
                     const deliveredLog = logs.find((l: any) => String(l.new_value || '').toLowerCase().includes('teslim'));
                     if (deliveredLog) seller = deliveredLog.performed_by;
@@ -137,17 +147,15 @@ export async function GET(req: NextRequest) {
 
         // --- 4. CALCULATE STATS ---
         leads?.forEach((lead: any) => {
-            // Determine Best Seller Name
-            // Fallback: assigned_to -> 'Bilinmeyen' (Not 'Atanmamış' if we can help it)
             let seller = lead.assigned_to || 'Atanmamış';
             if (salesAttribution.has(lead.id)) seller = salesAttribution.get(lead.id);
 
-            // Clean up admin email if present
+            // Normalize
             if (seller === 'ibrahimsentinmaz@gmail.com') seller = 'İbrahim (Admin)';
 
             const sellerStats = getStats(seller);
 
-            // Limit Stats (Based on Approval Date)
+            // Limit Stats
             if (lead.onay_durumu === 'Onaylandı') {
                 const onayTs = lead.onay_tarihi ? new Date(lead.onay_tarihi).getTime() : 0;
                 if (onayTs >= startTs && onayTs <= endTs) {
@@ -156,7 +164,7 @@ export async function GET(req: NextRequest) {
                 }
             }
 
-            // Delivered Stats (Based on ITEM Date)
+            // Delivered Stats
             const isDeliveredStatus = ['Teslim edildi', 'Satış yapıldı/Tamamlandı', 'Satış Yapıldı'].includes(lead.durum);
             if (isDeliveredStatus) {
                 let items: any[] = [];
@@ -171,7 +179,6 @@ export async function GET(req: NextRequest) {
 
                 if (items.length > 0) {
                     items.forEach(item => {
-                        // Priority: Sale Date > Delivery Date > Lead Delivery Date
                         const itemDate = item.satis_tarihi || item.teslim_tarihi || lead.teslim_tarihi;
                         if (itemDate) {
                             const d = new Date(itemDate).getTime();
@@ -183,7 +190,6 @@ export async function GET(req: NextRequest) {
                         }
                     });
                 } else {
-                    // Fallback
                     const leadDate = lead.teslim_tarihi || lead.satis_tarihi;
                     if (leadDate) {
                         const d = new Date(leadDate).getTime();
@@ -196,18 +202,16 @@ export async function GET(req: NextRequest) {
                 }
 
                 if (hasItemInPeriod) {
-                    // Add to Stats
                     sellerStats.deliveredCount++;
                     sellerStats.deliveredRevenue += revenue;
 
-                    // Add to List
                     deliveredLeadsDetails.push({
                         id: lead.id,
                         name: `${lead.ad || ''} ${lead.soyad || ''}`,
                         phone: lead.telefon_1,
                         tc: lead.tc_kimlik,
                         work: lead.calisma_sekli || lead.meslek || '-',
-                        workPlace: lead.is_yeri || '-', // Added Workplace
+                        workPlace: lead.is_yeri || '-',
                         limit: lead.kredi_limiti,
                         seller: seller,
                         items: soldItemsText.join(', '),
@@ -222,13 +226,15 @@ export async function GET(req: NextRequest) {
             .filter(p => p.name !== 'Atanmamış' && p.name !== 'ibrahimsentinmaz@gmail.com')
             .sort((a, b) => b.deliveredRevenue - a.deliveredRevenue);
 
-        // Sort List by Date Descending
-        deliveredLeadsDetails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        // FILTER THE LIST TOO (Fixes Data Mismatch)
+        const filteredList = deliveredLeadsDetails
+            .filter(l => l.seller !== 'Atanmamış' && l.seller !== 'ibrahimsentinmaz@gmail.com')
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
         return NextResponse.json({
             success: true,
             data: filteredData,
-            deliveredLeads: deliveredLeadsDetails
+            deliveredLeads: filteredList
         });
 
     } catch (error: any) {
