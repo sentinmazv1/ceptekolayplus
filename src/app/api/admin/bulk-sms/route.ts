@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { userIds, message, templateId, channel, statusUpdate } = body;
+        const { userIds, message, templateId, channel, statusUpdate: statusChanges } = body;
 
         if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
             return NextResponse.json({ message: 'No users selected' }, { status: 400 });
