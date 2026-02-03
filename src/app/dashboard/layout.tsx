@@ -18,23 +18,10 @@ export default function DashboardLayout({
     const [stats, setStats] = useState<{ pending_approval: number } | null>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-    // --- BOSS MODE REDIRECT ---
-    useEffect(() => {
-        if (status === 'authenticated' && session?.user?.role === 'BOSS') {
-            // If Boss is on standard dashboard, redirect to executive
-            if (pathname === '/dashboard') {
-                router.replace('/dashboard/executive');
-            }
-        }
-    }, [status, session, pathname, router]);
+    // --- BOSS MODE REDIRECT REMOVED ---
 
-    // --- BOSS MODE LAYOUT ---
-    // If user is BOSS, render ONLY the children (Executive Dashboard handles its own layout)
-    // This removes the standard Header/Sidebar for the Boss.
-    if (session?.user?.role === 'BOSS') {
-        return <>{children}</>;
-    }
-    // -------------------------
+    // --- BOSS MODE LAYOUT REMOVED ---
+
 
     // Close sidebar on route change
     useEffect(() => {
