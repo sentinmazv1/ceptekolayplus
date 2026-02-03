@@ -1,6 +1,6 @@
 'use client';
 
-import { Calendar, Printer, RefreshCw } from 'lucide-react';
+import { Calendar, Printer, RefreshCw, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 interface ReportHeaderProps {
