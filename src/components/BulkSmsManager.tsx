@@ -130,6 +130,7 @@ export function BulkSmsManager() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    userIds: selectedUserIds,
                     message: messageContent,
                     channel,
                     templateId: selectedTemplateId,
