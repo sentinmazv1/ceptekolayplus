@@ -499,7 +499,9 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
 
         // Validation
         if (!data.ad_soyad || !data.telefon) {
-            setError('Ad Soyad ve Telefon zorunludur.');
+            const msg = 'Ad Soyad ve Telefon zorunludur.';
+            setError(msg);
+            alert(msg);
             setLoading(false);
             return;
         }
@@ -516,28 +518,36 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
 
         // Phone Validation (Basic)
         if (data.telefon.length < 10) {
-            setError('Telefon numarası eksik veya hatalı.');
+            const msg = 'Telefon numarası eksik veya hatalı.';
+            setError(msg);
+            alert(msg);
             setLoading(false);
             return;
         }
 
         // TC Validation (If provided)
         if (data.tc_kimlik && (data.tc_kimlik.length !== 11 || !/^\d+$/.test(data.tc_kimlik))) {
-            setError('TC Kimlik Numarası 11 haneli ve sayısal olmalıdır.');
+            const msg = 'TC Kimlik Numarası 11 haneli ve sayısal olmalıdır.';
+            setError(msg);
+            alert(msg);
             setLoading(false);
             return;
         }
 
         // IMEI Validation (If provided, strictly 15 digits)
         if (data.urun_imei && (data.urun_imei.length !== 15 || !/^\d+$/.test(data.urun_imei))) {
-            setError('Ürün IMEI numarası tam 15 hane ve sayısal olmalıdır.');
+            const msg = 'Ürün IMEI numarası tam 15 hane ve sayısal olmalıdır.';
+            setError(msg);
+            alert(msg);
             setLoading(false);
             return;
         }
 
         // Status Logic
         if (data.durum === 'Daha sonra aranmak istiyor' && !data.sonraki_arama_zamani) {
-            setError('"Daha sonra aranmak istiyor" durumu için Sonraki Arama Zamanı zorunludur.');
+            const msg = '"Daha sonra aranmak istiyor" durumu için Sonraki Arama Zamanı zorunludur.';
+            setError(msg);
+            alert(msg);
             setLoading(false);
             return;
         }
@@ -548,22 +558,37 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
             (initialData.durum !== 'Teslim edildi' && initialData.durum !== 'Satış yapıldı/Tamamlandı');
 
         if (isBecomingDelivered && (!data.urun_seri_no || !data.urun_imei)) {
-            setError('⚠️ Teslimat tamamlamak için STOKTAN ürün seçmelisiniz.\n\nÜrün & Teslimat sekmesinden "Stoktan Ürün Seç" butonunu kullanın.');
+            const msg = '⚠️ Teslimat tamamlamak için STOKTAN ürün seçmelisiniz.\n\nÜrün & Teslimat sekmesinden "Stoktan Ürün Seç" butonunu kullanın.';
+            setError(msg);
+            alert(msg);
             setLoading(false);
             return;
+        }
+
+        // CONFIRMATION: Phone Verification Check for Delivery
+        if (isBecomingDelivered && !data.telefon_onayli) {
+            const confirmed = confirm('⚠️ Telefon numarası henüz doğrulanmamış.\n\nYine de teslim edildi olarak işaretlemek istiyor musunuz?');
+            if (!confirmed) {
+                setLoading(false);
+                return;
+            }
         }
 
         // Guarantor Validation
         // Only enforce if the sales rep is re-submitting for approval ('Başvuru alındı')
         if (data.onay_durumu === 'Kefil İstendi' && data.durum === 'Başvuru alındı') {
             if (!data.kefil_ad_soyad || !data.kefil_telefon || !data.kefil_tc_kimlik) {
-                setError('Kefil İstendiği ve onay süreci için; Kefil Ad Soyad, Telefon ve TC Kimlik zorunludur.');
+                const msg = 'Kefil İstendiği ve onay süreci için; Kefil Ad Soyad, Telefon ve TC Kimlik zorunludur.';
+                setError(msg);
+                alert(msg);
                 setLoading(false);
                 return;
             }
             // Kefil TC Check
             if (data.kefil_tc_kimlik && (data.kefil_tc_kimlik.length !== 11 || !/^\d+$/.test(data.kefil_tc_kimlik))) {
-                setError('Kefil TC Kimlik Numarası 11 haneli olmalıdır.');
+                const msg = 'Kefil TC Kimlik Numarası 11 haneli olmalıdır.';
+                setError(msg);
+                alert(msg);
                 setLoading(false);
                 return;
             }
@@ -1067,10 +1092,6 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                             value={data.durum}
                                             onChange={(e) => {
                                                 const val = e.target.value as any;
-                                                if (val === 'Teslim edildi' && !data.telefon_onayli) {
-                                                    alert('⚠️ Teslimat yapabilmek için önce telefon numarasını doğrulamanız gerekmektedir!');
-                                                    return;
-                                                }
                                                 handleChange('durum', val);
                                             }}
                                             options={statusOptions.length > 0 ? statusOptions : [
