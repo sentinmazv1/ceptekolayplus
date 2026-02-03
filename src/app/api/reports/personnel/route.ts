@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 
         const personnelMap = new Map<string, any>();
         const getStats = (name: string) => {
-            const key = name || 'Bilinmeyen'; // Safety
+            const key = name || 'Belirlenemedi';
             if (!personnelMap.has(key)) {
                 personnelMap.set(key, {
                     name: key,
@@ -71,21 +71,24 @@ export async function GET(req: NextRequest) {
             if (action === 'SEND_WHATSAPP' || action === 'CLICK_WHATSAPP') stats.whatsapp++;
 
             // Status Transitions
-            // Broaden matching for Attorney to ensure data capture
             if (newVal.includes('başvuru alındı')) stats.applications++;
 
-            // Attorney Query: "Avukat" generic or specific "İncelemesinde"/"Bekliyor"
-            if ((newVal.includes('avukat') && (newVal.includes('bekliyor') || newVal.includes('incelemesinde')))) {
-                stats.attorneyQuery++;
-            }
-
-            // Attorney Result: Clean vs Risky
-            // Sometimes it's just "Temiz" or "Riskli" without "Avukat" prefix in logs
-            if (newVal.includes('temiz') || note.includes('temiz')) {
-                stats.attorneyClean++;
-            }
-            if (newVal.includes('riskli') || note.includes('riskli') || newVal.includes('sorunlu')) {
-                stats.attorneyRisky++;
+            // Attorney Query: Broader Logic
+            // If it contains "avukat" and is NOT a result (temiz/riskli), assume it's a query/pending state.
+            // Also check for "bekliyor" or "incelemesinde" specifically if possible, but fallback to just "avukat" entry
+            if (newVal.includes('avukat')) {
+                if (newVal.includes('temiz') || note.includes('temiz')) {
+                    stats.attorneyClean++;
+                } else if (newVal.includes('riskli') || note.includes('riskli') || newVal.includes('sorunlu')) {
+                    stats.attorneyRisky++;
+                } else {
+                    // Assume Query/Pending
+                    stats.attorneyQuery++;
+                }
+            } else {
+                // Check legacy/simple strings
+                if (newVal.includes('temiz')) stats.attorneyClean++;
+                else if (newVal.includes('riskli') || newVal.includes('sorunlu')) stats.attorneyRisky++;
             }
         });
 
@@ -222,13 +225,17 @@ export async function GET(req: NextRequest) {
             }
         });
 
+        // 5. Return Data 
+        // DO NOT FILTER 'Atanmamış' from list, just sort. 
+        // Filter from TABLE only if completely empty or irrelevant? 
+        // User said "remove from table", but "don't let list be empty".
+
         const filteredData = Array.from(personnelMap.values())
             .filter(p => p.name !== 'Atanmamış' && p.name !== 'ibrahimsentinmaz@gmail.com')
             .sort((a, b) => b.deliveredRevenue - a.deliveredRevenue);
 
-        // FILTER THE LIST TOO (Fixes Data Mismatch)
+        // SHOW ALL in List (So user can see attribution errors)
         const filteredList = deliveredLeadsDetails
-            .filter(l => l.seller !== 'Atanmamış' && l.seller !== 'ibrahimsentinmaz@gmail.com')
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
         return NextResponse.json({
