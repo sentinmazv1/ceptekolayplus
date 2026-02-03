@@ -28,6 +28,13 @@ export function BulkSmsManager() {
     const [selectedTemplateId, setSelectedTemplateId] = useState('');
     const [messageContent, setMessageContent] = useState('');
 
+    const [messageContent, setMessageContent] = useState('');
+
+    // Status Update Features
+    const [enableStatusChange, setEnableStatusChange] = useState(false);
+    const [targetStatus, setTargetStatus] = useState('');
+    const [assignToMe, setAssignToMe] = useState(false); // New feature: Assign to sender
+
     const [dynamicStatuses, setDynamicStatuses] = useState<any[]>([]);
 
     // Load Data
@@ -123,10 +130,14 @@ export function BulkSmsManager() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    userIds: selectedUserIds,
                     message: messageContent,
                     channel,
-                    templateId: selectedTemplateId
+                    templateId: selectedTemplateId,
+                    // New Params
+                    statusUpdate: enableStatusChange ? {
+                        status: targetStatus,
+                        assignToSender: assignToMe
+                    } : null
                 })
             });
             const json = await res.json();
@@ -350,6 +361,57 @@ export function BulkSmsManager() {
                                 <span>{messageContent.length} karakter</span>
                                 {channel === 'SMS' && <span>{Math.ceil(messageContent.length / 160)} SMS (Yaklaşık)</span>}
                             </div>
+                            <div className="flex justify-between items-center mt-1 text-xs text-gray-400">
+                                <span>{messageContent.length} karakter</span>
+                                {channel === 'SMS' && <span>{Math.ceil(messageContent.length / 160)} SMS (Yaklaşık)</span>}
+                            </div>
+                        </div>
+
+                        {/* Status Update Options */}
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-3">
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="enableStatus"
+                                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                    checked={enableStatusChange}
+                                    onChange={(e) => setEnableStatusChange(e.target.checked)}
+                                />
+                                <label htmlFor="enableStatus" className="text-sm font-medium text-gray-700 select-none">
+                                    Gönderilenlerin Durumunu Değiştir
+                                </label>
+                            </div>
+
+                            {enableStatusChange && (
+                                <div className="pl-6 space-y-3 animate-in fade-in slide-in-from-top-2">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-500 mb-1">Yeni Durum Seçin</label>
+                                        <select
+                                            className="w-full text-xs border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                            value={targetStatus}
+                                            onChange={(e) => setTargetStatus(e.target.value)}
+                                        >
+                                            <option value="">-- Durum Seçin --</option>
+                                            {dynamicStatuses.filter(s => s.is_active).map(s => (
+                                                <option key={s.id} value={s.label}>{s.label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            id="assignOwner"
+                                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                            checked={assignToMe}
+                                            onChange={(e) => setAssignToMe(e.target.checked)}
+                                        />
+                                        <label htmlFor="assignOwner" className="text-xs text-gray-600 select-none">
+                                            Bu müşterileri <strong>Bana Ata</strong>
+                                        </label>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className={`p-3 rounded-lg border text-xs ${channel === 'WHATSAPP' ? 'bg-green-50 border-green-100 text-green-800' : 'bg-blue-50 border-blue-100 text-blue-800'}`}>

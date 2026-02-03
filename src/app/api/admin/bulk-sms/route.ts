@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { userIds, message, templateId, channel } = body;
+        const { userIds, message, templateId, channel, statusUpdate } = body;
 
         if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
             return NextResponse.json({ message: 'No users selected' }, { status: 400 });
@@ -149,6 +149,47 @@ export async function POST(req: NextRequest) {
             // Small delay to avoid rate limiting
             await new Promise(resolve => setTimeout(resolve, 100));
         }
+
+        // --- BULK STATUS UPDATE LOGIC ---
+        let updatedCount = 0;
+        if (statusUpdate && statusUpdate.status) {
+            console.log(`[BulkSMS] Updating status for ${userIds.length} users to: ${statusUpdate.status}`);
+
+            const updatePayload: any = {
+                durum: statusUpdate.status,
+                updated_at: new Date().toISOString(),
+                updated_by: session.user.email
+            };
+
+            if (statusUpdate.assignToSender) {
+                updatePayload.sahip = session.user.email;
+                updatePayload.assigned_to = session.user.email; // Keep legacy field sync if needed
+            }
+
+            const { error: updateError, count } = await supabaseAdmin
+                .from('leads')
+                .update(updatePayload)
+                .in('id', userIds)
+                .select('count', { count: 'exact' });
+
+            if (!updateError) {
+                updatedCount = count || 0;
+
+                // Log the bulk update event
+                await supabaseAdmin.from('activity_logs').insert({
+                    lead_id: null, // Global log or maybe loop individual logs if critical? 
+                    // Loop logging is safer for history, but expensive for 1000 users.
+                    // Let's create a single summary log.
+                    action: 'BULK_STATUS_UPDATE',
+                    user_email: session.user.email,
+                    note: `Bulk update to '${statusUpdate.status}'. Assigned: ${statusUpdate.assignToSender}. Count: ${updatedCount}`,
+                    metadata: { user_ids: userIds }
+                });
+            } else {
+                console.error('Bulk update error', updateError);
+            }
+        }
+
 
         // Log bulk action summary
         await supabaseAdmin.from('activity_logs').insert({
