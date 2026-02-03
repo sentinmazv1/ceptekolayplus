@@ -29,9 +29,10 @@ export async function GET(req: NextRequest) {
 
         const personnelMap = new Map<string, any>();
         const getStats = (name: string) => {
-            if (!personnelMap.has(name)) {
-                personnelMap.set(name, {
-                    name,
+            const key = name || 'Bilinmeyen'; // Safety
+            if (!personnelMap.has(key)) {
+                personnelMap.set(key, {
+                    name: key,
                     calls: 0,
                     sms: 0,
                     whatsapp: 0,
@@ -45,28 +46,10 @@ export async function GET(req: NextRequest) {
                     deliveredRevenue: 0
                 });
             }
-            return personnelMap.get(name);
+            return personnelMap.get(key);
         };
 
-        // --- 1. FETCH LOGS (Actions & Attribution Source) ---
-        // We fetch logs to:
-        // A) Count actions (Calls, SMS...) in range.
-        // B) Find who moved lead to "Başvuru alındı" (Attribution).
-        const { data: logs, error: logError } = await supabaseAdmin
-            .from('activity_logs')
-            .select('*');
-        // We need ALL logs to find proper attribution even if action was in past, 
-        // BUT for performance, maybe we restrict? 
-        // User says: "Kim başvuruya çektiyse satıcısı odur". 
-        // If checking attribution, we strictly need the log for that lead.
-        // Let's fetch logs in range for "Counts", and maybe a separate query or wider query for attribution?
-        // To be safe and since volume isn't massive yet, let's fetch logs overlapping the active leads or just "All Time" logs for attribution is safest but expensive.
-        // Optimization: We only care about attribution for LEADS that are delivered in this period.
-        // So we can fetch leads first, get their IDs, then fetch relevant logs? 
-        // Let's stick to: Fetch logs in date range for ACTIVITY COUNTS. 
-        // For ATTRIBUTION, we will query distinct logs for the specific delivered leads later.
-
-        // Actually, let's just fetch logs in range for the "Activity Board".
+        // --- 1. FETCH LOGS (Activity Counts) ---
         const { data: rangeLogs, error: rangeError } = await supabaseAdmin
             .from('activity_logs')
             .select('*')
@@ -75,7 +58,6 @@ export async function GET(req: NextRequest) {
 
         if (rangeError) throw rangeError;
 
-        // Process Activity Counts (Strictly in Date Range)
         rangeLogs?.forEach((log: any) => {
             const user = log.performed_by || log.user_email || 'Bilinmeyen';
             const stats = getStats(user);
@@ -93,8 +75,7 @@ export async function GET(req: NextRequest) {
             if ((newVal.includes('riskli') || note.includes('riskli') || newVal.includes('sorunlu')) && newVal.includes('avukat')) stats.attorneyRisky++;
         });
 
-        // --- 2. FETCH LEADS (Financials) ---
-        // We need leads that might have approved/delivered events in this month.
+        // --- 2. FETCH LEADS (Financials & List) ---
         const { data: leads, error: leadError } = await supabaseAdmin
             .from('leads')
             .select('*')
@@ -103,69 +84,81 @@ export async function GET(req: NextRequest) {
         if (leadError) throw leadError;
 
         const deliveredLeadsDetails: any[] = [];
-
-        // For attribution, we need to know who moved these leads to "Başvuru alındı".
-        // Collect IDs of delivered leads in range.
         const deliveredLeadIds = new Set<string>();
+
+        // Identify Candidates for "Delivered" in this period
+        // We'll filter them strictly by Item Date later, but we need their IDs for loose attribution first.
         leads?.forEach((lead: any) => {
-            // Check if potentially delivered in range
             const isDeliveredStatus = ['Teslim edildi', 'Satış yapıldı/Tamamlandı', 'Satış Yapıldı'].includes(lead.durum);
             if (isDeliveredStatus) deliveredLeadIds.add(lead.id);
         });
 
-        // Fetch attribution logs for these specific leads
-        let attributionMap = new Map<string, string>(); // LeadID -> User
+        // --- 3. ROBUST ATTRIBUTION ---
+        const salesAttribution = new Map<string, string>(); // LeadID -> Seller Name
+
         if (deliveredLeadIds.size > 0) {
+            // Fetch ALL relevant logs for these leads (not just in date range) to find who converted them
             const { data: attLogs } = await supabaseAdmin
                 .from('activity_logs')
-                .select('lead_id, performed_by, created_at, new_value')
+                .select('lead_id, performed_by, created_at, new_value, action')
                 .in('lead_id', Array.from(deliveredLeadIds))
-                .order('created_at', { ascending: false }); // Latest first
+                .order('created_at', { ascending: true }); // Oldest first to find first Application pull
 
+            const leadLogs = new Map<string, any[]>();
             attLogs?.forEach((log: any) => {
-                // Look for "Başvuru alındı"
-                const val = String(log.new_value || '').toLowerCase();
-                if (val.includes('başvuru alındı')) {
-                    // Start filling map. Since we ordered desc, the first one we find is the latest.
-                    // Or do we want the EARLIEST? "Whoever pulled it to application". 
-                    // Usually the one who converted it. 
-                    // I'll take the LATEST one before delivery basically.
-                    if (!attributionMap.has(log.lead_id)) {
-                        attributionMap.set(log.lead_id, log.performed_by);
-                    }
+                if (!leadLogs.has(log.lead_id)) leadLogs.set(log.lead_id, []);
+                leadLogs.get(log.lead_id)?.push(log);
+            });
+
+            // Determine Seller for each Lead
+            deliveredLeadIds.forEach(leadId => {
+                const logs = leadLogs.get(leadId) || [];
+                let seller = null;
+
+                // Priority 1: First person to move to "Başvuru alındı"
+                const appLog = logs.find((l: any) => String(l.new_value || '').toLowerCase().includes('başvuru alındı'));
+                if (appLog) seller = appLog.performed_by;
+
+                // Priority 2: Person who moved to "Onaylandı"
+                if (!seller) {
+                    const approvedLog = logs.find((l: any) => String(l.new_value || '').toLowerCase().includes('onaylandı'));
+                    if (approvedLog) seller = approvedLog.performed_by;
                 }
+
+                // Priority 3: Person who moved to "Teslim edildi"
+                if (!seller) {
+                    const deliveredLog = logs.find((l: any) => String(l.new_value || '').toLowerCase().includes('teslim'));
+                    if (deliveredLog) seller = deliveredLog.performed_by;
+                }
+
+                if (seller) salesAttribution.set(leadId, seller);
             });
         }
 
-        // Process Leads
+        // --- 4. CALCULATE STATS ---
         leads?.forEach((lead: any) => {
-            // APPROVED LOGIC (Ownership = Assigned To usually, or attribution?)
-            // User only specified "Delivered" logic. I will stick to "assigned_to" for Approval for now unless requested.
-            let approvedOwner = lead.assigned_to || 'Atanmamış';
-            // Adjust attribution for Approved as well? "Kim başvuruya çektiyse..." implies ownership.
-            // Let's try to use attributionMap if available, else fallback.
-            if (attributionMap.has(lead.id)) approvedOwner = attributionMap.get(lead.id);
+            // Determine Best Seller Name
+            // Fallback: assigned_to -> 'Bilinmeyen' (Not 'Atanmamış' if we can help it)
+            let seller = lead.assigned_to || 'Atanmamış';
+            if (salesAttribution.has(lead.id)) seller = salesAttribution.get(lead.id);
 
-            const appStats = getStats(approvedOwner);
+            // Clean up admin email if present
+            if (seller === 'ibrahimsentinmaz@gmail.com') seller = 'İbrahim (Admin)';
 
+            const sellerStats = getStats(seller);
+
+            // Limit Stats (Based on Approval Date)
             if (lead.onay_durumu === 'Onaylandı') {
                 const onayTs = lead.onay_tarihi ? new Date(lead.onay_tarihi).getTime() : 0;
                 if (onayTs >= startTs && onayTs <= endTs) {
-                    appStats.approvedCount++;
-                    appStats.approvedLimit += parsePrice(lead.kredi_limiti);
+                    sellerStats.approvedCount++;
+                    sellerStats.approvedLimit += parsePrice(lead.kredi_limiti);
                 }
             }
 
-            // DELIVERED LOGIC
+            // Delivered Stats (Based on ITEM Date)
             const isDeliveredStatus = ['Teslim edildi', 'Satış yapıldı/Tamamlandı', 'Satış Yapıldı'].includes(lead.durum);
             if (isDeliveredStatus) {
-                // Determine Seller
-                let seller = lead.assigned_to || 'Atanmamış';
-                if (attributionMap.has(lead.id)) {
-                    seller = attributionMap.get(lead.id);
-                }
-
-                // Check Items
                 let items: any[] = [];
                 try {
                     if (Array.isArray(lead.satilan_urunler)) items = lead.satilan_urunler;
@@ -173,17 +166,18 @@ export async function GET(req: NextRequest) {
                 } catch (e) { }
 
                 let revenue = 0;
-                let hasItem = false;
+                let hasItemInPeriod = false;
                 let soldItemsText: string[] = [];
 
                 if (items.length > 0) {
                     items.forEach(item => {
+                        // Priority: Sale Date > Delivery Date > Lead Delivery Date
                         const itemDate = item.satis_tarihi || item.teslim_tarihi || lead.teslim_tarihi;
                         if (itemDate) {
                             const d = new Date(itemDate).getTime();
                             if (d >= startTs && d <= endTs) {
                                 revenue += parsePrice(item.satis_fiyati || item.fiyat);
-                                hasItem = true;
+                                hasItemInPeriod = true;
                                 soldItemsText.push(`${item.marka || ''} ${item.model || ''} (${parsePrice(item.satis_fiyati || item.fiyat).toLocaleString('tr-TR')} ₺)`);
                             }
                         }
@@ -195,43 +189,46 @@ export async function GET(req: NextRequest) {
                         const d = new Date(leadDate).getTime();
                         if (d >= startTs && d <= endTs) {
                             revenue += parsePrice(lead.kredi_limiti || lead.satis_fiyati);
-                            hasItem = true;
+                            hasItemInPeriod = true;
                             soldItemsText.push("Ürün Detayı Yok");
                         }
                     }
                 }
 
-                if (hasItem) {
-                    const sellerStats = getStats(seller);
+                if (hasItemInPeriod) {
+                    // Add to Stats
                     sellerStats.deliveredCount++;
                     sellerStats.deliveredRevenue += revenue;
 
-                    // Add to Detailed List
+                    // Add to List
                     deliveredLeadsDetails.push({
                         id: lead.id,
                         name: `${lead.ad || ''} ${lead.soyad || ''}`,
                         phone: lead.telefon_1,
                         tc: lead.tc_kimlik,
-                        work: lead.calisma_sekli || lead.meslek,
+                        work: lead.calisma_sekli || lead.meslek || '-',
+                        workPlace: lead.is_yeri || '-', // Added Workplace
                         limit: lead.kredi_limiti,
                         seller: seller,
                         items: soldItemsText.join(', '),
                         revenue: revenue,
-                        date: lead.teslim_tarihi
+                        date: lead.teslim_tarihi || lead.satis_tarihi,
                     });
                 }
             }
         });
 
-        // 3. Filtering & Sorting
         const filteredData = Array.from(personnelMap.values())
             .filter(p => p.name !== 'Atanmamış' && p.name !== 'ibrahimsentinmaz@gmail.com')
             .sort((a, b) => b.deliveredRevenue - a.deliveredRevenue);
 
+        // Sort List by Date Descending
+        deliveredLeadsDetails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
         return NextResponse.json({
             success: true,
             data: filteredData,
-            deliveredLeads: deliveredLeadsDetails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            deliveredLeads: deliveredLeadsDetails
         });
 
     } catch (error: any) {
