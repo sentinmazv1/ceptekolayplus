@@ -16,8 +16,13 @@ export function CurrentMonthBar({ data, loading }: CurrentMonthBarProps) {
     const formatCurrency = (val: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(val);
 
     const turnover = data?.kpi?.turnover || 0;
-    const target = 2000000; // Example Target: 2M TL (This could be configurable later)
-    const targetProgress = Math.min((turnover / target) * 100, 100);
+
+    // Dynamic Target or just visual filler
+    // User requested "Don't write target, just advance based on revenue"
+    // So we use a visual max (e.g. 1.2x of current revenue or a base target)
+    const baseTarget = 2000000;
+    const visualMax = Math.max(turnover * 1.2, baseTarget);
+    const targetProgress = Math.min((turnover / visualMax) * 100, 100);
 
     if (loading) return <div className="w-full h-24 bg-white/5 animate-pulse rounded-2xl mb-8"></div>;
 
@@ -47,8 +52,8 @@ export function CurrentMonthBar({ data, loading }: CurrentMonthBarProps) {
                 {/* Center: Financial Progress */}
                 <div className="flex-1 w-full md:max-w-xl">
                     <div className="flex justify-between text-sm mb-2">
-                        <span className="text-slate-400">Ciro Hedefi ({formatCurrency(target)})</span>
-                        <span className="text-white font-bold">%{targetProgress.toFixed(1)}</span>
+                        <span className="text-slate-400">Aylık Ciro Durumu</span>
+                        <span className="text-white font-bold">{formatCurrency(turnover)}</span>
                     </div>
                     <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden relative">
                         {/* Target Markers */}
@@ -61,11 +66,12 @@ export function CurrentMonthBar({ data, loading }: CurrentMonthBarProps) {
                             className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-1000"
                             style={{ width: `${targetProgress}%` }}
                         ></div>
+
                     </div>
                     <div className="flex justify-between text-xs text-slate-500 mt-1">
                         <span>0₺</span>
                         <span>{formatCurrency(turnover)} (Mevcut)</span>
-                        <span>{formatCurrency(target)}</span>
+                        <span>{formatCurrency(visualMax)}</span>
                     </div>
                 </div>
 

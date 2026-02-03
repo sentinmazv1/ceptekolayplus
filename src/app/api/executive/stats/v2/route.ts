@@ -185,8 +185,18 @@ export async function GET(req: Request) {
 
             const saleDate = new Date(saleDateStr).getTime();
             const startMonthTime = new Date(startOfMonth).getTime();
-            let revenue = parsePrice(sale.satis_fiyati || sale.talep_edilen_tutar || 0);
-            // Hard fix for empty revenue on delivered items logic can be added here
+
+            // Revenue Calculation (Parse JSON)
+            let revenue = 0;
+            if (Array.isArray(sale.satilan_urunler)) {
+                sale.satilan_urunler.forEach((prod: any) => {
+                    revenue += parsePrice(prod.satis_fiyati || prod.fiyat || 0);
+                });
+            }
+            // Fallback to old scalar columns if JSON parsing yielded 0 (legacy data)
+            if (revenue === 0) {
+                revenue = parsePrice(sale.talep_edilen_tutar || 0);
+            }
 
             // Monthly Turnover (Fixed Scope: This Month)
             if (saleDate >= startMonthTime) {
@@ -259,11 +269,15 @@ export async function GET(req: Request) {
 
 
         // 6. FORMAT RESPONSE
-        // ... (existing helper logic)
+        // Monthly Projections
         const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
         const daysElapsed = now.getDate();
         const dailyAvg = monthly.turnover / Math.max(daysElapsed, 1);
         const projected = dailyAvg * daysInMonth;
+
+        // Metrics
+        const conversionRate = filtered.ops.calls > 0 ? (monthly.funnel.applications / filtered.ops.calls) * 100 : 0;
+        const avgDealSize = monthly.salesCount > 0 ? monthly.turnover / monthly.salesCount : 0;
 
         return NextResponse.json({
             success: true,
@@ -271,6 +285,8 @@ export async function GET(req: Request) {
                 ...monthly,
                 projectedRevenue: projected,
                 dailyAverage: dailyAvg,
+                conversion: conversionRate,
+                avgDealSize: avgDealSize,
                 demographics: {
                     cities: Object.entries(monthly.demographics.cities).sort((a, b) => b[1] - a[1]).slice(0, 8),
                     jobs: Object.entries(monthly.demographics.jobs).sort((a, b) => b[1] - a[1]).slice(0, 8),

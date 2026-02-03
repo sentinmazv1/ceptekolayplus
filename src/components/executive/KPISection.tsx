@@ -53,7 +53,7 @@ export function KPISection({ data, loading }: KPIProps) {
         {
             label: 'Dönüşüm',
             value: `%${safeData.conversion.toFixed(1)}`,
-            sub: 'Satış / Toplam Veri',
+            sub: 'Başvuru / Arama',
             icon: Activity,
             color: 'text-blue-400',
             bg: 'bg-blue-500/10',
