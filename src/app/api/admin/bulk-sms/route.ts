@@ -166,14 +166,14 @@ export async function POST(req: NextRequest) {
                 updatePayload.assigned_to = session.user.email; // Keep legacy field sync if needed
             }
 
-            const { error: updateError, count } = await supabaseAdmin
+            const { data, error: updateError } = await supabaseAdmin
                 .from('leads')
                 .update(updatePayload)
                 .in('id', userIds)
                 .select('id');
 
             if (!updateError) {
-                updatedCount = count?.length || 0;
+                updatedCount = data?.length || 0;
 
                 // Log the bulk update event
                 await supabaseAdmin.from('activity_logs').insert({
