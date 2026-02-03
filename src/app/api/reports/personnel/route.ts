@@ -65,8 +65,6 @@ export async function GET(req: NextRequest) {
             .from('activity_logs')
             .select('*')
             .gte('created_at', startIso)
-            .select('*')
-            .gte('created_at', startIso)
             .lte('created_at', endIso);
 
         // --- 1.5 ATTORNEY HISTORY (New Source of Truth) ---
@@ -109,7 +107,7 @@ export async function GET(req: NextRequest) {
 
         });
 
-    });
+
 
     // --- Process Attorney History ---
     attorneyHistory?.forEach((record: any) => {
