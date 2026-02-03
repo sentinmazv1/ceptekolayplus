@@ -170,10 +170,10 @@ export async function POST(req: NextRequest) {
                 .from('leads')
                 .update(updatePayload)
                 .in('id', userIds)
-                .select('count', { count: 'exact' });
+                .select('id');
 
             if (!updateError) {
-                updatedCount = count || 0;
+                updatedCount = count?.length || 0;
 
                 // Log the bulk update event
                 await supabaseAdmin.from('activity_logs').insert({
