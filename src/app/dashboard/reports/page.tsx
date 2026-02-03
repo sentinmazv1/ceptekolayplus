@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Wallet, ShoppingBag, PieChart, TrendingUp, Loader2, PhoneCall, MessageSquare, MonitorSmartphone, FileCheck, Scale, BadgeCheck, PackageCheck, ShieldAlert, ShieldCheck, Users } from 'lucide-react';
+import { Wallet, ShoppingBag, PieChart, TrendingUp, Loader2, PhoneCall, MessageSquare, MonitorSmartphone, FileCheck, Scale, BadgeCheck, PackageCheck, ShieldAlert, ShieldCheck, Users, Package } from 'lucide-react';
 import { ReportHeader } from '@/components/reports/ReportHeader';
 import { KPICard } from '@/components/reports/KPICard';
 import { PersonnelTable } from '@/components/reports/PersonnelTable';
+import { DeliveredCustomerList } from '@/components/reports/DeliveredCustomerList';
 import { Button } from '@/components/ui/Button';
 
 // Types
@@ -51,8 +52,9 @@ export default function ReportsPage() {
     const [detailedStats, setDetailedStats] = useState<ReportStats | null>(null);
     const [detailedLoading, setDetailedLoading] = useState(true);
 
-    // State for Personnel Report
+    // State for Personnel & Delivered
     const [personnelData, setPersonnelData] = useState<any[]>([]);
+    const [deliveredLeads, setDeliveredLeads] = useState<any[]>([]);
     const [personnelLoading, setPersonnelLoading] = useState(false);
 
     const fetchDetailedData = () => {
@@ -72,7 +74,10 @@ export default function ReportsPage() {
         fetch(`/api/reports/personnel?startDate=${startDate}&endDate=${endDate}`)
             .then(res => res.json())
             .then(data => {
-                if (data.success) setPersonnelData(data.data);
+                if (data.success) {
+                    setPersonnelData(data.data);
+                    setDeliveredLeads(data.deliveredLeads || []);
+                }
             })
             .catch(err => console.error(err))
             .finally(() => setPersonnelLoading(false));
@@ -130,6 +135,11 @@ export default function ReportsPage() {
                             PERSONEL PERFORMANS TABLOSU
                         </h3>
                         <PersonnelTable data={personnelData} loading={personnelLoading} />
+                    </div>
+
+                    {/* Delivered Customers List */}
+                    <div className="mb-12">
+                        <DeliveredCustomerList data={deliveredLeads} />
                     </div>
 
                     {/* KPI GRID (Global Totals for Context) */}
