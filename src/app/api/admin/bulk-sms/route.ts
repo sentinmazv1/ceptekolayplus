@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
         // --- BULK STATUS UPDATE LOGIC ---
         let updatedCount = 0;
         // --- BULK STATUS UPDATE LOGIC ---
-        let updatedCount = 0;
+
         // FIX: Allow update if EITHER status or assignment is requested
         if (statusUpdate && (statusUpdate.status || statusUpdate.assignToSender)) {
             console.log(`[BulkSMS] Updating leads... Status: ${statusUpdate.status || '(No Change)'}, Assign: ${statusUpdate.assignToSender}`);
