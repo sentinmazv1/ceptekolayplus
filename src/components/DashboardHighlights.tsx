@@ -43,7 +43,11 @@ export function DashboardHighlights({ onSelectCustomer, lastUpdated }: Dashboard
             const baseQuery = (status?: string) => {
                 let q = supabase.from('leads').select('id', { count: 'exact', head: true });
                 if (status) q = q.eq('durum', status);
-                if (!isAdmin && userEmail) q = q.eq('sahip', userEmail);
+
+                // USER ISOLATION: Owner OR Creator
+                if (!isAdmin && userEmail) {
+                    q = q.or(`sahip.eq.${userEmail},created_by.eq.${userEmail}`);
+                }
                 return q;
             };
 
@@ -63,8 +67,9 @@ export function DashboardHighlights({ onSelectCustomer, lastUpdated }: Dashboard
                 .or('durum.eq.Teslim edildi,durum.eq.Satış yapıldı/Tamamlandı')
                 .gte('teslim_tarihi', startOfMonth);
 
+            // USER ISOLATION: Owner OR Creator
             if (!isAdmin && userEmail) {
-                deliveredQuery = deliveredQuery.eq('sahip', userEmail);
+                deliveredQuery = deliveredQuery.or(`sahip.eq.${userEmail},created_by.eq.${userEmail}`);
             }
 
             const { count: deliveredCount } = await deliveredQuery;
@@ -96,9 +101,9 @@ export function DashboardHighlights({ onSelectCustomer, lastUpdated }: Dashboard
                 .order('updated_at', { ascending: false })
                 .limit(50); // Limit to 50 for performance
 
-            // Apply User Isolation
+            // Apply User Isolation: Owner OR Creator
             if (!isAdmin && userEmail) {
-                query = query.eq('sahip', userEmail);
+                query = query.or(`sahip.eq.${userEmail},created_by.eq.${userEmail}`);
             }
 
             if (type === 'APPROVED') {
