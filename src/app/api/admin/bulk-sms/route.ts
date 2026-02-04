@@ -175,8 +175,8 @@ export async function POST(req: NextRequest) {
             }
 
             if (statusUpdate.assignToSender) {
-                updatePayload.sahip = session.user.email;
-                updatePayload.assigned_to = session.user.email; // Keep legacy field sync if needed
+                updatePayload.sahip_email = session.user.email;
+                // Removed legacy 'assigned_to' and 'sahip' which are not checking db columns
             }
 
             // Use 'data' instead of 'count' to avoid type errors
