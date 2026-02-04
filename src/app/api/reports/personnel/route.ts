@@ -87,11 +87,8 @@ export async function GET(req: NextRequest) {
             const newVal = String(log.new_value || '').toLowerCase();
             const note = String(log.note || '').toLowerCase();
 
-            // MATCHING LEGACY LOGIC EXACTLY
-            if (action === 'PULL_LEAD') stats.calls++; // Legacy uses PULL_LEAD for 'pulled', CLICK_CALL for 'calls'. I'll stick to PULL_LEAD for general activity for now or combine.
-            // Wait, legacy stats.performance counts CLICK_CALL as calls. 
-            // I should probably count CLICK_CALL too.
-            if (action === 'CLICK_CALL') stats.calls++;
+            // MATCHING USER REQUEST: ONLY COUNT 'PULL_LEAD' (Müşteri Çek)
+            if (action === 'PULL_LEAD') stats.calls++;
             if (action === 'SEND_SMS' || action === 'CLICK_SMS') stats.sms++;
             if (action === 'SEND_WHATSAPP' || action === 'CLICK_WHATSAPP') stats.whatsapp++;
 
@@ -109,136 +106,137 @@ export async function GET(req: NextRequest) {
 
 
 
-    // --- Process Attorney History ---
-    attorneyHistory?.forEach((record: any) => {
-        const rawUser = record.changed_by;
-        if (!rawUser) return;
-        // Filter ignorable users
-        if (['sistem', 'system', 'admin', 'ibrahim', 'ibrahimsentinmaz@gmail.com'].some(x => rawUser.toLowerCase().includes(x))) return;
+        // --- Process Attorney History ---
+        attorneyHistory?.forEach((record: any) => {
+            const rawUser = record.changed_by;
+            if (!rawUser) return;
+            // Filter ignorable users
+            if (['sistem', 'system', 'admin', 'ibrahim', 'ibrahimsentinmaz@gmail.com'].some(x => rawUser.toLowerCase().includes(x))) return;
 
-        const user = normalizeUser(rawUser);
-        const stats = getStats(user);
+            const user = normalizeUser(rawUser);
+            const stats = getStats(user);
 
-        const status = (record.new_status || '').toLowerCase();
-        const result = (record.new_result || '').toLowerCase(); // If we tracked result separately
+            const status = (record.new_status || '').toLowerCase();
+            const result = (record.new_result || '').toLowerCase(); // If we tracked result separately
 
-        // Logic:
-        // If status includes 'Temiz' -> Clean
-        // If status includes 'Riskli' -> Risky
-        // Else -> Query? Or strictly "Sorgu Bekleniyor"?
+            // Logic:
+            // If status includes 'Temiz' -> Clean
+            // If status includes 'Riskli' -> Risky
+            // Else -> Query? Or strictly "Sorgu Bekleniyor"?
 
-        // In the backfill, we filled new_status with the log content.
-        // In new app usage, we fill new_status with 'Avukat Sorgu Durumu' field (e.g. 'Temiz', 'Riskli', 'Sorgu Bekleniyor').
+            // In the backfill, we filled new_status with the log content.
+            // In new app usage, we fill new_status with 'Avukat Sorgu Durumu' field (e.g. 'Temiz', 'Riskli', 'Sorgu Bekleniyor').
 
-        if (status.includes('temiz')) stats.attorneyClean++;
-        else if (status.includes('riskli') || status.includes('sorunlu') || status.includes('icralık')) stats.attorneyRisky++;
-        else stats.attorneyQuery++; // Any other change implies a query step or update
-    });
+            if (status.includes('temiz')) stats.attorneyClean++;
+            else if (status.includes('riskli') || status.includes('sorunlu') || status.includes('icralık')) stats.attorneyRisky++;
+            else stats.attorneyQuery++; // Any other change implies a query step or update
+        });
 
-    // --- 2. LEADS (Financials) ---
-    const { data: leads } = await supabaseAdmin
-        .from('leads')
-        .select('*')
-        .or(`updated_at.gte.${startIso},teslim_tarihi.gte.${startIso},onay_tarihi.gte.${startIso}`);
+        // --- 2. LEADS (Financials) ---
+        const { data: leads } = await supabaseAdmin
+            .from('leads')
+            .select('*')
+            .or(`updated_at.gte.${startIso},teslim_tarihi.gte.${startIso},onay_tarihi.gte.${startIso}`);
 
-    const deliveredLeadsDetails: any[] = [];
+        const deliveredLeadsDetails: any[] = [];
 
-    leads?.forEach((lead: any) => {
-        const ownerRaw = lead.sahip || lead.sahip_email || lead.assigned_to; // Priority to 'sahip' like Legacy
+        leads?.forEach((lead: any) => {
+            const ownerRaw = lead.sahip || lead.sahip_email || lead.assigned_to; // Priority to 'sahip' like Legacy
 
-        // IGNORE UNASSIGNED / ADMIN (Matching Legacy)
-        if (!ownerRaw || ['sistem', 'system', 'admin', 'ibrahim', 'ibrahimsentinmaz@gmail.com'].some(x => ownerRaw.toLowerCase().includes(x))) return;
+            // IGNORE UNASSIGNED / ADMIN (Matching Legacy)
+            if (!ownerRaw || ['sistem', 'system', 'admin', 'ibrahim', 'ibrahimsentinmaz@gmail.com'].some(x => ownerRaw.toLowerCase().includes(x))) return;
 
-        const user = normalizeUser(ownerRaw);
-        const stats = getStats(user);
+            const user = normalizeUser(ownerRaw);
+            const stats = getStats(user);
 
-        // Approved Logic
-        if (lead.onay_durumu === 'Onaylandı') {
-            const onayTs = lead.onay_tarihi ? new Date(lead.onay_tarihi).getTime() : 0;
-            if (onayTs >= startTs && onayTs <= endTs) {
-                stats.approvedCount++;
-                stats.approvedLimit += parsePrice(lead.kredi_limiti);
-            }
-        }
-
-        // Delivered Logic (Item Based)
-        const isDeliveredStatus = ['Teslim edildi', 'Satış yapıldı/Tamamlandı', 'Satış Yapıldı'].includes(lead.durum);
-        if (isDeliveredStatus) {
-            let items: any[] = [];
-            try {
-                if (Array.isArray(lead.satilan_urunler)) items = lead.satilan_urunler;
-                else if (typeof lead.satilan_urunler === 'string') items = JSON.parse(lead.satilan_urunler);
-            } catch (e) { }
-
-            let itemRevenue = 0;
-            let hasItemInPeriod = false;
-            let soldItemsText: string[] = [];
-
-            if (items.length > 0) {
-                items.forEach(item => {
-                    const itemDate = item.satis_tarihi || item.teslim_tarihi || lead.teslim_tarihi;
-                    if (itemDate) {
-                        const d = new Date(itemDate).getTime();
-                        if (d >= startTs && d <= endTs) {
-                            itemRevenue += parsePrice(item.satis_fiyati || item.fiyat);
-                            hasItemInPeriod = true;
-                            soldItemsText.push(`${item.marka || ''} ${item.model || ''} (${parsePrice(item.satis_fiyati || item.fiyat).toLocaleString('tr-TR')} ₺)`);
-                        }
-                    } else if (lead.teslim_tarihi) {
-                        // Fallback
-                        const d = new Date(lead.teslim_tarihi).getTime();
-                        if (d >= startTs && d <= endTs) {
-                            itemRevenue += parsePrice(item.satis_fiyati || item.fiyat);
-                            hasItemInPeriod = true;
-                            soldItemsText.push(`${item.marka || ''} ${item.model || ''} (${parsePrice(item.satis_fiyati || item.fiyat).toLocaleString('tr-TR')} ₺)`);
-                        }
-                    }
-                });
-            } else if (lead.teslim_tarihi) {
-                // Legacy Fallback
-                const d = new Date(lead.teslim_tarihi).getTime();
-                if (d >= startTs && d <= endTs) {
-                    itemRevenue += parsePrice(lead.kredi_limiti || lead.satis_fiyati);
-                    hasItemInPeriod = true;
-                    soldItemsText.push('Ürün Detayı Yok');
+            // Approved Logic
+            if (lead.onay_durumu === 'Onaylandı') {
+                const onayTs = lead.onay_tarihi ? new Date(lead.onay_tarihi).getTime() : 0;
+                if (onayTs >= startTs && onayTs <= endTs) {
+                    stats.approvedCount++;
+                    stats.approvedLimit += parsePrice(lead.kredi_limiti);
                 }
             }
 
-            if (hasItemInPeriod) {
-                stats.deliveredCount++;
-                stats.deliveredRevenue += itemRevenue;
+            // Delivered Logic (Item Based)
+            const isDeliveredStatus = ['Teslim edildi', 'Satış yapıldı/Tamamlandı', 'Satış Yapıldı'].includes(lead.durum);
+            if (isDeliveredStatus) {
+                let items: any[] = [];
+                try {
+                    if (Array.isArray(lead.satilan_urunler)) items = lead.satilan_urunler;
+                    else if (typeof lead.satilan_urunler === 'string') items = JSON.parse(lead.satilan_urunler);
+                } catch (e) { }
 
-                deliveredLeadsDetails.push({
-                    id: lead.id,
-                    name: `${lead.ad || ''} ${lead.soyad || ''}`,
-                    phone: lead.telefon_1,
-                    tc: lead.tc_kimlik,
-                    work: lead.calisma_sekli || lead.meslek || '-',
-                    workPlace: lead.is_yeri || '-',
-                    limit: lead.kredi_limiti,
-                    seller: user,
-                    items: soldItemsText.join(', '),
-                    revenue: itemRevenue,
-                    date: lead.teslim_tarihi || lead.satis_tarihi
-                });
+                let itemRevenue = 0;
+                let hasItemInPeriod = false;
+                let soldItemsText: string[] = [];
+
+                if (items.length > 0) {
+                    items.forEach(item => {
+                        const itemDate = item.satis_tarihi || item.teslim_tarihi || lead.teslim_tarihi;
+                        if (itemDate) {
+                            const d = new Date(itemDate).getTime();
+                            if (d >= startTs && d <= endTs) {
+                                itemRevenue += parsePrice(item.satis_fiyati || item.fiyat);
+                                hasItemInPeriod = true;
+                                soldItemsText.push(`${item.marka || ''} ${item.model || ''} (${parsePrice(item.satis_fiyati || item.fiyat).toLocaleString('tr-TR')} ₺)`);
+                            }
+                        } else if (lead.teslim_tarihi) {
+                            // Fallback
+                            const d = new Date(lead.teslim_tarihi).getTime();
+                            if (d >= startTs && d <= endTs) {
+                                itemRevenue += parsePrice(item.satis_fiyati || item.fiyat);
+                                hasItemInPeriod = true;
+                                soldItemsText.push(`${item.marka || ''} ${item.model || ''} (${parsePrice(item.satis_fiyati || item.fiyat).toLocaleString('tr-TR')} ₺)`);
+                            }
+                        }
+                    });
+                } else if (lead.teslim_tarihi) {
+                    // Legacy Fallback
+                    const d = new Date(lead.teslim_tarihi).getTime();
+                    if (d >= startTs && d <= endTs) {
+                        itemRevenue += parsePrice(lead.kredi_limiti || lead.satis_fiyati);
+                        hasItemInPeriod = true;
+                        soldItemsText.push('Ürün Detayı Yok');
+                    }
+                }
+
+                if (hasItemInPeriod) {
+                    stats.deliveredCount++;
+                    stats.deliveredRevenue += itemRevenue;
+
+                    deliveredLeadsDetails.push({
+                        id: lead.id,
+                        name: lead.ad_soyad || `${lead.ad || ''} ${lead.soyad || ''}`.trim(), // Prefer ad_soyad
+                        dob: lead.dogum_tarihi, // Added
+                        phone: lead.telefon || lead.telefon_1, // Prefer telefon
+                        tc: lead.tc_kimlik,
+                        work: lead.meslek_is || lead.calisma_sekli || lead.meslek || '-', // Prefer meslek_is
+                        workPlace: lead.is_yeri_bilgisi || lead.is_yeri || '-', // Prefer is_yeri_bilgisi
+                        limit: lead.kredi_limiti,
+                        seller: user,
+                        items: soldItemsText.join(', '),
+                        revenue: itemRevenue,
+                        date: lead.teslim_tarihi || lead.satis_tarihi
+                    });
+                }
             }
-        }
-    });
+        });
 
-    // Final Filter & Sort
-    const filteredData = Array.from(personnelMap.values())
-        .sort((a, b) => b.deliveredRevenue - a.deliveredRevenue);
+        // Final Filter & Sort
+        const filteredData = Array.from(personnelMap.values())
+            .sort((a, b) => b.deliveredRevenue - a.deliveredRevenue);
 
-    // List matches Table Filter (Since we filtered 'leads' loop above)
-    deliveredLeadsDetails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        // List matches Table Filter (Since we filtered 'leads' loop above)
+        deliveredLeadsDetails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    return NextResponse.json({
-        success: true,
-        data: filteredData,
-        deliveredLeads: deliveredLeadsDetails
-    });
+        return NextResponse.json({
+            success: true,
+            data: filteredData,
+            deliveredLeads: deliveredLeadsDetails
+        });
 
-} catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-}
+    } catch (error: any) {
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
 }
