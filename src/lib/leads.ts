@@ -34,45 +34,108 @@ export async function getLeads(filters?: { sahip?: string; durum?: LeadStatus | 
 
 // Special dashboard function to handle "Owner OR Creator" visibility
 export async function getLeadsForDashboard(userEmail: string, status?: string): Promise<Customer[]> {
-    // FIX: EMAIL MUST BE QUOTED IN OR STRING FILTER
-    let query = supabaseAdmin.from('leads').select('*').or(`sahip_email.eq."${userEmail}",created_by.eq."${userEmail}"`);
+    // Strategy: robust "Fetch All Potentials" and filter unique. 
+    // This avoids complex Supabase OR syntax issues with special chars in emails.
+
+    // 1. Fetch Owned
+    let q1 = supabaseAdmin.from('leads').select('*').eq('sahip_email', userEmail);
+    // 2. Fetch Created by Me (but possibly assigned to others)
+    let q2 = supabaseAdmin.from('leads').select('*').eq('created_by', userEmail);
 
     if (status && status !== 'Tüm Durumlar') {
-        query = query.eq('durum', status);
+        q1 = q1.eq('durum', status);
+        q2 = q2.eq('durum', status);
     }
 
-    // Sort by recent update to be useful
-    const { data, error } = await query.order('updated_at', { ascending: false }).limit(200);
+    const [res1, res2] = await Promise.all([
+        q1.order('updated_at', { ascending: false }).limit(200),
+        q2.order('updated_at', { ascending: false }).limit(200)
+    ]);
 
-    if (error) throw error;
-    return (data || []).map(mapRowToCustomer);
+    if (res1.error) throw res1.error;
+    if (res2.error) throw res2.error;
+
+    // Merge and Deduplicate by ID
+    const map = new Map<string, any>();
+    (res1.data || []).forEach(r => map.set(r.id, r));
+    (res2.data || []).forEach(r => map.set(r.id, r));
+
+    const combined = Array.from(map.values());
+
+    // Re-sort in memory (since we merged two sorted lists)
+    combined.sort((a, b) => {
+        const da = new Date(a.updated_at || 0).getTime();
+        const db = new Date(b.updated_at || 0).getTime();
+        return db - da;
+    });
+
+    return combined.slice(0, 200).map(mapRowToCustomer);
 }
 
 export async function getDashboardStatsCounts(userEmail: string, isAdmin: boolean) {
-    const baseFilter = (q: any) => {
-        if (!isAdmin) {
-            // FIX: EMAIL MUST BE QUOTED
-            return q.or(`sahip_email.eq."${userEmail}",created_by.eq."${userEmail}"`);
-        }
-        return q;
-    };
+    // If Admin, use efficient DB-side aggregation (Counts)
+    if (isAdmin) {
+        const pApproved = supabaseAdmin.from('leads').select('id', { count: 'exact', head: true }).eq('durum', 'Onaylandı');
+        const pGuarantor = supabaseAdmin.from('leads').select('id', { count: 'exact', head: true }).eq('durum', 'Kefil bekleniyor');
 
-    const pApproved = baseFilter(supabaseAdmin.from('leads').select('id', { count: 'exact', head: true }).eq('durum', 'Onaylandı'));
-    const pGuarantor = baseFilter(supabaseAdmin.from('leads').select('id', { count: 'exact', head: true }).eq('durum', 'Kefil bekleniyor'));
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        const pDelivered = supabaseAdmin.from('leads').select('id', { count: 'exact', head: true })
+            .or('durum.eq.Teslim edildi,durum.eq.Satış yapıldı/Tamamlandı')
+            .gte('teslim_tarihi', startOfMonth);
 
-    // Delivered (Current Month)
+        const [{ count: approved }, { count: guarantor }, { count: delivered }] = await Promise.all([pApproved, pGuarantor, pDelivered]);
+
+        return {
+            approved: approved || 0,
+            guarantor: guarantor || 0,
+            delivered: delivered || 0
+        };
+    }
+
+    // If Personnel (User Isolation), use reliable Fetch-and-Compute in memory 
+    // to handle "Owned OR Created" logic without OR Syntax risks.
+    // We fetch simplified objects to keep it lightweight.
+
+    // 1. Fetch Owned Ids/Status
+    const q1 = supabaseAdmin.from('leads')
+        .select('id, durum, teslim_tarihi')
+        .eq('sahip_email', userEmail);
+
+    // 2. Fetch Created Ids/Status
+    const q2 = supabaseAdmin.from('leads')
+        .select('id, durum, teslim_tarihi')
+        .eq('created_by', userEmail);
+
+    const [res1, res2] = await Promise.all([q1, q2]);
+
+    const uniqueLeads = new Map<string, any>();
+    (res1.data || []).forEach(r => uniqueLeads.set(r.id, r));
+    (res2.data || []).forEach(r => uniqueLeads.set(r.id, r));
+
+    // Compute Stats
+    let approved = 0;
+    let guarantor = 0;
+    let delivered = 0;
+
     const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const pDelivered = baseFilter(supabaseAdmin.from('leads').select('id', { count: 'exact', head: true })
-        .or('durum.eq.Teslim edildi,durum.eq.Satış yapıldı/Tamamlandı')
-        .gte('teslim_tarihi', startOfMonth));
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
 
-    const [{ count: approved }, { count: guarantor }, { count: delivered }] = await Promise.all([pApproved, pGuarantor, pDelivered]);
+    uniqueLeads.forEach(lead => {
+        if (lead.durum === 'Onaylandı') approved++;
+        if (lead.durum === 'Kefil bekleniyor') guarantor++;
+        if (lead.durum === 'Teslim edildi' || lead.durum === 'Satış yapıldı/Tamamlandı') {
+            if (lead.teslim_tarihi) {
+                const tDate = new Date(lead.teslim_tarihi).getTime();
+                if (tDate >= startOfMonth) delivered++;
+            }
+        }
+    });
 
     return {
-        approved: approved || 0,
-        guarantor: guarantor || 0,
-        delivered: delivered || 0
+        approved,
+        guarantor,
+        delivered
     };
 }
 
