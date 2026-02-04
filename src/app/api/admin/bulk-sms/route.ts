@@ -102,10 +102,78 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'Failed to fetch users' }, { status: 500 });
         }
 
-        // Send SMS to each user
+        // ========================================
+        // STEP 1: UPDATE STATUS & ASSIGNMENT FIRST
+        // ========================================
+        let updatedCount = 0;
+
+        // DEBUG: Check condition values
+        console.log('[BULK SMS DEBUG] Status Update Check:');
+        console.log('  - statusUpdate exists?', !!statusUpdate);
+        console.log('  - statusUpdate.status:', statusUpdate?.status);
+        console.log('  - statusUpdate.assignToSender:', statusUpdate?.assignToSender);
+        console.log('  - Condition result:', !!(statusUpdate && (statusUpdate.status || statusUpdate.assignToSender)));
+
+        // Execute status update BEFORE sending SMS
+        if (statusUpdate && (statusUpdate.status || statusUpdate.assignToSender)) {
+            console.log(`[BulkSMS] ✅ ENTERING UPDATE BLOCK - Status: ${statusUpdate.status || '(No Change)'}, Assign: ${statusUpdate.assignToSender}`);
+
+            const updatePayload: any = {
+                updated_at: new Date().toISOString(),
+                updated_by: session.user.email
+            };
+
+            // Only update status if provided and valid
+            if (statusUpdate.status) {
+                updatePayload.durum = statusUpdate.status;
+            }
+
+            if (statusUpdate.assignToSender) {
+                updatePayload.sahip_email = session.user.email;
+            }
+
+            console.log('[BULK SMS DEBUG] Update Payload:', JSON.stringify(updatePayload, null, 2));
+            console.log('[BULK SMS DEBUG] Target User IDs:', userIds);
+
+            // Execute the update
+            const { data, error: updateError } = await supabaseAdmin
+                .from('leads')
+                .update(updatePayload)
+                .in('id', userIds)
+                .select('id');
+
+            console.log('[BULK SMS DEBUG] Update Response:');
+            console.log('  - Error:', updateError);
+            console.log('  - Data:', data);
+            console.log('  - Updated Count:', data?.length || 0);
+
+            if (!updateError) {
+                updatedCount = data?.length || 0;
+                console.log(`[BulkSMS] ✅ Successfully updated ${updatedCount} leads`);
+
+                // Log the bulk update event
+                await supabaseAdmin.from('activity_logs').insert({
+                    lead_id: null, // Global log
+                    action: 'BULK_STATUS_UPDATE',
+                    user_email: session.user.email,
+                    note: `Bulk update. Status: ${statusUpdate.status || 'Unchanged'}. Assigned to me: ${statusUpdate.assignToSender}. Count: ${updatedCount}`,
+                    metadata: { user_ids: userIds }
+                });
+            } else {
+                console.error('[BulkSMS] ❌ Bulk update error:', updateError);
+            }
+        } else {
+            console.log('[BulkSMS] ⏭️ Skipping status update (no update requested)');
+        }
+
+        // ========================================
+        // STEP 2: SEND SMS TO EACH USER
+        // ========================================
         let successCount = 0;
         let failCount = 0;
         const results = [];
+
+        console.log(`[BulkSMS] Starting SMS sending to ${users.length} users...`);
 
         for (const user of users) {
             let phone = user.telefon;
@@ -161,68 +229,6 @@ export async function POST(req: NextRequest) {
             await new Promise(resolve => setTimeout(resolve, 100));
         }
 
-        // --- BULK STATUS UPDATE LOGIC ---
-        let updatedCount = 0;
-        // --- BULK STATUS UPDATE LOGIC ---
-
-        // DEBUG: Check condition values
-        console.log('[BULK SMS DEBUG] Status Update Check:');
-        console.log('  - statusUpdate exists?', !!statusUpdate);
-        console.log('  - statusUpdate.status:', statusUpdate?.status);
-        console.log('  - statusUpdate.assignToSender:', statusUpdate?.assignToSender);
-        console.log('  - Condition result:', !!(statusUpdate && (statusUpdate.status || statusUpdate.assignToSender)));
-
-        // FIX: Allow update if EITHER status or assignment is requested
-        if (statusUpdate && (statusUpdate.status || statusUpdate.assignToSender)) {
-            console.log(`[BulkSMS] ✅ ENTERING UPDATE BLOCK - Status: ${statusUpdate.status || '(No Change)'}, Assign: ${statusUpdate.assignToSender}`);
-
-            const updatePayload: any = {
-                updated_at: new Date().toISOString(),
-                updated_by: session.user.email
-            };
-
-            // Only update status if provided and valid
-            if (statusUpdate.status) {
-                updatePayload.durum = statusUpdate.status;
-            }
-
-            if (statusUpdate.assignToSender) {
-                updatePayload.sahip_email = session.user.email;
-                // Removed legacy 'assigned_to' and 'sahip' which are not checking db columns
-            }
-
-            console.log('[BULK SMS DEBUG] Update Payload:', JSON.stringify(updatePayload, null, 2));
-            console.log('[BULK SMS DEBUG] Target User IDs:', userIds);
-
-            // Use 'data' instead of 'count' to avoid type errors
-            const { data, error: updateError } = await supabaseAdmin
-                .from('leads')
-                .update(updatePayload)
-                .in('id', userIds)
-                .select('id');
-
-            console.log('[BULK SMS DEBUG] Update Response:');
-            console.log('  - Error:', updateError);
-            console.log('  - Data:', data);
-            console.log('  - Updated Count:', data?.length || 0);
-
-            if (!updateError) {
-                // CORRECT LOGIC
-                updatedCount = data?.length || 0;
-
-                // Log the bulk update event
-                await supabaseAdmin.from('activity_logs').insert({
-                    lead_id: null, // Global log
-                    action: 'BULK_STATUS_UPDATE',
-                    user_email: session.user.email,
-                    note: `Bulk update. Status: ${statusUpdate.status || 'Unchanged'}. Assigned to me: ${statusUpdate.assignToSender}. Count: ${updatedCount}`,
-                    metadata: { user_ids: userIds }
-                });
-            } else {
-                console.error('Bulk update error', updateError);
-            }
-        }
-
         // Log bulk action summary
         await supabaseAdmin.from('activity_logs').insert({
             lead_id: null,
@@ -236,8 +242,9 @@ export async function POST(req: NextRequest) {
             processed: userIds.length,
             successCount,
             failCount,
+            updatedCount,
             results,
-            message: `${channel} gönderimi tamamlandı. Başarılı: ${successCount}, Başarısız: ${failCount}`
+            message: `${channel} gönderimi tamamlandı. Başarılı: ${successCount}, Başarısız: ${failCount}${updatedCount > 0 ? `, Güncellenen: ${updatedCount}` : ''}`
         });
 
     } catch (error: any) {
