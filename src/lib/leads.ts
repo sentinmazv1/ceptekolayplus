@@ -34,7 +34,8 @@ export async function getLeads(filters?: { sahip?: string; durum?: LeadStatus | 
 
 // Special dashboard function to handle "Owner OR Creator" visibility
 export async function getLeadsForDashboard(userEmail: string, status?: string): Promise<Customer[]> {
-    let query = supabaseAdmin.from('leads').select('*').or(`sahip_email.eq.${userEmail},created_by.eq.${userEmail}`);
+    // FIX: EMAIL MUST BE QUOTED IN OR STRING FILTER
+    let query = supabaseAdmin.from('leads').select('*').or(`sahip_email.eq."${userEmail}",created_by.eq."${userEmail}"`);
 
     if (status && status !== 'Tüm Durumlar') {
         query = query.eq('durum', status);
@@ -50,7 +51,8 @@ export async function getLeadsForDashboard(userEmail: string, status?: string): 
 export async function getDashboardStatsCounts(userEmail: string, isAdmin: boolean) {
     const baseFilter = (q: any) => {
         if (!isAdmin) {
-            return q.or(`sahip_email.eq.${userEmail},created_by.eq.${userEmail}`);
+            // FIX: EMAIL MUST BE QUOTED
+            return q.or(`sahip_email.eq."${userEmail}",created_by.eq."${userEmail}"`);
         }
         return q;
     };
