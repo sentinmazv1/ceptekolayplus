@@ -32,6 +32,48 @@ export async function getLeads(filters?: { sahip?: string; durum?: LeadStatus | 
     return (data || []).map(mapRowToCustomer);
 }
 
+// Special dashboard function to handle "Owner OR Creator" visibility
+export async function getLeadsForDashboard(userEmail: string, status?: string): Promise<Customer[]> {
+    let query = supabaseAdmin.from('leads').select('*').or(`sahip_email.eq.${userEmail},created_by.eq.${userEmail}`);
+
+    if (status && status !== 'Tüm Durumlar') {
+        query = query.eq('durum', status);
+    }
+
+    // Sort by recent update to be useful
+    const { data, error } = await query.order('updated_at', { ascending: false }).limit(200);
+
+    if (error) throw error;
+    return (data || []).map(mapRowToCustomer);
+}
+
+export async function getDashboardStatsCounts(userEmail: string, isAdmin: boolean) {
+    const baseFilter = (q: any) => {
+        if (!isAdmin) {
+            return q.or(`sahip_email.eq.${userEmail},created_by.eq.${userEmail}`);
+        }
+        return q;
+    };
+
+    const pApproved = baseFilter(supabaseAdmin.from('leads').select('id', { count: 'exact', head: true }).eq('durum', 'Onaylandı'));
+    const pGuarantor = baseFilter(supabaseAdmin.from('leads').select('id', { count: 'exact', head: true }).eq('durum', 'Kefil bekleniyor'));
+
+    // Delivered (Current Month)
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const pDelivered = baseFilter(supabaseAdmin.from('leads').select('id', { count: 'exact', head: true })
+        .or('durum.eq.Teslim edildi,durum.eq.Satış yapıldı/Tamamlandı')
+        .gte('teslim_tarihi', startOfMonth));
+
+    const [{ count: approved }, { count: guarantor }, { count: delivered }] = await Promise.all([pApproved, pGuarantor, pDelivered]);
+
+    return {
+        approved: approved || 0,
+        guarantor: guarantor || 0,
+        delivered: delivered || 0
+    };
+}
+
 export async function getCustomersByStatus(status: string, user: { email: string; role: string }): Promise<Customer[]> {
     let query = supabaseAdmin.from('leads').select('*');
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { supabaseAdmin } from '@/lib/supabase';
+import { getDashboardStatsCounts, getLeadsForDashboard } from '@/lib/leads';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,73 +13,61 @@ export async function GET(req: NextRequest) {
     }
 
     const userEmail = session.user.email;
-    // Admin check - centralized logic or simple check
     const isAdmin = userEmail === 'ibrahimsentinmaz@gmail.com' || userEmail === 'admin';
 
     try {
         const { searchParams } = new URL(req.url);
         const action = searchParams.get('action'); // 'stats' or 'list'
 
-        // Helper to apply isolation
-        const applyIsolation = (query: any) => {
-            if (!isAdmin) {
-                // Return query with filter: sahib OR created_by
-                return query.or(`sahip.eq.${userEmail},created_by.eq.${userEmail}`);
-            }
-            return query;
-        };
-
         if (action === 'stats') {
-            // 1. Approved
-            let approvedQuery = supabaseAdmin
-                .from('leads')
-                .select('id', { count: 'exact', head: true })
-                .eq('durum', 'Onaylandı');
-
-            approvedQuery = applyIsolation(approvedQuery);
-            const { count: approvedCount } = await approvedQuery;
-
-            // 2. Guarantor
-            let guarantorQuery = supabaseAdmin
-                .from('leads')
-                .select('id', { count: 'exact', head: true })
-                .eq('durum', 'Kefil bekleniyor');
-
-            guarantorQuery = applyIsolation(guarantorQuery);
-            const { count: guarantorCount } = await guarantorQuery;
-
-            // 3. Delivered (This Month)
-            const now = new Date();
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-
-            let deliveredQuery = supabaseAdmin
-                .from('leads')
-                .select('id', { count: 'exact', head: true })
-                .or('durum.eq.Teslim edildi,durum.eq.Satış yapıldı/Tamamlandı')
-                .gte('teslim_tarihi', startOfMonth);
-
-            deliveredQuery = applyIsolation(deliveredQuery);
-            const { count: deliveredCount } = await deliveredQuery;
-
-            return NextResponse.json({
-                stats: {
-                    approved: approvedCount || 0,
-                    guarantor: guarantorCount || 0,
-                    delivered: deliveredCount || 0
-                }
-            });
+            const stats = await getDashboardStatsCounts(userEmail, isAdmin);
+            return NextResponse.json({ stats });
         }
         else if (action === 'list') {
-            const type = searchParams.get('type'); // 'APPROVED', 'GUARANTOR', 'DELIVERED'
+            const type = searchParams.get('type');
+            let status = '';
 
-            let query = supabaseAdmin
-                .from('leads')
-                .select('*')
-                .order('updated_at', { ascending: false })
-                .limit(50);
+            if (type === 'APPROVED') status = 'Onaylandı';
+            else if (type === 'GUARANTOR') status = 'Kefil bekleniyor';
+            // For DELIVERED, it's more complex (date range + mulit status), let's keep it simple or expand helper?
+            // User just wants to see the list. My helper supports status.
+            // But Delivered needs date check? 
+            // Actually, handleBadgeClick passed 'DELIVERED', but getLeadsForDashboard only takes status.
+            // Let's rely on getLeadsForDashboard but maybe improve it later or just show all Delivered?
+            // The dashboard box shows *This Month* delivered. The list should probably show that too.
+            // Use manual logic here or expand helper? 
+            // Let's use getLeadsForDashboard for consistency but careful with Delivered.
 
-            query = applyIsolation(query);
+            // Re-eval: getLeadsForDashboard is simple OR query. 
+            // If type is DELIVERED, we need special handling.
 
+            if (type === 'DELIVERED') {
+                // Special case relying on imported logic? 
+                // Or just replicate correct logic here using shared base?
+                // Let's use the helper for isolation but build the query manually here since it's cleaner than over-engineering the helper now.
+                // Actually, I can use getDashboardStatsCounts logic pattern.
+            }
+
+            // Wait, I can just use getLeadsForDashboard and filter in memory if the list is small (limit 200)? 
+            // No, better to filter in DB.
+
+            // Let's update the API to use the helper for generic, but if DELIVERED, do manual to ensure date range.
+            // BUT wait, getLeadsForDashboard is new. I can modify it to accept multiple statuses or dates?
+            // Or just inline the logic here using `supabaseAdmin` directly again but using the exact SAME filter string as the helper.
+
+            // Actually, to ensure exact consistency with the stats count, let's keep the logic close.
+            // I will implement list retrieval here re-using the exact "baseFilter" concept.
+
+            const { supabaseAdmin } = await import('@/lib/supabase'); // Dynamic import to avoid circular dep if any? No.
+
+            let query = supabaseAdmin.from('leads').select('*').order('updated_at', { ascending: false }).limit(200);
+
+            // 1. ISOLATION
+            if (!isAdmin) {
+                query = query.or(`sahip_email.eq.${userEmail},created_by.eq.${userEmail}`);
+            }
+
+            // 2. TYPE FILTER
             if (type === 'APPROVED') {
                 query = query.eq('durum', 'Onaylandı');
             } else if (type === 'GUARANTOR') {
@@ -90,8 +78,6 @@ export async function GET(req: NextRequest) {
                 query = query
                     .or('durum.eq.Teslim edildi,durum.eq.Satış yapıldı/Tamamlandı')
                     .gte('teslim_tarihi', startOfMonth);
-            } else {
-                return NextResponse.json({ message: 'Invalid type' }, { status: 400 });
             }
 
             const { data, error } = await query;
