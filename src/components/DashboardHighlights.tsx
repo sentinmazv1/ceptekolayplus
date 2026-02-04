@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Loader2, CheckCircle, Clock, Package, X, Phone, User, ExternalLink } from 'lucide-react';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/lib/supabase';
 import { Customer } from '@/lib/types';
 
 interface DashboardHighlightsProps {
