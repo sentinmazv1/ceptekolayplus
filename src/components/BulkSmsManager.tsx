@@ -370,6 +370,24 @@ export function BulkSmsManager() {
 
                         {/* Status Update Options */}
                         <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-3">
+                            {/* Assignment Option - ALWAYS VISIBLE */}
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="assignOwner"
+                                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                    checked={assignToMe}
+                                    onChange={(e) => setAssignToMe(e.target.checked)}
+                                />
+                                <label htmlFor="assignOwner" className="text-sm font-medium text-gray-700 select-none">
+                                    Bu müşterileri <strong>Bana Ata</strong>
+                                </label>
+                            </div>
+
+                            {/* Divider */}
+                            <div className="border-t border-gray-200"></div>
+
+                            {/* Status Change Option */}
                             <div className="flex items-center gap-2">
                                 <input
                                     type="checkbox"
@@ -384,7 +402,7 @@ export function BulkSmsManager() {
                             </div>
 
                             {enableStatusChange && (
-                                <div className="pl-6 space-y-3 animate-in fade-in slide-in-from-top-2">
+                                <div className="pl-6 animate-in fade-in slide-in-from-top-2">
                                     <div>
                                         <label className="block text-xs font-semibold text-gray-500 mb-1">Yeni Durum Seçin</label>
                                         <select
@@ -397,19 +415,6 @@ export function BulkSmsManager() {
                                                 <option key={s.id} value={s.label}>{s.label}</option>
                                             ))}
                                         </select>
-                                    </div>
-
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="checkbox"
-                                            id="assignOwner"
-                                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                            checked={assignToMe}
-                                            onChange={(e) => setAssignToMe(e.target.checked)}
-                                        />
-                                        <label htmlFor="assignOwner" className="text-xs text-gray-600 select-none">
-                                            Bu müşterileri <strong>Bana Ata</strong>
-                                        </label>
                                     </div>
                                 </div>
                             )}
