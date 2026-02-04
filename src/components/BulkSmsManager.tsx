@@ -134,11 +134,11 @@ export function BulkSmsManager() {
                     message: messageContent,
                     channel,
                     templateId: selectedTemplateId,
-                    // New Params
-                    statusUpdate: enableStatusChange ? {
-                        status: targetStatus,
+                    // New Params - Always send object, backend will check values
+                    statusUpdate: {
+                        status: enableStatusChange ? targetStatus : '',
                         assignToSender: assignToMe
-                    } : null
+                    }
                 })
             });
             const json = await res.json();

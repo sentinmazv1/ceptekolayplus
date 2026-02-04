@@ -111,11 +111,13 @@ export async function POST(req: NextRequest) {
         console.log('[BULK SMS DEBUG] Status Update Check:');
         console.log('  - statusUpdate exists?', !!statusUpdate);
         console.log('  - statusUpdate.status:', statusUpdate?.status);
+        console.log('  - statusUpdate.status (trimmed):', statusUpdate?.status?.trim());
         console.log('  - statusUpdate.assignToSender:', statusUpdate?.assignToSender);
-        console.log('  - Condition result:', !!(statusUpdate && (statusUpdate.status || statusUpdate.assignToSender)));
+        console.log('  - Condition result:', !!(statusUpdate && (statusUpdate.status?.trim() || statusUpdate.assignToSender)));
 
         // Execute status update BEFORE sending SMS
-        if (statusUpdate && (statusUpdate.status || statusUpdate.assignToSender)) {
+        // Check for non-empty status OR assignToSender flag
+        if (statusUpdate && (statusUpdate.status?.trim() || statusUpdate.assignToSender)) {
             console.log(`[BulkSMS] ✅ ENTERING UPDATE BLOCK - Status: ${statusUpdate.status || '(No Change)'}, Assign: ${statusUpdate.assignToSender}`);
 
             const updatePayload: any = {
@@ -123,9 +125,9 @@ export async function POST(req: NextRequest) {
                 updated_by: session.user.email
             };
 
-            // Only update status if provided and valid
-            if (statusUpdate.status) {
-                updatePayload.durum = statusUpdate.status;
+            // Only update status if provided and valid (non-empty after trim)
+            if (statusUpdate.status?.trim()) {
+                updatePayload.durum = statusUpdate.status.trim();
             }
 
             if (statusUpdate.assignToSender) {
