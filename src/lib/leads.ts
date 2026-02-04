@@ -838,7 +838,7 @@ export async function getInventoryStats() {
     return { totalItems, totalCost, totalRevenue };
 }
 
-function mapRowToCustomer(row: any): Customer {
+export function mapRowToCustomer(row: any): Customer {
     return {
         id: row.id, created_at: row.created_at, created_by: row.created_by, ad_soyad: row.ad_soyad, telefon: row.telefon, tc_kimlik: row.tc_kimlik, email: row.email, dogum_tarihi: row.dogum_tarihi, durum: row.durum, sahip: row.sahip_email, sehir: row.sehir, ilce: row.ilce, meslek_is: row.meslek_is,
 

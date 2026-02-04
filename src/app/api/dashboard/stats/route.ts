@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getDashboardStatsCounts, getLeadsForDashboard } from '@/lib/leads';
+import { getDashboardStatsCounts, getLeadsForDashboard, mapRowToCustomer } from '@/lib/leads';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
             const { data, error } = await query;
             if (error) throw error;
 
-            return NextResponse.json({ list: data });
+            return NextResponse.json({ list: (data || []).map(mapRowToCustomer) });
         }
 
         return NextResponse.json({ message: 'Invalid action' }, { status: 400 });
