@@ -65,7 +65,7 @@ export function DashboardHighlights({ onSelectCustomer, lastUpdated }: Dashboard
     });
 
     const handleBadgeClick = async (type: 'APPROVED' | 'GUARANTOR' | 'DELIVERED') => {
-        if (!session) return;
+        console.log('Badge clicked:', type); // Debug
         setListType(type);
         setIsListOpen(true);
         setListLoading(true);

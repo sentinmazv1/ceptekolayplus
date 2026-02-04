@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
 
             const { supabaseAdmin } = await import('@/lib/supabase'); // Dynamic import to avoid circular dep if any? No.
 
-            let query = supabaseAdmin.from('leads').select('*').order('updated_at', { ascending: false }).limit(200);
+            let query = supabaseAdmin.from('leads').select('*').order('updated_at', { ascending: false }).limit(1000);
 
             // 1. ISOLATION
             if (!isAdmin) {

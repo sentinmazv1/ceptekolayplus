@@ -95,15 +95,19 @@ export async function getDashboardStatsCounts(userEmail: string, isAdmin: boolea
     // to handle "Owned OR Created" logic without OR Syntax risks.
     // We fetch simplified objects to keep it lightweight.
 
-    // 1. Fetch Owned Ids/Status
+    // 1. Fetch Owned Ids/Status - Filter by relevant statuses to avoid 1000 row limit truncation
+    const relevantStatuses = ['Onaylandı', 'Kefil bekleniyor', 'Teslim edildi', 'Satış yapıldı/Tamamlandı'];
+
     const q1 = supabaseAdmin.from('leads')
         .select('id, durum, teslim_tarihi')
-        .eq('sahip_email', userEmail);
+        .eq('sahip_email', userEmail)
+        .in('durum', relevantStatuses);
 
     // 2. Fetch Created Ids/Status
     const q2 = supabaseAdmin.from('leads')
         .select('id, durum, teslim_tarihi')
-        .eq('created_by', userEmail);
+        .eq('created_by', userEmail)
+        .in('durum', relevantStatuses);
 
     const [res1, res2] = await Promise.all([q1, q2]);
 
