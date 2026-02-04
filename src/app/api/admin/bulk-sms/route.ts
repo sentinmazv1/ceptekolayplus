@@ -158,14 +158,21 @@ export async function POST(req: NextRequest) {
 
         // --- BULK STATUS UPDATE LOGIC ---
         let updatedCount = 0;
-        if (statusUpdate && statusUpdate.status) {
-            console.log(`[BulkSMS] Updating status for ${userIds.length} users to: ${statusUpdate.status}`);
+        // --- BULK STATUS UPDATE LOGIC ---
+        let updatedCount = 0;
+        // FIX: Allow update if EITHER status or assignment is requested
+        if (statusUpdate && (statusUpdate.status || statusUpdate.assignToSender)) {
+            console.log(`[BulkSMS] Updating leads... Status: ${statusUpdate.status || '(No Change)'}, Assign: ${statusUpdate.assignToSender}`);
 
             const updatePayload: any = {
-                durum: statusUpdate.status,
                 updated_at: new Date().toISOString(),
                 updated_by: session.user.email
             };
+
+            // Only update status if provided and valid
+            if (statusUpdate.status) {
+                updatePayload.durum = statusUpdate.status;
+            }
 
             if (statusUpdate.assignToSender) {
                 updatePayload.sahip = session.user.email;
@@ -188,7 +195,7 @@ export async function POST(req: NextRequest) {
                     lead_id: null, // Global log
                     action: 'BULK_STATUS_UPDATE',
                     user_email: session.user.email,
-                    note: `Bulk update to '${statusUpdate.status}'. Assigned: ${statusUpdate.assignToSender}. Count: ${updatedCount}`,
+                    note: `Bulk update. Status: ${statusUpdate.status || 'Unchanged'}. Assigned to me: ${statusUpdate.assignToSender}. Count: ${updatedCount}`,
                     metadata: { user_ids: userIds }
                 });
             } else {
