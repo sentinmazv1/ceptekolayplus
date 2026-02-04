@@ -10,6 +10,7 @@ import { ActionCenter } from '@/components/ActionCenter';
 import { Customer } from '@/lib/types';
 import { Loader2, LogOut, Users, FileText, RefreshCcw } from 'lucide-react';
 import { UserPerformanceCard } from '@/components/UserPerformanceCard';
+import { DashboardHighlights } from '@/components/DashboardHighlights';
 
 export default function Dashboard() {
     const { data: session, status } = useSession();
@@ -157,6 +158,14 @@ export default function Dashboard() {
                         teamStats={teamStats}
                         newLeadCount={newLeadCount}
                         mode={isAdmin ? 'admin' : 'personal'}
+                    />
+                </div>
+
+                {/* 2.5 DASHBOARD HIGHLIGHTS (New) */}
+                <div className="animate-in fade-in duration-500 delay-150">
+                    <DashboardHighlights
+                        onSelectCustomer={(c) => setActiveLead(c)}
+                        lastUpdated={lastUpdated}
                     />
                 </div>
 
