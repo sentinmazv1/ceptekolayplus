@@ -35,17 +35,17 @@ export function DeliveredCustomerList({ data }: DeliveredCustomerListProps) {
                             {/* Header */}
                             <div className="flex justify-between items-start mb-3 border-b border-gray-50 pb-2">
                                 <div>
-                                    <h4 className="font-bold text-gray-900 text-lg">{lead.name}</h4>
-                                    <p className="text-xs text-gray-400 font-mono mt-0.5">{lead.tc} | {lead.phone}</p>
+                                    <h4 className="font-bold text-gray-900 text-lg truncate w-full max-w-[180px]" title={lead.name}>{lead.name}</h4>
+                                    <p className="text-xs text-gray-400 font-mono mt-0.5 truncate max-w-[180px]">{lead.tc} | {lead.phone}</p>
                                     {lead.dob && (
                                         <p className="text-[10px] text-gray-400 mt-1">
                                             Doğum T: <span className="font-semibold text-gray-600">{new Date(lead.dob).toLocaleDateString('tr-TR')}</span>
                                         </p>
                                     )}
                                 </div>
-                                <div className="text-right">
-                                    <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-full uppercase">Satıcı</span>
-                                    <div className="text-xs font-bold text-indigo-600 mt-1">{lead.seller}</div>
+                                <div className="text-right flex flex-col items-end min-w-0 flex-1 ml-2">
+                                    <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-full uppercase whitespace-nowrap">Satıcı</span>
+                                    <div className="text-xs font-bold text-indigo-600 mt-1 truncate max-w-[120px]" title={lead.seller}>{lead.seller}</div>
                                 </div>
                             </div>
 
