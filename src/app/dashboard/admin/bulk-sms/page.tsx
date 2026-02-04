@@ -28,6 +28,11 @@ export default function BulkSmsPage() {
     const [selectedTemplateId, setSelectedTemplateId] = useState('');
     const [messageContent, setMessageContent] = useState('');
 
+    // Status Update Options
+    const [assignToSender, setAssignToSender] = useState(false);
+    const [enableStatusChange, setEnableStatusChange] = useState(false);
+    const [selectedStatus, setSelectedStatus] = useState('');
+
     // Load Data
     useEffect(() => {
         fetchTemplates();
@@ -119,7 +124,11 @@ export default function BulkSmsPage() {
                     userIds: selectedUserIds,
                     message: messageContent,
                     channel,
-                    templateId: selectedTemplateId
+                    templateId: selectedTemplateId,
+                    statusUpdate: {
+                        assignToSender: assignToSender,
+                        status: enableStatusChange ? selectedStatus : ''
+                    }
                 })
             });
             const json = await res.json();
@@ -316,6 +325,49 @@ export default function BulkSmsPage() {
                         <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 text-xs text-blue-800">
                             <strong>Bilgi:</strong> Seçilen {selectedUserIds.length} kullanıcıya bu mesaj sırayla gönderilecektir.
                             {channel === 'WHATSAPP' && <p className="mt-1">WhatsApp gönderimleri masaüstü uygulaması gerektirebilir veya entegrasyon servisi kullanır.</p>}
+                        </div>
+
+                        {/* Status Update Options */}
+                        <div className="border-t border-gray-200 pt-4 space-y-3">
+                            <h3 className="text-sm font-semibold text-gray-700">Durum Güncelleme Seçenekleri</h3>
+
+                            {/* Assign to Me - Always visible */}
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={assignToSender}
+                                    onChange={(e) => setAssignToSender(e.target.checked)}
+                                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                />
+                                <span className="text-sm text-gray-700">Bana Ata</span>
+                            </label>
+
+                            {/* Change Status */}
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={enableStatusChange}
+                                    onChange={(e) => setEnableStatusChange(e.target.checked)}
+                                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                />
+                                <span className="text-sm text-gray-700">Gönderilenlerin Durumunu Değiştir</span>
+                            </label>
+
+                            {enableStatusChange && (
+                                <select
+                                    value={selectedStatus}
+                                    onChange={(e) => setSelectedStatus(e.target.value)}
+                                    className="w-full text-sm border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                >
+                                    <option value="">-- Durum Seçin --</option>
+                                    <option value="Aranacak">Aranacak</option>
+                                    <option value="Ulaşılamadı">Ulaşılamadı</option>
+                                    <option value="Onaylandı">Onaylandı</option>
+                                    <option value="Reddetti">Reddetti</option>
+                                    <option value="Kefil Bekleniyor">Kefil Bekleniyor</option>
+                                    <option value="Teslim edildi">Teslim edildi</option>
+                                </select>
+                            )}
                         </div>
 
                         <Button
