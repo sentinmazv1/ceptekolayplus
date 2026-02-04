@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { Loader2, CheckCircle, Clock, Package, X, Phone, User, ExternalLink } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { Customer } from '@/lib/types';
 
 interface DashboardHighlightsProps {
@@ -13,9 +12,8 @@ interface DashboardHighlightsProps {
 
 export function DashboardHighlights({ onSelectCustomer, lastUpdated }: DashboardHighlightsProps) {
     const { data: session } = useSession();
-    const isAdmin = session?.user?.email === 'ibrahimsentinmaz@gmail.com' || session?.user?.email === 'admin';
-    const userEmail = session?.user?.email;
 
+    // UI State
     const [stats, setStats] = useState({
         approved: 0,
         guarantor: 0,
@@ -39,47 +37,13 @@ export function DashboardHighlights({ onSelectCustomer, lastUpdated }: Dashboard
         if (!session) return;
         setLoading(true);
         try {
-            // Helper to build base query with isolation
-            const baseQuery = (status?: string) => {
-                let q = supabase.from('leads').select('id', { count: 'exact', head: true });
-                if (status) q = q.eq('durum', status);
-
-                // USER ISOLATION: Owner OR Creator
-                if (!isAdmin && userEmail) {
-                    q = q.or(`sahip.eq.${userEmail},created_by.eq.${userEmail}`);
+            const res = await fetch('/api/dashboard/stats?action=stats');
+            if (res.ok) {
+                const json = await res.json();
+                if (json.stats) {
+                    setStats(json.stats);
                 }
-                return q;
-            };
-
-            // 1. Approved
-            const { count: approvedCount } = await baseQuery('Onaylandı');
-
-            // 2. Guarantor (Kefil bekleniyor)
-            const { count: guarantorCount } = await baseQuery('Kefil bekleniyor');
-
-            // 3. Delivered (This Month)
-            const now = new Date();
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-
-            let deliveredQuery = supabase
-                .from('leads')
-                .select('id', { count: 'exact', head: true })
-                .or('durum.eq.Teslim edildi,durum.eq.Satış yapıldı/Tamamlandı')
-                .gte('teslim_tarihi', startOfMonth);
-
-            // USER ISOLATION: Owner OR Creator
-            if (!isAdmin && userEmail) {
-                deliveredQuery = deliveredQuery.or(`sahip.eq.${userEmail},created_by.eq.${userEmail}`);
             }
-
-            const { count: deliveredCount } = await deliveredQuery;
-
-            setStats({
-                approved: approvedCount || 0,
-                guarantor: guarantorCount || 0,
-                delivered: deliveredCount || 0
-            });
-
         } catch (e) {
             console.error('Stats fetch error', e);
         } finally {
@@ -95,33 +59,13 @@ export function DashboardHighlights({ onSelectCustomer, lastUpdated }: Dashboard
         setCustomerList([]);
 
         try {
-            let query = supabase
-                .from('leads')
-                .select('*')
-                .order('updated_at', { ascending: false })
-                .limit(50); // Limit to 50 for performance
-
-            // Apply User Isolation: Owner OR Creator
-            if (!isAdmin && userEmail) {
-                query = query.or(`sahip.eq.${userEmail},created_by.eq.${userEmail}`);
+            const res = await fetch(`/api/dashboard/stats?action=list&type=${type}`);
+            if (res.ok) {
+                const json = await res.json();
+                setCustomerList(json.list || []);
+            } else {
+                throw new Error('Failed to fetch list');
             }
-
-            if (type === 'APPROVED') {
-                query = query.eq('durum', 'Onaylandı');
-            } else if (type === 'GUARANTOR') {
-                query = query.eq('durum', 'Kefil bekleniyor');
-            } else if (type === 'DELIVERED') {
-                const now = new Date();
-                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-                query = query
-                    .or('durum.eq.Teslim edildi,durum.eq.Satış yapıldı/Tamamlandı')
-                    .gte('teslim_tarihi', startOfMonth);
-            }
-
-            const { data, error } = await query;
-            if (error) throw error;
-            if (data) setCustomerList(data);
-
         } catch (e) {
             console.error('List fetch error', e);
             alert('Liste yüklenirken hata oluştu');
@@ -163,7 +107,7 @@ export function DashboardHighlights({ onSelectCustomer, lastUpdated }: Dashboard
                         <span className="text-emerald-100 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
                             <CheckCircle className="w-3 h-3" /> Onaylı
                         </span>
-                        <span className="text-3xl font-black mt-1">{stats.approved}</span>
+                        <span className="text-3xl font-black mt-1">{loading ? '...' : stats.approved}</span>
                     </div>
                 </div>
 
@@ -179,7 +123,7 @@ export function DashboardHighlights({ onSelectCustomer, lastUpdated }: Dashboard
                         <span className="text-amber-100 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
                             <Clock className="w-3 h-3" /> Kefil Bekliyor
                         </span>
-                        <span className="text-3xl font-black mt-1">{stats.guarantor}</span>
+                        <span className="text-3xl font-black mt-1">{loading ? '...' : stats.guarantor}</span>
                     </div>
                 </div>
 
@@ -195,7 +139,7 @@ export function DashboardHighlights({ onSelectCustomer, lastUpdated }: Dashboard
                         <span className="text-indigo-100 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
                             <Package className="w-3 h-3" /> Teslim Edilen
                         </span>
-                        <span className="text-3xl font-black mt-1">{stats.delivered}</span>
+                        <span className="text-3xl font-black mt-1">{loading ? '...' : stats.delivered}</span>
                     </div>
                 </div>
             </div>
