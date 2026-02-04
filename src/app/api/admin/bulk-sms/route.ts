@@ -74,6 +74,11 @@ export async function POST(req: NextRequest) {
         // Fixed: Use statusUpdate consistently
         const { userIds, message, templateId, channel, statusUpdate } = body;
 
+        // DEBUG: Log the entire request payload
+        console.log('[BULK SMS DEBUG] Full Request Body:', JSON.stringify(body, null, 2));
+        console.log('[BULK SMS DEBUG] statusUpdate value:', statusUpdate);
+        console.log('[BULK SMS DEBUG] statusUpdate type:', typeof statusUpdate);
+
         if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
             return NextResponse.json({ message: 'No users selected' }, { status: 400 });
         }
@@ -160,9 +165,16 @@ export async function POST(req: NextRequest) {
         let updatedCount = 0;
         // --- BULK STATUS UPDATE LOGIC ---
 
+        // DEBUG: Check condition values
+        console.log('[BULK SMS DEBUG] Status Update Check:');
+        console.log('  - statusUpdate exists?', !!statusUpdate);
+        console.log('  - statusUpdate.status:', statusUpdate?.status);
+        console.log('  - statusUpdate.assignToSender:', statusUpdate?.assignToSender);
+        console.log('  - Condition result:', !!(statusUpdate && (statusUpdate.status || statusUpdate.assignToSender)));
+
         // FIX: Allow update if EITHER status or assignment is requested
         if (statusUpdate && (statusUpdate.status || statusUpdate.assignToSender)) {
-            console.log(`[BulkSMS] Updating leads... Status: ${statusUpdate.status || '(No Change)'}, Assign: ${statusUpdate.assignToSender}`);
+            console.log(`[BulkSMS] ✅ ENTERING UPDATE BLOCK - Status: ${statusUpdate.status || '(No Change)'}, Assign: ${statusUpdate.assignToSender}`);
 
             const updatePayload: any = {
                 updated_at: new Date().toISOString(),
@@ -179,12 +191,20 @@ export async function POST(req: NextRequest) {
                 // Removed legacy 'assigned_to' and 'sahip' which are not checking db columns
             }
 
+            console.log('[BULK SMS DEBUG] Update Payload:', JSON.stringify(updatePayload, null, 2));
+            console.log('[BULK SMS DEBUG] Target User IDs:', userIds);
+
             // Use 'data' instead of 'count' to avoid type errors
             const { data, error: updateError } = await supabaseAdmin
                 .from('leads')
                 .update(updatePayload)
                 .in('id', userIds)
                 .select('id');
+
+            console.log('[BULK SMS DEBUG] Update Response:');
+            console.log('  - Error:', updateError);
+            console.log('  - Data:', data);
+            console.log('  - Updated Count:', data?.length || 0);
 
             if (!updateError) {
                 // CORRECT LOGIC
