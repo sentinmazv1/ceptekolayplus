@@ -2,10 +2,11 @@
 interface DeliveredLead {
     id: string;
     name: string;
+    dob?: string; // Added
     phone: string;
     tc: string;
     work: string;
-    workPlace: string; // Added
+    workPlace: string;
     limit: string;
     seller: string;
     items: string;
@@ -36,6 +37,11 @@ export function DeliveredCustomerList({ data }: DeliveredCustomerListProps) {
                                 <div>
                                     <h4 className="font-bold text-gray-900 text-lg">{lead.name}</h4>
                                     <p className="text-xs text-gray-400 font-mono mt-0.5">{lead.tc} | {lead.phone}</p>
+                                    {lead.dob && (
+                                        <p className="text-[10px] text-gray-400 mt-1">
+                                            Doğum T: <span className="font-semibold text-gray-600">{new Date(lead.dob).toLocaleDateString('tr-TR')}</span>
+                                        </p>
+                                    )}
                                 </div>
                                 <div className="text-right">
                                     <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-full uppercase">Satıcı</span>
