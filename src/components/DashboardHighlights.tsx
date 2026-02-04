@@ -51,49 +51,50 @@ export function DashboardHighlights({ onSelectCustomer, lastUpdated }: Dashboard
         }
     };
 
+
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredList = customerList.filter(c => {
+        if (!searchTerm) return true;
+        const low = searchTerm.toLowerCase();
+        return (
+            (c.ad_soyad || '').toLowerCase().includes(low) ||
+            (c.telefon || '').includes(searchTerm) ||
+            (c.sehir || '').toLowerCase().includes(low)
+        );
+    });
+
     const handleBadgeClick = async (type: 'APPROVED' | 'GUARANTOR' | 'DELIVERED') => {
         if (!session) return;
         setListType(type);
         setIsListOpen(true);
         setListLoading(true);
         setCustomerList([]);
+        setSearchTerm(''); // Reset search
 
         try {
             const res = await fetch(`/api/dashboard/stats?action=list&type=${type}`);
+            const json = await res.json();
+
             if (res.ok) {
-                const json = await res.json();
                 setCustomerList(json.list || []);
             } else {
-                throw new Error('Failed to fetch list');
+                console.error('Stats API Error:', json);
+                throw new Error(json.message || 'Failed to fetch list');
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error('List fetch error', e);
-            alert('Liste yüklenirken hata oluştu');
+            alert(`Liste yüklenirken hata oluştu: ${e.message}`);
         } finally {
             setListLoading(false);
         }
     };
 
-    const getTypeColor = () => {
-        switch (listType) {
-            case 'APPROVED': return 'emerald';
-            case 'GUARANTOR': return 'amber';
-            case 'DELIVERED': return 'indigo';
-            default: return 'gray';
-        }
-    };
-
-    const getTitle = () => {
-        switch (listType) {
-            case 'APPROVED': return 'Onaylı Müşteriler';
-            case 'GUARANTOR': return 'Kefil Bekleyen Müşteriler';
-            case 'DELIVERED': return 'Bu Ay Teslim Edilenler';
-            default: return '';
-        }
-    };
+    // ... (rest of helper functions)
 
     return (
         <>
+            {/* ... (Badges Grid code remains same) ... */}
             <div className="grid grid-cols-3 gap-3 md:gap-6 mb-6">
                 {/* 1. Approved */}
                 <div
@@ -105,7 +106,7 @@ export function DashboardHighlights({ onSelectCustomer, lastUpdated }: Dashboard
                     </div>
                     <div className="relative z-10 flex flex-col">
                         <span className="text-emerald-100 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                            <CheckCircle className="w-3 h-3" /> Onaylı
+                            <CheckCircle className="w-3 h-3" /> Onaylı (Tümü)
                         </span>
                         <span className="text-3xl font-black mt-1">{loading ? '...' : stats.approved}</span>
                     </div>
@@ -121,7 +122,7 @@ export function DashboardHighlights({ onSelectCustomer, lastUpdated }: Dashboard
                     </div>
                     <div className="relative z-10 flex flex-col">
                         <span className="text-amber-100 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> Kefil Bekliyor
+                            <Clock className="w-3 h-3" /> Kefil Bekliyor (Tümü)
                         </span>
                         <span className="text-3xl font-black mt-1">{loading ? '...' : stats.guarantor}</span>
                     </div>
@@ -137,7 +138,7 @@ export function DashboardHighlights({ onSelectCustomer, lastUpdated }: Dashboard
                     </div>
                     <div className="relative z-10 flex flex-col">
                         <span className="text-indigo-100 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                            <Package className="w-3 h-3" /> Teslim Edilen
+                            <Package className="w-3 h-3" /> Teslim Edilen (Tümü)
                         </span>
                         <span className="text-3xl font-black mt-1">{loading ? '...' : stats.delivered}</span>
                     </div>
@@ -150,11 +151,21 @@ export function DashboardHighlights({ onSelectCustomer, lastUpdated }: Dashboard
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsListOpen(false)} />
                     <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
                         {/* Modal Header */}
-                        <div className={`p-4 border-b flex justify-between items-center bg-${getTypeColor()}-50`}>
-                            <h3 className={`text-lg font-black text-${getTypeColor()}-700 uppercase`}>{getTitle()}</h3>
-                            <button onClick={() => setIsListOpen(false)} className="p-1 rounded-full hover:bg-gray-100 text-gray-500">
-                                <X className="w-6 h-6" />
-                            </button>
+                        <div className={`p-4 border-b flex flex-col gap-3 bg-${getTypeColor()}-50`}>
+                            <div className="flex justify-between items-center">
+                                <h3 className={`text-lg font-black text-${getTypeColor()}-700 uppercase`}>{getTitle()}</h3>
+                                <button onClick={() => setIsListOpen(false)} className="p-1 rounded-full hover:bg-gray-100 text-gray-500">
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+                            {/* Search Bar */}
+                            <input
+                                type="text"
+                                placeholder="İsim, telefon veya şehir ara..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
                         </div>
 
                         {/* Modal Body */}
@@ -164,12 +175,12 @@ export function DashboardHighlights({ onSelectCustomer, lastUpdated }: Dashboard
                                     <Loader2 className={`w-8 h-8 animate-spin text-${getTypeColor()}-600`} />
                                     <span className="text-gray-400 text-sm font-medium">Liste yükleniyor...</span>
                                 </div>
-                            ) : customerList.length === 0 ? (
+                            ) : filteredList.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center h-40 text-gray-400">
                                     <div className="bg-gray-50 p-3 rounded-full mb-2">
                                         <X className="w-6 h-6" />
                                     </div>
-                                    <p>Bu durumda kayıt bulunamadı.</p>
+                                    <p>Bu filtreye uygun kayıt bulunamadı.</p>
                                 </div>
                             ) : (
                                 <table className="min-w-full divide-y divide-gray-100">
@@ -182,7 +193,7 @@ export function DashboardHighlights({ onSelectCustomer, lastUpdated }: Dashboard
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 bg-white">
-                                        {customerList.map((customer) => (
+                                        {filteredList.map((customer) => (
                                             <tr key={customer.id} className="hover:bg-gray-50 transition-colors group">
                                                 <td className="px-4 py-3">
                                                     <div className="font-bold text-gray-900">{customer.ad_soyad}</div>

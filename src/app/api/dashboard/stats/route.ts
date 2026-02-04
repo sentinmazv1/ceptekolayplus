@@ -73,11 +73,8 @@ export async function GET(req: NextRequest) {
             } else if (type === 'GUARANTOR') {
                 query = query.eq('durum', 'Kefil bekleniyor');
             } else if (type === 'DELIVERED') {
-                const now = new Date();
-                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-                query = query
-                    .or('durum.eq.Teslim edildi,durum.eq.Satış yapıldı/Tamamlandı')
-                    .gte('teslim_tarihi', startOfMonth);
+                // Removed date filter as requested - Show ALL TIME delivered
+                query = query.or('durum.eq.Teslim edildi,durum.eq.Satış yapıldı/Tamamlandı');
             }
 
             const { data, error } = await query;
