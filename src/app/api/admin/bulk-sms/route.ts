@@ -121,8 +121,8 @@ export async function POST(req: NextRequest) {
             console.log(`[BulkSMS] ✅ ENTERING UPDATE BLOCK - Status: ${statusUpdate.status || '(No Change)'}, Assign: ${statusUpdate.assignToSender}`);
 
             const updatePayload: any = {
-                updated_at: new Date().toISOString(),
-                updated_by: session.user.email
+                updated_at: new Date().toISOString()
+                // updated_by removed - column does not exist in leads table
             };
 
             // Only update status if provided and valid (non-empty after trim)
