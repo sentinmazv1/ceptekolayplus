@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { Loader2, CheckCircle, Clock, Package, X, Phone, User, ExternalLink } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Customer } from '@/lib/types';
@@ -11,6 +12,10 @@ interface DashboardHighlightsProps {
 }
 
 export function DashboardHighlights({ onSelectCustomer, lastUpdated }: DashboardHighlightsProps) {
+    const { data: session } = useSession();
+    const isAdmin = session?.user?.email === 'ibrahimsentinmaz@gmail.com' || session?.user?.email === 'admin';
+    const userEmail = session?.user?.email;
+
     const [stats, setStats] = useState({
         approved: 0,
         guarantor: 0,
@@ -25,39 +30,44 @@ export function DashboardHighlights({ onSelectCustomer, lastUpdated }: Dashboard
     const [listLoading, setListLoading] = useState(false);
 
     useEffect(() => {
-        fetchStats();
-    }, [lastUpdated]);
+        if (session) {
+            fetchStats();
+        }
+    }, [lastUpdated, session]);
 
     const fetchStats = async () => {
+        if (!session) return;
         setLoading(true);
         try {
-            // We can fetch these counts efficiently from Supabase or via our existing API
-            // For speed/custom logic, let's query supabase directly for counts using head
+            // Helper to build base query with isolation
+            const baseQuery = (status?: string) => {
+                let q = supabase.from('leads').select('id', { count: 'exact', head: true });
+                if (status) q = q.eq('durum', status);
+                if (!isAdmin && userEmail) q = q.eq('sahip', userEmail);
+                return q;
+            };
 
             // 1. Approved
-            const { count: approvedCount } = await supabase
-                .from('leads')
-                .select('id', { count: 'exact', head: true })
-                .eq('durum', 'Onaylandı');
+            const { count: approvedCount } = await baseQuery('Onaylandı');
 
             // 2. Guarantor (Kefil bekleniyor)
-            const { count: guarantorCount } = await supabase
-                .from('leads')
-                .select('id', { count: 'exact', head: true })
-                .eq('durum', 'Kefil bekleniyor');
+            const { count: guarantorCount } = await baseQuery('Kefil bekleniyor');
 
-            // 3. Delivered (This Month? Or Total?)
-            // User context suggests "Current Activity", so "Delivered THIS MONTH" is usually most relevant for a dashboard.
-            // But user might want "Total Delivered" to feel good. 
-            // Let's stick to "This Month" to match the rest of the dashboard stats usually.
+            // 3. Delivered (This Month)
             const now = new Date();
             const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-            const { count: deliveredCount } = await supabase
+            let deliveredQuery = supabase
                 .from('leads')
                 .select('id', { count: 'exact', head: true })
                 .or('durum.eq.Teslim edildi,durum.eq.Satış yapıldı/Tamamlandı')
                 .gte('teslim_tarihi', startOfMonth);
+
+            if (!isAdmin && userEmail) {
+                deliveredQuery = deliveredQuery.eq('sahip', userEmail);
+            }
+
+            const { count: deliveredCount } = await deliveredQuery;
 
             setStats({
                 approved: approvedCount || 0,
@@ -73,6 +83,7 @@ export function DashboardHighlights({ onSelectCustomer, lastUpdated }: Dashboard
     };
 
     const handleBadgeClick = async (type: 'APPROVED' | 'GUARANTOR' | 'DELIVERED') => {
+        if (!session) return;
         setListType(type);
         setIsListOpen(true);
         setListLoading(true);
@@ -84,6 +95,11 @@ export function DashboardHighlights({ onSelectCustomer, lastUpdated }: Dashboard
                 .select('*')
                 .order('updated_at', { ascending: false })
                 .limit(50); // Limit to 50 for performance
+
+            // Apply User Isolation
+            if (!isAdmin && userEmail) {
+                query = query.eq('sahip', userEmail);
+            }
 
             if (type === 'APPROVED') {
                 query = query.eq('durum', 'Onaylandı');
