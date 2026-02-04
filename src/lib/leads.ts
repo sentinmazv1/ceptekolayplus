@@ -78,11 +78,9 @@ export async function getDashboardStatsCounts(userEmail: string, isAdmin: boolea
         const pApproved = supabaseAdmin.from('leads').select('id', { count: 'exact', head: true }).eq('durum', 'Onaylandı');
         const pGuarantor = supabaseAdmin.from('leads').select('id', { count: 'exact', head: true }).eq('durum', 'Kefil bekleniyor');
 
-        const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        // Delivered (ALL TIME) - Removed date filter as requested
         const pDelivered = supabaseAdmin.from('leads').select('id', { count: 'exact', head: true })
-            .or('durum.eq.Teslim edildi,durum.eq.Satış yapıldı/Tamamlandı')
-            .gte('teslim_tarihi', startOfMonth);
+            .or('durum.eq.Teslim edildi,durum.eq.Satış yapıldı/Tamamlandı');
 
         const [{ count: approved }, { count: guarantor }, { count: delivered }] = await Promise.all([pApproved, pGuarantor, pDelivered]);
 
@@ -118,17 +116,12 @@ export async function getDashboardStatsCounts(userEmail: string, isAdmin: boolea
     let guarantor = 0;
     let delivered = 0;
 
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-
     uniqueLeads.forEach(lead => {
         if (lead.durum === 'Onaylandı') approved++;
         if (lead.durum === 'Kefil bekleniyor') guarantor++;
+        // Delivered (ALL TIME)
         if (lead.durum === 'Teslim edildi' || lead.durum === 'Satış yapıldı/Tamamlandı') {
-            if (lead.teslim_tarihi) {
-                const tDate = new Date(lead.teslim_tarihi).getTime();
-                if (tDate >= startOfMonth) delivered++;
-            }
+            delivered++;
         }
     });
 
