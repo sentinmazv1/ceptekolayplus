@@ -34,42 +34,19 @@ export async function getLeads(filters?: { sahip?: string; durum?: LeadStatus | 
 
 // Special dashboard function to handle "Owner OR Creator" visibility
 export async function getLeadsForDashboard(userEmail: string, status?: string): Promise<Customer[]> {
-    // Strategy: robust "Fetch All Potentials" and filter unique. 
-    // This avoids complex Supabase OR syntax issues with special chars in emails.
+    // Strategy: Fetch Owned Leads only (until 'created_by' column is added to Schema)
 
-    // 1. Fetch Owned
     let q1 = supabaseAdmin.from('leads').select('*').eq('sahip_email', userEmail);
-    // 2. Fetch Created by Me (but possibly assigned to others)
-    let q2 = supabaseAdmin.from('leads').select('*').eq('created_by', userEmail);
 
     if (status && status !== 'Tüm Durumlar') {
         q1 = q1.eq('durum', status);
-        q2 = q2.eq('durum', status);
     }
 
-    const [res1, res2] = await Promise.all([
-        q1.order('updated_at', { ascending: false }).limit(200),
-        q2.order('updated_at', { ascending: false }).limit(200)
-    ]);
+    const res1 = await q1.order('updated_at', { ascending: false }).limit(200);
 
     if (res1.error) throw res1.error;
-    if (res2.error) throw res2.error;
 
-    // Merge and Deduplicate by ID
-    const map = new Map<string, any>();
-    (res1.data || []).forEach(r => map.set(r.id, r));
-    (res2.data || []).forEach(r => map.set(r.id, r));
-
-    const combined = Array.from(map.values());
-
-    // Re-sort in memory (since we merged two sorted lists)
-    combined.sort((a, b) => {
-        const da = new Date(a.updated_at || 0).getTime();
-        const db = new Date(b.updated_at || 0).getTime();
-        return db - da;
-    });
-
-    return combined.slice(0, 200).map(mapRowToCustomer);
+    return (res1.data || []).map(mapRowToCustomer);
 }
 
 export async function getDashboardStatsCounts(userEmail: string, isAdmin: boolean) {
@@ -92,7 +69,7 @@ export async function getDashboardStatsCounts(userEmail: string, isAdmin: boolea
     }
 
     // If Personnel (User Isolation), use reliable Fetch-and-Compute in memory 
-    // to handle "Owned OR Created" logic without OR Syntax risks.
+    // to handle "Owned" logic.
     // We fetch simplified objects to keep it lightweight.
 
     // 1. Fetch Owned Ids/Status - Filter by relevant statuses to avoid 1000 row limit truncation
@@ -103,17 +80,12 @@ export async function getDashboardStatsCounts(userEmail: string, isAdmin: boolea
         .eq('sahip_email', userEmail)
         .in('durum', relevantStatuses);
 
-    // 2. Fetch Created Ids/Status
-    const q2 = supabaseAdmin.from('leads')
-        .select('id, durum, teslim_tarihi')
-        .eq('created_by', userEmail)
-        .in('durum', relevantStatuses);
+    const res1 = await q1;
 
-    const [res1, res2] = await Promise.all([q1, q2]);
+    if (res1.error) throw res1.error;
 
     const uniqueLeads = new Map<string, any>();
     (res1.data || []).forEach(r => uniqueLeads.set(r.id, r));
-    (res2.data || []).forEach(r => uniqueLeads.set(r.id, r));
 
     // Compute Stats
     let approved = 0;

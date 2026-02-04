@@ -64,7 +64,8 @@ export async function GET(req: NextRequest) {
 
             // 1. ISOLATION
             if (!isAdmin) {
-                query = query.or(`sahip_email.eq.${userEmail},created_by.eq.${userEmail}`);
+                // Removed 'created_by' logic as the column does not exist in the database.
+                query = query.eq('sahip_email', userEmail);
             }
 
             // 2. TYPE FILTER
