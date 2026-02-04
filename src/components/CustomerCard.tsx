@@ -689,6 +689,33 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
             {/* --- HEADER --- */}
             <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-4 shrink-0 shadow-md relative overflow-hidden">
                 <div className="absolute inset-0 bg-white/5 opacity-50 pattern-grid-lg"></div>
+
+                {/* --- DELIVERED BANNER (Conditional) --- */}
+                {(data.durum === 'Teslim edildi' || data.durum === 'Satış yapıldı/Tamamlandı') && (
+                    <div className="mb-4 bg-emerald-500/20 border border-emerald-500/40 rounded-lg p-3 flex items-center justify-between relative z-10 backdrop-blur-md animate-in slide-in-from-top-2">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-emerald-500 p-2 rounded-full shadow-lg shadow-emerald-500/20">
+                                <CheckCircle className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <h3 className="font-black text-emerald-100 text-sm uppercase tracking-wide">Teslimat Tamamlandı</h3>
+                                <div className="text-xs text-emerald-200/80 font-mono mt-0.5">
+                                    Bu müşteriye ürün teslimi yapılmıştır.
+                                </div>
+                            </div>
+                        </div>
+                        {data.teslim_tarihi && (
+                            <div className="text-right">
+                                <div className="text-[10px] text-emerald-300 uppercase font-bold">Son Teslim Tarihi</div>
+                                <div className="text-sm font-bold text-white font-mono">
+                                    {new Date(data.teslim_tarihi).toLocaleDateString('tr-TR')}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
                     <div>
                         <div className="flex items-center gap-3 mb-1">
