@@ -90,6 +90,24 @@ export function DashboardHighlights({ onSelectCustomer, lastUpdated }: Dashboard
         }
     };
 
+    const getTypeColor = () => {
+        switch (listType) {
+            case 'APPROVED': return 'emerald';
+            case 'GUARANTOR': return 'amber';
+            case 'DELIVERED': return 'indigo';
+            default: return 'gray';
+        }
+    };
+
+    const getTitle = () => {
+        switch (listType) {
+            case 'APPROVED': return 'Onaylı Müşteriler';
+            case 'GUARANTOR': return 'Kefil Bekleyen Müşteriler';
+            case 'DELIVERED': return 'Bu Ay Teslim Edilenler'; // Or All Time if you changed label
+            default: return '';
+        }
+    };
+
     // ... (rest of helper functions)
 
     return (
