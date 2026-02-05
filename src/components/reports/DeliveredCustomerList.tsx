@@ -28,53 +28,53 @@ export function DeliveredCustomerList({ data }: DeliveredCustomerListProps) {
                 TESLİM EDİLEN MÜŞTERİLER VE ÜRÜNLER
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {data.map((lead, i) => (
-                    <div key={i} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between">
+                    <div key={i} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between">
                         <div>
                             {/* Header */}
-                            <div className="flex justify-between items-start mb-3 border-b border-gray-50 pb-2">
-                                <div>
-                                    <h4 className="font-bold text-gray-900 text-lg truncate w-full max-w-[180px]" title={lead.name}>{lead.name}</h4>
-                                    <p className="text-xs text-gray-400 font-mono mt-0.5 truncate max-w-[180px]">{lead.tc} | {lead.phone}</p>
+                            <div className="flex justify-between items-start mb-2 border-b border-gray-50 pb-1.5">
+                                <div className="flex-1 min-w-0 mr-2">
+                                    <h4 className="font-bold text-gray-900 text-sm truncate" title={lead.name}>{lead.name}</h4>
+                                    <p className="text-[10px] text-gray-400 font-mono mt-0.5 truncate">{lead.tc} | {lead.phone}</p>
                                     {lead.dob && (
-                                        <p className="text-[10px] text-gray-400 mt-1">
-                                            Doğum T: <span className="font-semibold text-gray-600">{new Date(lead.dob).toLocaleDateString('tr-TR')}</span>
+                                        <p className="text-[9px] text-gray-400 mt-0.5">
+                                            Doğum: <span className="font-semibold text-gray-600">{new Date(lead.dob).toLocaleDateString('tr-TR')}</span>
                                         </p>
                                     )}
                                 </div>
-                                <div className="text-right flex flex-col items-end min-w-0 flex-1 ml-2">
-                                    <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-full uppercase whitespace-nowrap">Satıcı</span>
-                                    <div className="text-xs font-bold text-indigo-600 mt-1 truncate max-w-[120px]" title={lead.seller}>{lead.seller}</div>
+                                <div className="text-right flex flex-col items-end">
+                                    <span className="text-[9px] font-bold text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded uppercase whitespace-nowrap">Satıcı</span>
+                                    <div className="text-[10px] font-bold text-indigo-600 mt-0.5 truncate max-w-[100px]" title={lead.seller}>{lead.seller}</div>
                                 </div>
                             </div>
 
                             {/* Content */}
-                            <div className="space-y-3">
-                                <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div className="space-y-2">
+                                <div className="grid grid-cols-2 gap-2 text-xs">
                                     <div>
-                                        <span className="text-[10px] text-gray-400 uppercase font-bold block">Meslek</span>
-                                        <span className="text-gray-900 font-semibold">{lead.work}</span>
+                                        <span className="text-[9px] text-gray-400 uppercase font-bold block">Meslek</span>
+                                        <span className="text-gray-900 font-semibold text-[11px] truncate block" title={lead.work}>{lead.work}</span>
                                     </div>
                                     <div>
-                                        <span className="text-[10px] text-gray-400 uppercase font-bold block">İş Yeri</span>
-                                        <span className="text-gray-900 font-semibold truncate" title={lead.workPlace}>{lead.workPlace}</span>
+                                        <span className="text-[9px] text-gray-400 uppercase font-bold block">İş Yeri</span>
+                                        <span className="text-gray-900 font-semibold text-[11px] truncate block" title={lead.workPlace}>{lead.workPlace}</span>
                                     </div>
                                 </div>
 
-                                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
-                                    <span className="text-xs font-bold text-gray-400 uppercase block mb-1">Teslim Edilen Ürünler</span>
-                                    <p className="text-sm font-bold text-gray-800 leading-snug">{lead.items}</p>
+                                <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
+                                    <span className="text-[9px] font-bold text-gray-400 uppercase block mb-0.5">Teslim Edilen Ürünler</span>
+                                    <p className="text-[11px] font-bold text-gray-800 leading-tight line-clamp-2" title={lead.items}>{lead.items}</p>
                                 </div>
                             </div>
                         </div>
 
                         {/* Footer */}
-                        <div className="flex justify-between items-end pt-4 mt-2 border-t border-gray-50">
-                            <div className="text-xs text-gray-400 font-medium">
-                                {new Date(lead.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        <div className="flex justify-between items-end pt-2 mt-1.5 border-t border-gray-50">
+                            <div className="text-[10px] text-gray-400 font-medium">
+                                {new Date(lead.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })}
                             </div>
-                            <div className="text-xl font-black text-emerald-600">
+                            <div className="text-base font-black text-emerald-600">
                                 {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(lead.revenue)}
                             </div>
                         </div>
