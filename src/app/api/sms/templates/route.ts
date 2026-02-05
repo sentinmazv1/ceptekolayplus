@@ -1,35 +1,31 @@
 import { NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-    const templates = [
-        {
-            id: 'odeme_hatirlatma',
-            name: 'Ödeme Hatırlatma',
-            message: 'Sayın {ad_soyad}, ödeme tarihiniz yaklaşmaktadır. Lütfen en kısa sürede ödemenizi gerçekleştiriniz. Bilgi: 0850 XXX XX XX'
-        },
-        {
-            id: 'odeme_gecikme',
-            name: 'Ödeme Gecikme Uyarısı',
-            message: 'Sayın {ad_soyad}, ödemeniz gecikmiştir. Lütfen acilen iletişime geçiniz. Tel: 0850 XXX XX XX'
-        },
-        {
-            id: 'odeme_tesekkur',
-            name: 'Ödeme Teşekkür',
-            message: 'Sayın {ad_soyad}, ödemeniz alınmıştır. Teşekkür ederiz.'
-        },
-        {
-            id: 'iletisim_talebi',
-            name: 'İletişim Talebi',
-            message: 'Sayın {ad_soyad}, sizinle görüşmek istiyoruz. Lütfen en kısa sürede bizi arayınız. Tel: 0850 XXX XX XX'
-        },
-        {
-            id: 'odeme_plani',
-            name: 'Ödeme Planı Teklifi',
-            message: 'Sayın {ad_soyad}, ödeme planı oluşturmak için sizinle görüşmek istiyoruz. Lütfen bizi arayınız.'
-        }
-    ];
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('sms_templates')
+            .select('*')
+            .eq('is_active', true)
+            .order('name');
 
-    return NextResponse.json({ success: true, templates });
+        if (error) {
+            console.error('Error fetching SMS templates:', error);
+            return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        }
+
+        // Format for frontend compatibility
+        const templates = data.map(t => ({
+            id: t.id.toString(),
+            name: t.name,
+            message: t.message
+        }));
+
+        return NextResponse.json({ success: true, templates });
+    } catch (error: any) {
+        console.error('Error in SMS templates API:', error);
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
 }
