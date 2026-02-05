@@ -660,7 +660,6 @@ export default function CollectionPage() {
                                         <th className="text-left p-2 font-bold">Ad Soyad</th>
                                         <th className="text-left p-2 font-bold">TC Kimlik</th>
                                         <th className="text-left p-2 font-bold">Telefon</th>
-                                        <th className="text-left p-2 font-bold">Email</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -670,7 +669,6 @@ export default function CollectionPage() {
                                             <td className="p-2 text-sm font-medium">{lead.ad_soyad}</td>
                                             <td className="p-2 text-sm">{lead.tc_kimlik || '-'}</td>
                                             <td className="p-2 text-sm">{lead.telefon || '-'}</td>
-                                            <td className="p-2 text-sm">{lead.email || '-'}</td>
                                         </tr>
                                     ))}
                                 </tbody>

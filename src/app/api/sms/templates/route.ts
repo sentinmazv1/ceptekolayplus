@@ -9,18 +9,18 @@ export async function GET() {
             .from('sms_templates')
             .select('*')
             .eq('is_active', true)
-            .order('name');
+            .order('title');
 
         if (error) {
             console.error('Error fetching SMS templates:', error);
             return NextResponse.json({ success: false, error: error.message }, { status: 500 });
         }
 
-        // Format for frontend compatibility
+        // Format for frontend compatibility - map database fields to expected format
         const templates = data.map(t => ({
             id: t.id.toString(),
-            name: t.name,
-            message: t.message
+            name: t.title,        // Database uses 'title'
+            message: t.content    // Database uses 'content'
         }));
 
         return NextResponse.json({ success: true, templates });
