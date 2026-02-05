@@ -230,10 +230,47 @@ export async function GET(req: NextRequest) {
         // List matches Table Filter (Since we filtered 'leads' loop above)
         deliveredLeadsDetails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+        // Calculate Status Counts for Pie Chart
+        const statusCounts = {
+            approved: 0,
+            guarantorRequested: 0,
+            delivered: 0
+        };
+
+        leads?.forEach((lead: any) => {
+            // Count Approved (Onaylandı)
+            if (lead.onay_durumu === 'Onaylandı') {
+                const onayTs = lead.onay_tarihi ? new Date(lead.onay_tarihi).getTime() : 0;
+                if (onayTs >= startTs && onayTs <= endTs) {
+                    statusCounts.approved++;
+                }
+            }
+
+            // Count Guarantor Requested (Kefil İstendi or Kefil Bekleniyor)
+            if (lead.onay_durumu === 'Kefil İstendi' || lead.durum === 'Kefil bekleniyor') {
+                const createdTs = lead.created_at ? new Date(lead.created_at).getTime() : 0;
+                const updatedTs = lead.updated_at ? new Date(lead.updated_at).getTime() : 0;
+                const relevantTs = Math.max(createdTs, updatedTs);
+                if (relevantTs >= startTs && relevantTs <= endTs) {
+                    statusCounts.guarantorRequested++;
+                }
+            }
+
+            // Count Delivered (already calculated above)
+            const isDeliveredStatus = ['Teslim edildi', 'Satış yapıldı/Tamamlandı', 'Satış Yapıldı'].includes(lead.durum);
+            if (isDeliveredStatus && lead.teslim_tarihi) {
+                const deliveredTs = new Date(lead.teslim_tarihi).getTime();
+                if (deliveredTs >= startTs && deliveredTs <= endTs) {
+                    statusCounts.delivered++;
+                }
+            }
+        });
+
         return NextResponse.json({
             success: true,
             data: filteredData,
-            deliveredLeads: deliveredLeadsDetails
+            deliveredLeads: deliveredLeadsDetails,
+            statusCounts
         });
 
     } catch (error: any) {

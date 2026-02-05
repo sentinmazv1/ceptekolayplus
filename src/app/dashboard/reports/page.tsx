@@ -6,6 +6,7 @@ import { ReportHeader } from '@/components/reports/ReportHeader';
 import { KPICard } from '@/components/reports/KPICard';
 import { PersonnelTable } from '@/components/reports/PersonnelTable';
 import { DeliveredCustomerList } from '@/components/reports/DeliveredCustomerList';
+import { StatusPieChart } from '@/components/reports/StatusPieChart';
 import { Button } from '@/components/ui/Button';
 
 // Types
@@ -55,6 +56,7 @@ export default function ReportsPage() {
     // State for Personnel & Delivered
     const [personnelData, setPersonnelData] = useState<any[]>([]);
     const [deliveredLeads, setDeliveredLeads] = useState<any[]>([]);
+    const [statusCounts, setStatusCounts] = useState<{ approved: number; guarantorRequested: number; delivered: number } | null>(null);
     const [personnelLoading, setPersonnelLoading] = useState(false);
 
     const fetchDetailedData = () => {
@@ -77,6 +79,7 @@ export default function ReportsPage() {
                 if (data.success) {
                     setPersonnelData(data.data);
                     setDeliveredLeads(data.deliveredLeads || []);
+                    setStatusCounts(data.statusCounts || { approved: 0, guarantorRequested: 0, delivered: 0 });
                 }
             })
             .catch(err => console.error(err))
@@ -127,6 +130,13 @@ export default function ReportsPage() {
                         setEndDate={setEndDate}
                         onRefresh={fetchDetailedData}
                     />
+
+                    {/* Status Pie Chart */}
+                    {statusCounts && (
+                        <div className="mb-8">
+                            <StatusPieChart data={statusCounts} />
+                        </div>
+                    )}
 
                     {/* Personnel Table */}
                     <div className="mb-8">
