@@ -459,6 +459,7 @@ export default function CollectionPage() {
                                     <tr className="border-b-2 border-slate-800">
                                         <th className="text-left p-2 font-bold">Satış Tarihi</th>
                                         <th className="text-left p-2 font-bold">Ad Soyad</th>
+                                        <th className="text-left p-2 font-bold">TC Kimlik</th>
                                         <th className="text-left p-2 font-bold">Telefon</th>
                                         <th className="text-left p-2 font-bold">Email</th>
                                     </tr>
@@ -468,6 +469,7 @@ export default function CollectionPage() {
                                         <tr key={lead.id} className="border-b border-slate-300">
                                             <td className="p-2 text-sm">{lead.satis_tarihi || lead.created_at?.split('T')[0] || '-'}</td>
                                             <td className="p-2 text-sm font-medium">{lead.ad_soyad}</td>
+                                            <td className="p-2 text-sm">{lead.tc_kimlik || '-'}</td>
                                             <td className="p-2 text-sm">{lead.telefon || '-'}</td>
                                             <td className="p-2 text-sm">{lead.email || '-'}</td>
                                         </tr>
