@@ -787,18 +787,22 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                 window.open(`tel:${tel}`);
                             }}><Phone className="w-3 h-3" /> {data.telefon}</span>
 
-                            {/* Verification Badge/Button */}
+                            {/* Verification Badge/Button - Admin Only */}
                             {data.telefon_onayli ? (
                                 <span className="flex items-center gap-1 bg-emerald-500/20 text-emerald-200 px-2 py-0.5 rounded border border-emerald-500/30 text-[10px] uppercase font-bold tracking-wider">
                                     <ShieldCheck className="w-3 h-3" /> Doğrulandı
                                 </span>
-                            ) : (
+                            ) : session?.user?.role === 'ADMIN' ? (
                                 <button
                                     onClick={(e) => { e.stopPropagation(); setIsVerifyModalOpen(true); }}
                                     className="flex items-center gap-1 bg-indigo-500 hover:bg-indigo-400 text-white px-2 py-0.5 rounded border border-indigo-400/50 text-[10px] uppercase font-bold tracking-wider transition-colors shadow-sm"
                                 >
                                     <ShieldAlert className="w-3 h-3" /> Doğrula
                                 </button>
+                            ) : (
+                                <span className="flex items-center gap-1 bg-amber-500/20 text-amber-200 px-2 py-0.5 rounded border border-amber-500/30 text-[10px] uppercase font-bold tracking-wider">
+                                    <ShieldAlert className="w-3 h-3" /> Doğrulanmadı
+                                </span>
                             )}
                             <span className='hidden md:flex items-center gap-1 text-slate-400'> <Calendar className="w-3 h-3" /> {new Date(data.created_at || new Date()).toLocaleDateString('tr-TR')}</span>
                         </div>
