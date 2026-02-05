@@ -204,12 +204,12 @@ export default function CollectionPage() {
             {/* Print Styles */}
             <style jsx global>{`
                 @media print {
-                    /* Hide everything except the list */
+                    /* Hide everything by default */
                     body * {
                         visibility: hidden;
                     }
                     
-                    /* Show only the list content */
+                    /* Show only print container and its children */
                     .print-container,
                     .print-container * {
                         visibility: visible;
@@ -220,22 +220,39 @@ export default function CollectionPage() {
                         left: 0;
                         top: 0;
                         width: 100%;
+                        padding: 20px;
                     }
                     
-                    /* Hide navigation and interactive elements */
+                    /* Hide interactive elements */
                     .print\\:hidden {
                         display: none !important;
                     }
                     
+                    /* Show print table */
+                    .print\\:table {
+                        display: table !important;
+                    }
+                    
                     /* Optimize page breaks */
-                    .print-item {
+                    tr {
                         page-break-inside: avoid;
                     }
                     
-                    /* Clean background colors */
-                    * {
-                        background: white !important;
-                        color: black !important;
+                    /* Clean styling for print */
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                    }
+                    
+                    th, td {
+                        border: 1px solid #333;
+                        padding: 8px;
+                        text-align: left;
+                    }
+                    
+                    th {
+                        background-color: #f0f0f0 !important;
+                        font-weight: bold;
                     }
                 }
             `}</style>
@@ -360,6 +377,53 @@ export default function CollectionPage() {
                                         {meta.total} Kayıt (Sayfa {meta.page}/{meta.totalPages})
                                     </span>
 
+                                    {/* Filter Dropdown */}
+                                    <div className="relative print:hidden" ref={dropdownRef}>
+                                        <button
+                                            onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                                            className="flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                                            title="Filtrele"
+                                        >
+                                            <ChevronDown className={`w-4 h-4 transition-transform ${showFilterDropdown ? 'rotate-180' : ''}`} />
+                                            <span className="hidden md:inline text-sm font-medium">Filtre</span>
+                                        </button>
+
+                                        {showFilterDropdown && stats && (
+                                            <div className="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-200 z-50 min-w-[200px] max-h-96 overflow-y-auto">
+                                                <div className="p-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            fetchList('status', 'all', 'Tüm Dosyalar');
+                                                            setShowFilterDropdown(false);
+                                                        }}
+                                                        className="w-full text-left px-4 py-3 rounded-lg hover:bg-indigo-50 transition-colors flex items-center justify-between group"
+                                                    >
+                                                        <span className="font-bold text-slate-700 group-hover:text-indigo-700">Tümü</span>
+                                                        <span className="bg-slate-100 group-hover:bg-indigo-100 text-slate-600 group-hover:text-indigo-700 px-3 py-1 rounded-full font-black text-sm">
+                                                            {stats.total}
+                                                        </span>
+                                                    </button>
+                                                    <div className="my-2 border-t border-slate-100"></div>
+                                                    {Object.entries(stats.byStatus || {}).map(([status, count]: any) => (
+                                                        <button
+                                                            key={status}
+                                                            onClick={() => {
+                                                                fetchList('status', status, status);
+                                                                setShowFilterDropdown(false);
+                                                            }}
+                                                            className="w-full text-left px-4 py-3 rounded-lg hover:bg-indigo-50 transition-colors flex items-center justify-between group"
+                                                        >
+                                                            <span className="font-medium text-slate-700 group-hover:text-indigo-700">{status}</span>
+                                                            <span className="bg-slate-100 group-hover:bg-indigo-100 text-slate-600 group-hover:text-indigo-700 px-3 py-1 rounded-full font-black text-sm">
+                                                                {count}
+                                                            </span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
                                     {/* Print Button */}
                                     <button
                                         onClick={() => window.print()}
@@ -389,7 +453,30 @@ export default function CollectionPage() {
                                 </div>
                             </div>
 
-                            <div className="grid gap-3">
+                            {/* Print-only table */}
+                            <table className="hidden print:table w-full border-collapse mt-4">
+                                <thead>
+                                    <tr className="border-b-2 border-slate-800">
+                                        <th className="text-left p-2 font-bold">Satış Tarihi</th>
+                                        <th className="text-left p-2 font-bold">Ad Soyad</th>
+                                        <th className="text-left p-2 font-bold">Telefon</th>
+                                        <th className="text-left p-2 font-bold">Email</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {leadList.map((lead) => (
+                                        <tr key={lead.id} className="border-b border-slate-300">
+                                            <td className="p-2 text-sm">{lead.satis_tarihi || lead.created_at?.split('T')[0] || '-'}</td>
+                                            <td className="p-2 text-sm font-medium">{lead.ad_soyad}</td>
+                                            <td className="p-2 text-sm">{lead.telefon || '-'}</td>
+                                            <td className="p-2 text-sm">{lead.email || '-'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            {/* Screen-only cards */}
+                            <div className="grid gap-3 print:hidden">
                                 {leadList.map((lead) => (
                                     <div
                                         key={lead.id}
