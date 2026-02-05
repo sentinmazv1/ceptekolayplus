@@ -55,6 +55,8 @@ export async function GET(req: NextRequest) {
             SELECT 'Ödeme Sözü Alındı', 'green', 2 WHERE NOT EXISTS (SELECT 1 FROM collection_statuses WHERE label = 'Ödeme Sözü Alındı');
              INSERT INTO collection_statuses (label, color, sort_order)
             SELECT 'Avukata Sevk', 'orange', 3 WHERE NOT EXISTS (SELECT 1 FROM collection_statuses WHERE label = 'Avukata Sevk');
+            INSERT INTO collection_statuses (label, color, sort_order)
+            SELECT 'Avukata Hazırlık Aşaması', 'orange', 4 WHERE NOT EXISTS (SELECT 1 FROM collection_statuses WHERE label = 'Avukata Hazırlık Aşaması');
 
             -- Add index for performance
             CREATE INDEX IF NOT EXISTS idx_leads_sinif ON leads(sinif);

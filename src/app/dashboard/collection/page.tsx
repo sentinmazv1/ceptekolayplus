@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { CustomerCard } from '@/components/CustomerCard';
-import { Loader2, Play, Users, Calendar, AlertTriangle, CheckCircle, RefreshCw, X, ArrowLeft, BarChart3 } from 'lucide-react';
+import { Loader2, Play, Users, Calendar, AlertTriangle, CheckCircle, RefreshCw, X, ArrowLeft, BarChart3, Scale } from 'lucide-react';
 import { Customer } from '@/lib/types';
 
 export default function CollectionPage() {
@@ -163,7 +163,7 @@ export default function CollectionPage() {
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
 
                         {/* 1. TOP ROW: BIG STATS */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                             <StatsCard
                                 title="Toplam Dosya"
                                 count={stats.total}
@@ -186,6 +186,13 @@ export default function CollectionPage() {
                                 onClick={() => fetchList('date', 'today', 'Bugün Ödenecekler')}
                             />
                             <StatsCard
+                                title="Avukata Hazırlık"
+                                count={stats.byStatus['Avukata Hazırlık Aşaması'] || 0}
+                                icon={Scale}
+                                color="bg-orange-100 text-orange-600"
+                                onClick={() => fetchList('status', 'Avukata Hazırlık Aşaması', 'Avukata Hazırlık Aşaması')}
+                            />
+                            <StatsCard
                                 title="Sözü Geçenler"
                                 count={stats.promises.overdue}
                                 icon={X}
@@ -202,7 +209,7 @@ export default function CollectionPage() {
                             </h2>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 {Object.entries(stats.byStatus).map(([status, count]: any) => {
-                                    if (status === 'İşlem Bekliyor') return null; // Already shown top
+                                    if (status === 'İşlem Bekliyor' || status === 'Avukata Hazırlık Aşaması') return null; // Already shown top
                                     return (
                                         <div
                                             key={status}
