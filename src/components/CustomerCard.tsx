@@ -999,6 +999,8 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                                     label="Telefon"
                                                     value={data.telefon}
                                                     onChange={(e) => handleChange('telefon', e.target.value)}
+                                                    disabled={data.telefon_onayli}
+                                                    className={data.telefon_onayli ? 'bg-gray-100 cursor-not-allowed' : ''}
                                                 />
                                             </div>
                                             <div className="flex gap-1 mb-1">
