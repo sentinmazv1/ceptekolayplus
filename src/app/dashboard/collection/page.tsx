@@ -369,7 +369,7 @@ export default function CollectionPage() {
 
                     {/* --- LIST VIEW --- */}
                     {viewMode === 'LIST' && (
-                        <div className="space-y-4 animate-in fade-in slide-in-from-right-8 duration-300">
+                        <div className="space-y-4 animate-in fade-in slide-in-from-right-8 duration-300 print-container">
                             <div className="bg-indigo-900 text-white p-4 rounded-xl flex justify-between items-center shadow-lg print:bg-white print:text-black print:border print:border-slate-300">
                                 <h2 className="font-bold text-lg">{listTitle}</h2>
                                 <div className="flex items-center gap-4">
