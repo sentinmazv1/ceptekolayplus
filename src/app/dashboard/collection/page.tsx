@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { CustomerCard } from '@/components/CustomerCard';
-import { Loader2, Play, Users, Calendar, AlertTriangle, CheckCircle, RefreshCw, X, ArrowLeft, BarChart3, Scale, ChevronDown, Printer } from 'lucide-react';
+import { Loader2, Play, Users, Calendar, AlertTriangle, CheckCircle, RefreshCw, X, ArrowLeft, BarChart3, Scale, ChevronDown, Printer, MessageSquare, Send } from 'lucide-react';
 import { Customer } from '@/lib/types';
 
 export default function CollectionPage() {
@@ -24,6 +24,14 @@ export default function CollectionPage() {
     // Filter dropdown state
     const [showFilterDropdown, setShowFilterDropdown] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // SMS Modal state
+    const [showSmsModal, setShowSmsModal] = useState(false);
+    const [smsTemplates, setSmsTemplates] = useState<any[]>([]);
+    const [selectedTemplate, setSelectedTemplate] = useState('');
+    const [customMessage, setCustomMessage] = useState('');
+    const [isSending, setIsSending] = useState(false);
+    const [sendResult, setSendResult] = useState<any>(null);
 
     useEffect(() => {
         fetchStats();
@@ -103,6 +111,56 @@ export default function CollectionPage() {
             alert('Hata: ' + e.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchSmsTemplates = async () => {
+        try {
+            const res = await fetch('/api/sms/templates');
+            const json = await res.json();
+            if (json.success) {
+                setSmsTemplates(json.templates);
+            }
+        } catch (e: any) {
+            console.error('Error fetching SMS templates:', e);
+        }
+    };
+
+    const sendBulkSms = async () => {
+        if (!customMessage && !selectedTemplate) {
+            alert('Lütfen bir şablon seçin veya özel mesaj yazın.');
+            return;
+        }
+
+        const message = customMessage || smsTemplates.find(t => t.id === selectedTemplate)?.message;
+        if (!message) {
+            alert('Mesaj bulunamadı.');
+            return;
+        }
+
+        setIsSending(true);
+        setSendResult(null);
+
+        try {
+            const customerIds = leadList.map(lead => lead.id);
+            const res = await fetch('/api/sms/bulk-send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ customerIds, message, templateId: selectedTemplate })
+            });
+
+            const json = await res.json();
+
+            if (json.success) {
+                setSendResult(json);
+                alert(`✅ ${json.sent} SMS başarıyla gönderildi!\n❌ ${json.failed} SMS gönderilemedi.`);
+            } else {
+                alert('SMS gönderimi başarısız: ' + json.error);
+            }
+        } catch (e: any) {
+            alert('Hata: ' + e.message);
+        } finally {
+            setIsSending(false);
         }
     };
 
@@ -201,6 +259,134 @@ export default function CollectionPage() {
 
     return (
         <>
+            {/* SMS Modal */}
+            {showSmsModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-t-2xl flex justify-between items-center">
+                            <div>
+                                <h2 className="text-2xl font-bold flex items-center gap-2">
+                                    <MessageSquare className="w-6 h-6" />
+                                    Toplu SMS Gönder
+                                </h2>
+                                <p className="text-green-100 mt-1">{meta.total} müşteriye SMS gönderilecek</p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setShowSmsModal(false);
+                                    setSelectedTemplate('');
+                                    setCustomMessage('');
+                                    setSendResult(null);
+                                }}
+                                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-6 space-y-6">
+                            {/* Template Selection */}
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">
+                                    SMS Şablonu Seçin
+                                </label>
+                                <select
+                                    value={selectedTemplate}
+                                    onChange={(e) => {
+                                        setSelectedTemplate(e.target.value);
+                                        setCustomMessage('');
+                                    }}
+                                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-green-500 focus:outline-none transition-colors"
+                                >
+                                    <option value="">-- Şablon Seçin --</option>
+                                    {smsTemplates.map(template => (
+                                        <option key={template.id} value={template.id}>
+                                            {template.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Template Preview */}
+                            {selectedTemplate && (
+                                <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-4">
+                                    <p className="text-sm font-bold text-slate-700 mb-2">Şablon Önizleme:</p>
+                                    <p className="text-slate-600 whitespace-pre-wrap">
+                                        {smsTemplates.find(t => t.id === selectedTemplate)?.message}
+                                    </p>
+                                    <p className="text-xs text-slate-500 mt-2">
+                                        * {'{ad_soyad}'} ve {'{telefon}'} otomatik değiştirilecektir.
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Custom Message */}
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">
+                                    Veya Özel Mesaj Yazın
+                                </label>
+                                <textarea
+                                    value={customMessage}
+                                    onChange={(e) => {
+                                        setCustomMessage(e.target.value);
+                                        setSelectedTemplate('');
+                                    }}
+                                    placeholder="Özel mesajınızı buraya yazın... {ad_soyad} ve {telefon} kullanabilirsiniz."
+                                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-green-500 focus:outline-none transition-colors resize-none"
+                                    rows={4}
+                                />
+                            </div>
+
+                            {/* Send Result */}
+                            {sendResult && (
+                                <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4">
+                                    <p className="font-bold text-green-800 mb-2">Gönderim Sonucu:</p>
+                                    <div className="space-y-1 text-sm">
+                                        <p className="text-green-700">✅ Başarılı: {sendResult.sent}</p>
+                                        <p className="text-red-700">❌ Başarısız: {sendResult.failed}</p>
+                                        <p className="text-slate-700">📊 Toplam: {sendResult.total}</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="bg-slate-50 p-6 rounded-b-2xl flex gap-3 justify-end">
+                            <button
+                                onClick={() => {
+                                    setShowSmsModal(false);
+                                    setSelectedTemplate('');
+                                    setCustomMessage('');
+                                    setSendResult(null);
+                                }}
+                                className="px-6 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl transition-colors"
+                            >
+                                İptal
+                            </button>
+                            <button
+                                onClick={sendBulkSms}
+                                disabled={isSending || (!selectedTemplate && !customMessage)}
+                                className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            >
+                                {isSending ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        Gönderiliyor...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Send className="w-5 h-5" />
+                                        SMS Gönder
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Print Styles */}
             <style jsx global>{`
                 @media print {
@@ -376,6 +562,19 @@ export default function CollectionPage() {
                                     <span className="bg-white/20 px-3 py-1 rounded-full font-mono text-sm print:bg-slate-100 print:text-slate-700">
                                         {meta.total} Kayıt (Sayfa {meta.page}/{meta.totalPages})
                                     </span>
+
+                                    {/* SMS Button */}
+                                    <button
+                                        onClick={() => {
+                                            fetchSmsTemplates();
+                                            setShowSmsModal(true);
+                                        }}
+                                        className="flex items-center gap-2 px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors print:hidden"
+                                        title="Toplu SMS Gönder"
+                                    >
+                                        <MessageSquare className="w-4 h-4" />
+                                        <span className="hidden md:inline text-sm font-medium">Toplu SMS</span>
+                                    </button>
 
                                     {/* Filter Dropdown */}
                                     <div className="relative print:hidden" ref={dropdownRef}>
