@@ -58,12 +58,36 @@ export async function GET(req: NextRequest) {
         };
 
         // --- 1. LOGS (For Activity Counts) ---
-        const { data: rangeLogs } = await supabaseAdmin
-            .from('activity_logs')
-            .select('*')
-            .gte('created_at', startIso)
-            .lte('created_at', endIso)
-            .range(0, 9999); // Fetch up to 10000 records
+        // Fetch ALL activity logs with pagination (Supabase limits to 1000 per query)
+        let rangeLogs: any[] = [];
+        let page = 0;
+        const pageSize = 1000;
+        let hasMore = true;
+
+        while (hasMore) {
+            const { data, error } = await supabaseAdmin
+                .from('activity_logs')
+                .select('*')
+                .gte('created_at', startIso)
+                .lte('created_at', endIso)
+                .range(page * pageSize, (page + 1) * pageSize - 1)
+                .order('created_at', { ascending: true });
+
+            if (error) {
+                console.error('Error fetching activity logs:', error);
+                break;
+            }
+
+            if (data && data.length > 0) {
+                rangeLogs = rangeLogs.concat(data);
+                page++;
+                hasMore = data.length === pageSize; // Continue if we got a full page
+            } else {
+                hasMore = false;
+            }
+        }
+
+        console.log(`Fetched ${rangeLogs.length} activity logs across ${page} pages`);
 
         // --- 1.5 ATTORNEY HISTORY (New Source of Truth) ---
         // Fetch attorney history records
