@@ -6,16 +6,10 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
     try {
-        const { searchParams } = new URL(req.url);
-        const startDate = searchParams.get('startDate');
-        const endDate = searchParams.get('endDate');
-
-        if (!startDate || !endDate) {
-            return NextResponse.json({ success: false, error: 'Dates required' }, { status: 400 });
-        }
+        // Collection service stats are ALWAYS current, not date-filtered
+        // This shows the real-time status of all collection files
 
         // Fetch all leads with collection service status
-        // Note: The status might be stored as different variations
         const { data: allLeads, error: fetchError } = await supabaseAdmin
             .from('leads')
             .select('id, ad_soyad, durum, tahsilat_durumu, created_at, updated_at');
