@@ -217,15 +217,15 @@ export async function GET(req: NextRequest) {
 
         // Query delivered leads separately with date filter
         // Use date-only comparison (no time) to avoid timezone issues
-        const startDate = startIso.split('T')[0]; // Get YYYY-MM-DD only
-        const endDate = endIso.split('T')[0];
+        const deliveryStartDate = startIso.split('T')[0]; // Get YYYY-MM-DD only
+        const deliveryEndDate = endIso.split('T')[0];
 
         const { data: deliveredLeads } = await supabaseAdmin
             .from('leads')
             .select('*')
             .in('durum', ['Teslim edildi', 'Satış yapıldı/Tamamlandı', 'Satış Yapıldı'])
-            .gte('teslim_tarihi', startDate)
-            .lte('teslim_tarihi', endDate + 'T23:59:59.999Z')
+            .gte('teslim_tarihi', deliveryStartDate)
+            .lte('teslim_tarihi', deliveryEndDate + 'T23:59:59.999Z')
             .order('teslim_tarihi', { ascending: false });
 
         // Process approved leads
