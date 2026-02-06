@@ -215,14 +215,14 @@ export async function GET(req: NextRequest) {
             .gte('onay_tarihi', startIso)
             .lte('onay_tarihi', endIso);
 
-        // Query ALL delivered leads (showing last 100)
+        // Query delivered leads with date filter (using updated_at since teslim_tarihi has timezone issues)
         const { data: deliveredLeads } = await supabaseAdmin
             .from('leads')
             .select('*')
             .in('durum', ['Teslim edildi', 'Satış yapıldı/Tamamlandı', 'Satış Yapıldı'])
-            .not('teslim_tarihi', 'is', null)
-            .order('teslim_tarihi', { ascending: false })
-            .limit(100);
+            .gte('updated_at', startIso)
+            .lte('updated_at', endIso)
+            .order('updated_at', { ascending: false });
 
         // Process approved leads
         approvedLeads?.forEach((lead: any) => {

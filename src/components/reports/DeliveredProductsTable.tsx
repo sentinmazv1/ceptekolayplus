@@ -89,8 +89,8 @@ export function DeliveredProductsTable({ products, loading }: DeliveredProductsT
             <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center gap-2">
                     <Package className="w-5 h-5 text-blue-600" />
-                    <h3 className="text-lg font-semibold">Teslim Edilen Ürünler</h3>
-                    <span className="ml-auto text-sm text-gray-500">{products.length} ürün</span>
+                    <h3 className="text-lg font-semibold">Teslim Edilen Müşteriler</h3>
+                    <span className="ml-auto text-sm text-gray-500">{products.length} müşteri</span>
                 </div>
             </div>
 
@@ -99,22 +99,13 @@ export function DeliveredProductsTable({ products, loading }: DeliveredProductsT
                     <thead className="bg-gray-50 border-b border-gray-200">
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Müşteri
+                                Müşteri İsmi
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Meslek
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Ürün
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Tutar
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Teslim Tarihi
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Personel
                             </th>
                         </tr>
                     </thead>
@@ -127,21 +118,8 @@ export function DeliveredProductsTable({ products, loading }: DeliveredProductsT
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="text-sm text-gray-600">{product.meslek || '-'}</div>
                                 </td>
-                                <td className="px-6 py-4">
-                                    <div className="text-sm text-gray-900 max-w-xs truncate" title={getProductNames(product.satilan_urunler)}>
-                                        {getProductNames(product.satilan_urunler)}
-                                    </div>
-                                </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm font-semibold text-green-600">
-                                        {formatCurrency(getProductAmount(product.satilan_urunler))}
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm text-gray-600">{formatDate(product.teslim_tarihi)}</div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm text-gray-600">{product.sahip_email?.split('@')[0] || '-'}</div>
+                                    <div className="text-sm text-gray-600">{formatDate(product.teslim_tarihi || product.updated_at)}</div>
                                 </td>
                             </tr>
                         ))}
