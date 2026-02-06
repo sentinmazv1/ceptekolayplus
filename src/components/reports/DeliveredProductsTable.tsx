@@ -23,7 +23,7 @@ export function DeliveredProductsTable({ products, loading }: DeliveredProductsT
             <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center gap-2 mb-4">
                     <Package className="w-5 h-5 text-blue-600" />
-                    <h3 className="text-lg font-semibold">Teslim Edilen Ürünler</h3>
+                    <h3 className="text-lg font-semibold">Teslim Edilen Müşteriler</h3>
                 </div>
                 <div className="text-center py-8 text-gray-500">Yükleniyor...</div>
             </div>
