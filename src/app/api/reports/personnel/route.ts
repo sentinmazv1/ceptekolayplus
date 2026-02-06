@@ -11,13 +11,10 @@ const parsePrice = (p: any): number => {
     return parseFloat(str) || 0;
 };
 
-// Helper for User Normalization (matching legacy)
+// Helper for User Normalization
 const normalizeUser = (u: string) => {
     if (!u) return 'Atanmamış';
-    let norm = u.toLowerCase().trim();
-    if (norm === 'funda') return 'funda@ceptekolayplus.com';
-    if (norm === 'gözde' || norm === 'gozde') return 'gozde@ceptekolayplus.com';
-    return norm; // Keep email format
+    return u.toLowerCase().trim(); // Keep email as-is, just lowercase and trim
 };
 
 export const dynamic = 'force-dynamic';
