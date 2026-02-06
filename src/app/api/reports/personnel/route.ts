@@ -250,13 +250,16 @@ export async function GET(req: NextRequest) {
         });
 
         // Final Filter & Sort
-        const filteredData = Array.from(personnelMap.values())
+        const results = Array.from(personnelMap.values())
             .sort((a: any, b: any) => b.deliveredRevenue - a.deliveredRevenue);
 
         return NextResponse.json({
             success: true,
-            data: filteredData,
+            data: results,
+            deliveredLeads: deliveredLeads || [],
             debug: {
+                approvedLeadsCount: approvedLeads?.length || 0,
+                deliveredLeadsCount: deliveredLeads?.length || 0,
                 attorneyHistoryCount: attorneyHistory?.length || 0,
                 leadOwnerMapSize: leadOwnerMap.size,
                 activityLogs: {
