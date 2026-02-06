@@ -120,7 +120,7 @@ export async function GET(req: NextRequest) {
         // --- Process Attorney History ---
         // IMPORTANT: Attribute to LEAD OWNER, not the person who performed the query
         attorneyHistory?.forEach((record: any) => {
-            const lead = record.lead;
+            const lead = record.leads; // Supabase returns 'leads' not 'lead'
             if (!lead) return;
 
             const ownerRaw = lead.sahip_email || lead.assigned_to;
