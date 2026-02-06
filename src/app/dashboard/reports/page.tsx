@@ -187,7 +187,7 @@ export default function ReportsPage() {
 
                     {/* Delivered Products Table */}
                     <DeliveredProductsTable
-                        products={personnelData?.deliveredLeads || []}
+                        products={deliveredLeads}
                         loading={personnelLoading}
                         startDate={startDate}
                         endDate={endDate}
