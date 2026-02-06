@@ -69,11 +69,21 @@ export async function GET(req: NextRequest) {
 
         // --- 1.5 ATTORNEY HISTORY (New Source of Truth) ---
         // Fetch with lead data to get owner information
-        const { data: attorneyHistory } = await supabaseAdmin
+        const { data: attorneyHistory, error: attorneyError } = await supabaseAdmin
             .from('attorney_status_history')
-            .select('*, lead:leads(sahip_email, assigned_to)')
+            .select(`
+                *,
+                leads!inner (
+                    sahip_email,
+                    assigned_to
+                )
+            `)
             .gte('created_at', startIso)
             .lte('created_at', endIso);
+
+        if (attorneyError) {
+            console.error('Attorney history query error:', attorneyError);
+        }
 
 
         rangeLogs?.forEach((log: any) => {
