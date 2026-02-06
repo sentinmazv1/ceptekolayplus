@@ -6,8 +6,9 @@ interface DeliveredProduct {
     ad_soyad: string;
     meslek: string;
     satilan_urunler: any;
-    kredi_limiti: string;
+    kredi_limiti: number;
     teslim_tarihi: string;
+    updated_at: string;
     sahip_email: string;
 }
 
