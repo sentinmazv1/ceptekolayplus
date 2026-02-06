@@ -6,6 +6,7 @@ import { ReportHeader } from '@/components/reports/ReportHeader';
 import { KPICard } from '@/components/reports/KPICard';
 import { PersonnelTable } from '@/components/reports/PersonnelTable';
 import { DeliveredCustomerList } from '@/components/reports/DeliveredCustomerList';
+import { DeliveredProductsTable } from '@/components/reports/DeliveredProductsTable';
 import { CollectionServiceKPI } from '@/components/reports/CollectionServiceKPI';
 import { Button } from '@/components/ui/Button';
 
@@ -183,6 +184,9 @@ export default function ReportsPage() {
                             className="text-xs"
                         />
                     </div>
+
+                    {/* Teslim Edilen Ürünler Tablosu */}
+                    <DeliveredProductsTable products={deliveredLeads} loading={personnelLoading} />
                 </div>
             </div>
         </div>
