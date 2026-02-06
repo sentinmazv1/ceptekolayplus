@@ -66,6 +66,24 @@ export function DeliveredProductsTable({ products, loading }: DeliveredProductsT
         return '-';
     };
 
+    const getProductAmount = (products: any) => {
+        if (!products) return 0;
+        if (typeof products === 'string') {
+            try {
+                products = JSON.parse(products);
+            } catch {
+                return 0;
+            }
+        }
+        if (Array.isArray(products)) {
+            return products.reduce((total, p) => {
+                const tutar = typeof p.tutar === 'string' ? parseFloat(p.tutar.replace(/[^0-9.-]/g, '')) : (p.tutar || 0);
+                return total + tutar;
+            }, 0);
+        }
+        return 0;
+    };
+
     return (
         <div className="bg-white rounded-lg shadow">
             <div className="p-6 border-b border-gray-200">
@@ -116,7 +134,7 @@ export function DeliveredProductsTable({ products, loading }: DeliveredProductsT
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="text-sm font-semibold text-green-600">
-                                        {formatCurrency(product.kredi_limiti)}
+                                        {formatCurrency(getProductAmount(product.satilan_urunler))}
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
