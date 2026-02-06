@@ -8,22 +8,18 @@ export async function GET(req: NextRequest) {
     try {
         // Collection service stats are ALWAYS current, not date-filtered
         // This shows the real-time status of all collection files
+        // IMPORTANT: Must match the collection panel filter (sinif = 'Gecikme')
 
-        // Fetch all leads with collection service status
-        const { data: allLeads, error: fetchError } = await supabaseAdmin
+        // Fetch all leads with sinif = 'Gecikme' (same as collection panel)
+        const { data: leads, error: fetchError } = await supabaseAdmin
             .from('leads')
-            .select('id, ad_soyad, durum, tahsilat_durumu, created_at, updated_at');
+            .select('id, ad_soyad, durum, tahsilat_durumu, sinif, created_at, updated_at')
+            .eq('sinif', 'Gecikme');
 
         if (fetchError) {
             console.error('Collection service query error:', fetchError);
             return NextResponse.json({ success: false, error: fetchError.message }, { status: 500 });
         }
-
-        // Filter for collection service leads (handle multiple status variations)
-        const leads = allLeads?.filter((lead: any) => {
-            const durum = (lead.durum || '').toLowerCase();
-            return durum.includes('tahsilat') || durum === 'tahsilat servisi' || durum === 'tahsilat servisinde';
-        }) || [];
 
         const stats = {
             totalFiles: 0,
@@ -34,13 +30,13 @@ export async function GET(req: NextRequest) {
             attorneyDelivered: 0
         };
 
-        leads.forEach((lead: any) => {
+        (leads || []).forEach((lead: any) => {
             stats.totalFiles++;
 
-            // Categorize based on tahsilat_durumu field
+            // Categorize based on tahsilat_durumu field (same logic as collection panel)
             const tahsilatDurumu = (lead.tahsilat_durumu || '').toLowerCase().trim();
 
-            if (!tahsilatDurumu || tahsilatDurumu === '') {
+            if (!tahsilatDurumu || tahsilatDurumu === '' || tahsilatDurumu === 'işlem bekliyor') {
                 // No status set - count as unreachable or pending
                 stats.unreachable++;
             } else if (tahsilatDurumu.includes('ödeme sözü') || tahsilatDurumu.includes('odeme sozu') || tahsilatDurumu.includes('söz alındı')) {
