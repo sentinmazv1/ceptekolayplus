@@ -116,20 +116,17 @@ export async function GET(req: NextRequest) {
             const user = normalizeUser(rawUser);
             const stats = getStats(user);
 
-            const status = (record.new_status || '').toLowerCase();
-            const result = (record.new_result || '').toLowerCase(); // If we tracked result separately
+            const status = record.new_status || '';
 
-            // Logic:
-            // If status includes 'Temiz' -> Clean
-            // If status includes 'Riskli' -> Risky
-            // Else -> Query? Or strictly "Sorgu Bekleniyor"?
-
-            // In the backfill, we filled new_status with the log content.
-            // In new app usage, we fill new_status with 'Avukat Sorgu Durumu' field (e.g. 'Temiz', 'Riskli', 'Sorgu Bekleniyor').
-
-            if (status.includes('temiz')) stats.attorneyClean++;
-            else if (status.includes('riskli') || status.includes('sorunlu') || status.includes('icralık')) stats.attorneyRisky++;
-            else stats.attorneyQuery++; // Any other change implies a query step or update
+            // Use exact matching for attorney statuses
+            if (status === 'Temiz') {
+                stats.attorneyClean++;
+            } else if (status === 'Riskli') {
+                stats.attorneyRisky++;
+            } else if (status === 'Sorgu Bekleniyor' || status === 'Kefil bekleniyor') {
+                stats.attorneyQuery++;
+            }
+            // Ignore backfill records like "1 fields changed", "2 fields changed", etc.
         });
 
         // --- 2. LEADS (Financials) ---
@@ -141,7 +138,7 @@ export async function GET(req: NextRequest) {
         const deliveredLeadsDetails: any[] = [];
 
         leads?.forEach((lead: any) => {
-            const ownerRaw = lead.sahip || lead.sahip_email || lead.assigned_to; // Priority to 'sahip' like Legacy
+            const ownerRaw = lead.sahip_email || lead.assigned_to; // Use sahip_email as primary
 
             // IGNORE UNASSIGNED / ADMIN (Matching Legacy)
             if (!ownerRaw || ['sistem', 'system', 'admin', 'ibrahim', 'ibrahimsentinmaz@gmail.com'].some(x => ownerRaw.toLowerCase().includes(x))) return;
