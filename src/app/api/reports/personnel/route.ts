@@ -133,10 +133,10 @@ export async function GET(req: NextRequest) {
         });
 
         // --- 2. LEADS (Financials) ---
+        // CRITICAL FIX: Don't use OR - it fetches ALL leads. We need to filter properly.
         const { data: leads } = await supabaseAdmin
             .from('leads')
-            .select('*')
-            .or(`updated_at.gte.${startIso},teslim_tarihi.gte.${startIso},onay_tarihi.gte.${startIso}`);
+            .select('*');
 
         const deliveredLeadsDetails: any[] = [];
 
@@ -168,6 +168,7 @@ export async function GET(req: NextRequest) {
                 } catch (e) { }
 
                 let itemRevenue = 0;
+                let itemCount = 0;
                 let hasItemInPeriod = false;
                 let soldItemsText: string[] = [];
 
@@ -178,6 +179,7 @@ export async function GET(req: NextRequest) {
                             const d = new Date(itemDate).getTime();
                             if (d >= startTs && d <= endTs) {
                                 itemRevenue += parsePrice(item.satis_fiyati || item.fiyat);
+                                itemCount++;
                                 hasItemInPeriod = true;
                                 soldItemsText.push(`${item.marka || ''} ${item.model || ''} (${parsePrice(item.satis_fiyati || item.fiyat).toLocaleString('tr-TR')} ₺)`);
                             }
@@ -186,6 +188,7 @@ export async function GET(req: NextRequest) {
                             const d = new Date(lead.teslim_tarihi).getTime();
                             if (d >= startTs && d <= endTs) {
                                 itemRevenue += parsePrice(item.satis_fiyati || item.fiyat);
+                                itemCount++;
                                 hasItemInPeriod = true;
                                 soldItemsText.push(`${item.marka || ''} ${item.model || ''} (${parsePrice(item.satis_fiyati || item.fiyat).toLocaleString('tr-TR')} ₺)`);
                             }
@@ -196,13 +199,14 @@ export async function GET(req: NextRequest) {
                     const d = new Date(lead.teslim_tarihi).getTime();
                     if (d >= startTs && d <= endTs) {
                         itemRevenue += parsePrice(lead.kredi_limiti || lead.satis_fiyati);
+                        itemCount = 1;
                         hasItemInPeriod = true;
                         soldItemsText.push('Ürün Detayı Yok');
                     }
                 }
 
                 if (hasItemInPeriod) {
-                    stats.deliveredCount++;
+                    stats.deliveredCount += itemCount; // Count items, not customers
                     stats.deliveredRevenue += itemRevenue;
 
                     deliveredLeadsDetails.push({
@@ -217,6 +221,7 @@ export async function GET(req: NextRequest) {
                         seller: user,
                         items: soldItemsText.join(', '),
                         revenue: itemRevenue,
+                        itemCount: itemCount,
                         date: lead.teslim_tarihi || lead.satis_tarihi
                     });
                 }
@@ -230,47 +235,10 @@ export async function GET(req: NextRequest) {
         // List matches Table Filter (Since we filtered 'leads' loop above)
         deliveredLeadsDetails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-        // Calculate Status Counts for Pie Chart
-        const statusCounts = {
-            approved: 0,
-            guarantorRequested: 0,
-            delivered: 0
-        };
-
-        leads?.forEach((lead: any) => {
-            // Count Approved (Onaylandı)
-            if (lead.onay_durumu === 'Onaylandı') {
-                const onayTs = lead.onay_tarihi ? new Date(lead.onay_tarihi).getTime() : 0;
-                if (onayTs >= startTs && onayTs <= endTs) {
-                    statusCounts.approved++;
-                }
-            }
-
-            // Count Guarantor Requested (Kefil İstendi or Kefil Bekleniyor)
-            if (lead.onay_durumu === 'Kefil İstendi' || lead.durum === 'Kefil bekleniyor') {
-                const createdTs = lead.created_at ? new Date(lead.created_at).getTime() : 0;
-                const updatedTs = lead.updated_at ? new Date(lead.updated_at).getTime() : 0;
-                const relevantTs = Math.max(createdTs, updatedTs);
-                if (relevantTs >= startTs && relevantTs <= endTs) {
-                    statusCounts.guarantorRequested++;
-                }
-            }
-
-            // Count Delivered (already calculated above)
-            const isDeliveredStatus = ['Teslim edildi', 'Satış yapıldı/Tamamlandı', 'Satış Yapıldı'].includes(lead.durum);
-            if (isDeliveredStatus && lead.teslim_tarihi) {
-                const deliveredTs = new Date(lead.teslim_tarihi).getTime();
-                if (deliveredTs >= startTs && deliveredTs <= endTs) {
-                    statusCounts.delivered++;
-                }
-            }
-        });
-
         return NextResponse.json({
             success: true,
             data: filteredData,
-            deliveredLeads: deliveredLeadsDetails,
-            statusCounts
+            deliveredLeads: deliveredLeadsDetails
         });
 
     } catch (error: any) {

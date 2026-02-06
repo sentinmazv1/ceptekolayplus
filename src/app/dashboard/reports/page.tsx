@@ -6,7 +6,7 @@ import { ReportHeader } from '@/components/reports/ReportHeader';
 import { KPICard } from '@/components/reports/KPICard';
 import { PersonnelTable } from '@/components/reports/PersonnelTable';
 import { DeliveredCustomerList } from '@/components/reports/DeliveredCustomerList';
-import { StatusPieChart } from '@/components/reports/StatusPieChart';
+import { CollectionServiceKPI } from '@/components/reports/CollectionServiceKPI';
 import { Button } from '@/components/ui/Button';
 
 // Types
@@ -39,7 +39,7 @@ export default function ReportsPage() {
     // State for Personnel & Delivered
     const [personnelData, setPersonnelData] = useState<any[]>([]);
     const [deliveredLeads, setDeliveredLeads] = useState<any[]>([]);
-    const [statusCounts, setStatusCounts] = useState<{ approved: number; guarantorRequested: number; delivered: number } | null>(null);
+    const [collectionServiceStats, setCollectionServiceStats] = useState<any>(null);
     const [personnelLoading, setPersonnelLoading] = useState(false);
 
     const fetchDetailedData = () => {
@@ -62,11 +62,20 @@ export default function ReportsPage() {
                 if (data.success) {
                     setPersonnelData(data.data);
                     setDeliveredLeads(data.deliveredLeads || []);
-                    setStatusCounts(data.statusCounts || { approved: 0, guarantorRequested: 0, delivered: 0 });
                 }
             })
             .catch(err => console.error(err))
             .finally(() => setPersonnelLoading(false));
+
+        // Fetch Collection Service Stats
+        fetch(`/api/reports/collection-service?startDate=${startDate}&endDate=${endDate}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    setCollectionServiceStats(data.stats);
+                }
+            })
+            .catch(err => console.error(err));
     };
 
     useEffect(() => {
@@ -89,15 +98,15 @@ export default function ReportsPage() {
                     onRefresh={fetchDetailedData}
                 />
 
-                {/* Status Pie Chart */}
-                {statusCounts && (
-                    <div className="mb-8">
-                        <StatusPieChart data={statusCounts} />
+                {/* Collection Service KPI */}
+                {collectionServiceStats && (
+                    <div className="mb-6">
+                        <CollectionServiceKPI data={collectionServiceStats} loading={!collectionServiceStats} />
                     </div>
                 )}
 
                 {/* Personnel Table */}
-                <div className="mb-8">
+                <div className="mb-6">
                     <h3 className="text-lg font-black text-gray-900 mb-4 flex items-center gap-2">
                         <Users className="w-5 h-5 text-indigo-600" />
                         PERSONEL PERFORMANS TABLOSU
@@ -112,38 +121,58 @@ export default function ReportsPage() {
 
                 {/* KPI GRID (Global Totals for Context) */}
                 <div>
-                    <h3 className="text-lg font-black text-gray-900 mb-4 flex items-center gap-2">
-                        <PieChart className="w-5 h-5 text-gray-400" />
+                    <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <PieChart className="w-4 h-4 text-gray-400" />
                         GENEL TOPLAM ({startDate} - {endDate})
                     </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
                         <KPICard
                             title="Toplam Ciro"
                             value={detailedStats ? formatCurrency(detailedStats.funnel.deliveredVolume) : '0 ₺'}
                             subValue="Net Satış"
                             icon={Wallet}
                             loading={detailedLoading}
+                            className="text-xs"
                         />
                         <KPICard
-                            title="Satış Adeti"
+                            title="Ürün Adedi"
                             value={detailedStats ? formatNumber(detailedStats.funnel.delivered) : '0'}
-                            subValue="Ürün Bazlı"
+                            subValue="Teslim Edilen"
                             icon={ShoppingBag}
                             loading={detailedLoading}
+                            className="text-xs"
+                        />
+                        <KPICard
+                            title="Müşteri Sayısı"
+                            value={detailedStats ? formatNumber(detailedStats.funnel.sale) : '0'}
+                            subValue="Teslim Edilen"
+                            icon={Users}
+                            loading={detailedLoading}
+                            className="text-xs"
+                        />
+                        <KPICard
+                            title="Toplam Arama"
+                            value={detailedStats ? formatNumber(detailedStats.funnel.totalCalled) : '0'}
+                            subValue="Çekilen"
+                            icon={Package}
+                            loading={detailedLoading}
+                            className="text-xs"
+                        />
+                        <KPICard
+                            title="Başvuru"
+                            value={detailedStats ? formatNumber(detailedStats.funnel.applications) : '0'}
+                            subValue="Alınan"
+                            icon={TrendingUp}
+                            loading={detailedLoading}
+                            className="text-xs"
                         />
                         <KPICard
                             title="Dönüşüm"
-                            value={detailedStats && detailedStats.funnel.totalCalled > 0 ? `%${((detailedStats.funnel.sale / detailedStats.funnel.totalCalled) * 100).toFixed(1)}` : '%0'}
-                            subValue="Satış / Arama"
+                            value={detailedStats && detailedStats.funnel.applications > 0 ? `%${((detailedStats.funnel.sale / detailedStats.funnel.applications) * 100).toFixed(1)}` : '%0'}
+                            subValue="Müşteri / Başvuru"
                             icon={PieChart}
                             loading={detailedLoading}
-                        />
-                        <KPICard
-                            title="Müşteri"
-                            value={detailedStats ? formatNumber(detailedStats.funnel.sale) : '0'}
-                            subValue="Teslim Edilen Kişi"
-                            icon={TrendingUp}
-                            loading={detailedLoading}
+                            className="text-xs"
                         />
                     </div>
                 </div>
