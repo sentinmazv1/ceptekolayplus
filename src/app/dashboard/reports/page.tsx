@@ -185,8 +185,13 @@ export default function ReportsPage() {
                         />
                     </div>
 
-                    {/* Teslim Edilen Ürünler Tablosu */}
-                    <DeliveredProductsTable products={deliveredLeads} loading={personnelLoading} />
+                    {/* Delivered Products Table */}
+                    <DeliveredProductsTable
+                        products={personnelData?.deliveredLeads || []}
+                        loading={personnelLoading}
+                        startDate={startDate}
+                        endDate={endDate}
+                    />
                 </div>
             </div>
         </div>

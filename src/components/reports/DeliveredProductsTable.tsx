@@ -7,17 +7,32 @@ interface DeliveredProduct {
     meslek: string;
     satilan_urunler: any;
     kredi_limiti: number;
-    teslim_tarihi: string;
+    created_at: string;
     updated_at: string;
+    teslim_tarihi: string;
+    onay_tarihi: string;
     sahip_email: string;
 }
 
 interface DeliveredProductsTableProps {
     products: DeliveredProduct[];
     loading?: boolean;
+    startDate?: string; // YYYY-MM-DD
+    endDate?: string;   // YYYY-MM-DD
 }
 
-export function DeliveredProductsTable({ products, loading }: DeliveredProductsTableProps) {
+export function DeliveredProductsTable({ products, loading, startDate, endDate }: DeliveredProductsTableProps) {
+    // Filter by date if provided
+    const filteredProducts = products.filter(p => {
+        if (!startDate || !endDate) return true;
+
+        // Check all date fields
+        const dates = [p.created_at, p.updated_at, p.teslim_tarihi, p.onay_tarihi]
+            .filter(d => d)
+            .map(d => d.split('T')[0]); // Get YYYY-MM-DD
+
+        return dates.some(date => date >= startDate && date <= endDate);
+    });
     if (loading) {
         return (
             <div className="bg-white rounded-lg shadow p-6">
@@ -30,14 +45,14 @@ export function DeliveredProductsTable({ products, loading }: DeliveredProductsT
         );
     }
 
-    if (!products || products.length === 0) {
+    if (!filteredProducts || filteredProducts.length === 0) {
         return (
             <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center gap-2 mb-4">
                     <Package className="w-5 h-5 text-blue-600" />
-                    <h3 className="text-lg font-semibold">Teslim Edilen Ürünler</h3>
+                    <h3 className="text-lg font-semibold">Teslim Edilen Müşteriler</h3>
                 </div>
-                <div className="text-center py-8 text-gray-500">Bu tarih aralığında teslim edilen ürün bulunamadı.</div>
+                <div className="text-center py-8 text-gray-500">Bu tarih aralığında teslim edilen müşteri bulunamadı.</div>
             </div>
         );
     }
@@ -91,7 +106,7 @@ export function DeliveredProductsTable({ products, loading }: DeliveredProductsT
                 <div className="flex items-center gap-2">
                     <Package className="w-5 h-5 text-blue-600" />
                     <h3 className="text-lg font-semibold">Teslim Edilen Müşteriler</h3>
-                    <span className="ml-auto text-sm text-gray-500">{products.length} müşteri</span>
+                    <span className="ml-auto text-sm text-gray-500">{filteredProducts.length} müşteri</span>
                 </div>
             </div>
 
@@ -111,7 +126,7 @@ export function DeliveredProductsTable({ products, loading }: DeliveredProductsT
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                        {products.map((product, idx) => (
+                        {filteredProducts.map((product, idx) => (
                             <tr key={idx} className="hover:bg-gray-50 transition-colors">
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="text-sm font-medium text-gray-900">{product.ad_soyad || '-'}</div>
