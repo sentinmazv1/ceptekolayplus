@@ -14,9 +14,6 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ success: false, error: 'Dates required' }, { status: 400 });
         }
 
-        const startIso = new Date(startDate).toISOString();
-        const endIso = new Date(new Date(endDate).setHours(23, 59, 59, 999)).toISOString();
-
         // Fetch all leads with "Tahsilat servisi" status
         const { data: leads, error } = await supabaseAdmin
             .from('leads')
@@ -41,18 +38,24 @@ export async function GET(req: NextRequest) {
             stats.totalFiles++;
 
             // Categorize based on tahsilat_durumu field
-            const tahsilatDurumu = (lead.tahsilat_durumu || '').toLowerCase();
+            const tahsilatDurumu = (lead.tahsilat_durumu || '').toLowerCase().trim();
 
-            if (tahsilatDurumu.includes('ödeme sözü') || tahsilatDurumu.includes('odeme sozu')) {
-                stats.paymentPromised++;
-            } else if (tahsilatDurumu.includes('ulaşılamadı') || tahsilatDurumu.includes('ulasilamadi')) {
+            if (!tahsilatDurumu || tahsilatDurumu === '') {
+                // No status set - count as unreachable or pending
                 stats.unreachable++;
-            } else if (tahsilatDurumu.includes('sözü geçti') || tahsilatDurumu.includes('sozu gecti') || tahsilatDurumu.includes('vade geçti')) {
+            } else if (tahsilatDurumu.includes('ödeme sözü') || tahsilatDurumu.includes('odeme sozu') || tahsilatDurumu.includes('söz alındı')) {
+                stats.paymentPromised++;
+            } else if (tahsilatDurumu.includes('ulaşılamadı') || tahsilatDurumu.includes('ulasilamadi') || tahsilatDurumu.includes('cevap yok')) {
+                stats.unreachable++;
+            } else if (tahsilatDurumu.includes('sözü geçti') || tahsilatDurumu.includes('sozu gecti') || tahsilatDurumu.includes('vade geçti') || tahsilatDurumu.includes('vade gecti')) {
                 stats.promiseExpired++;
-            } else if (tahsilatDurumu.includes('avukat hazırlık') || tahsilatDurumu.includes('avukata hazırlık')) {
+            } else if (tahsilatDurumu.includes('avukat hazırlık') || tahsilatDurumu.includes('avukata hazırlık') || tahsilatDurumu.includes('avukat hazirligi')) {
                 stats.attorneyPrep++;
-            } else if (tahsilatDurumu.includes('avukata teslim') || tahsilatDurumu.includes('avukata gönderildi')) {
+            } else if (tahsilatDurumu.includes('avukata teslim') || tahsilatDurumu.includes('avukata gönderildi') || tahsilatDurumu.includes('avukata gitti')) {
                 stats.attorneyDelivered++;
+            } else {
+                // Other statuses - categorize as unreachable for now
+                stats.unreachable++;
             }
         });
 

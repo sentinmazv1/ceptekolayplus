@@ -125,14 +125,14 @@ export default function ReportsPage() {
                         <PieChart className="w-4 h-4 text-gray-400" />
                         GENEL TOPLAM ({startDate} - {endDate})
                     </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 mb-6">
                         <KPICard
                             title="Toplam Ciro"
                             value={detailedStats ? formatCurrency(detailedStats.funnel.deliveredVolume) : '0 ₺'}
                             subValue="Net Satış"
                             icon={Wallet}
                             loading={detailedLoading}
-                            className="text-xs"
+                            className="text-xs lg:col-span-1"
                         />
                         <KPICard
                             title="Ürün Adedi"
@@ -167,9 +167,17 @@ export default function ReportsPage() {
                             className="text-xs"
                         />
                         <KPICard
-                            title="Dönüşüm"
+                            title="Arama→Başvuru"
+                            value={detailedStats && detailedStats.funnel.totalCalled > 0 ? `%${((detailedStats.funnel.applications / detailedStats.funnel.totalCalled) * 100).toFixed(1)}` : '%0'}
+                            subValue="Dönüşüm"
+                            icon={TrendingUp}
+                            loading={detailedLoading}
+                            className="text-xs"
+                        />
+                        <KPICard
+                            title="Başvuru→Satış"
                             value={detailedStats && detailedStats.funnel.applications > 0 ? `%${((detailedStats.funnel.sale / detailedStats.funnel.applications) * 100).toFixed(1)}` : '%0'}
-                            subValue="Müşteri / Başvuru"
+                            subValue="Dönüşüm"
                             icon={PieChart}
                             loading={detailedLoading}
                             className="text-xs"
