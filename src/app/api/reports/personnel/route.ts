@@ -68,22 +68,30 @@ export async function GET(req: NextRequest) {
             .lte('created_at', endIso);
 
         // --- 1.5 ATTORNEY HISTORY (New Source of Truth) ---
-        // Fetch with lead data to get owner information
+        // Fetch attorney history records
         const { data: attorneyHistory, error: attorneyError } = await supabaseAdmin
             .from('attorney_status_history')
-            .select(`
-                *,
-                leads!inner (
-                    sahip_email,
-                    assigned_to
-                )
-            `)
+            .select('*')
             .gte('created_at', startIso)
             .lte('created_at', endIso);
 
         if (attorneyError) {
             console.error('Attorney history query error:', attorneyError);
         }
+
+        // Fetch all leads to get owner information
+        const { data: allLeads } = await supabaseAdmin
+            .from('leads')
+            .select('id, sahip_email, assigned_to');
+
+        // Create a map of lead_id -> owner
+        const leadOwnerMap = new Map<string, string>();
+        allLeads?.forEach((lead: any) => {
+            const owner = lead.sahip_email || lead.assigned_to;
+            if (owner) {
+                leadOwnerMap.set(lead.id, owner);
+            }
+        });
 
 
         rangeLogs?.forEach((log: any) => {
@@ -120,10 +128,10 @@ export async function GET(req: NextRequest) {
         // --- Process Attorney History ---
         // IMPORTANT: Attribute to LEAD OWNER, not the person who performed the query
         attorneyHistory?.forEach((record: any) => {
-            const lead = record.leads; // Supabase returns 'leads' not 'lead'
-            if (!lead) return;
+            const leadId = record.lead_id;
+            if (!leadId) return;
 
-            const ownerRaw = lead.sahip_email || lead.assigned_to;
+            const ownerRaw = leadOwnerMap.get(leadId);
             if (!ownerRaw) return;
 
             // Filter ignorable users
