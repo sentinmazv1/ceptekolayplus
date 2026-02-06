@@ -78,6 +78,7 @@ export async function GET(req: NextRequest) {
         if (attorneyError) {
             console.error('Attorney history query error:', attorneyError);
         }
+        console.log('Attorney history records fetched:', attorneyHistory?.length);
 
         // Fetch all leads to get owner information
         const { data: allLeads } = await supabaseAdmin
@@ -92,6 +93,7 @@ export async function GET(req: NextRequest) {
                 leadOwnerMap.set(lead.id, owner);
             }
         });
+        console.log('Lead owner map created, size:', leadOwnerMap.size);
 
 
         rangeLogs?.forEach((log: any) => {
