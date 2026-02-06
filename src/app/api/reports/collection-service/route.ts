@@ -10,12 +10,6 @@ export async function GET(req: NextRequest) {
         // This shows the real-time status of all collection files
         // IMPORTANT: Must match the collection panel filter (sinif = 'Gecikme')
 
-        // Fetch collection statuses for proper categorization
-        const { data: collectionStatuses } = await supabaseAdmin
-            .from('collection_statuses')
-            .select('label')
-            .order('sort_order', { ascending: true });
-
         // Fetch all leads with sinif = 'Gecikme' (same as collection panel)
         const { data: leads, error: fetchError } = await supabaseAdmin
             .from('leads')
@@ -36,7 +30,7 @@ export async function GET(req: NextRequest) {
             attorneyDelivered: 0
         };
 
-        // Date calculation for promise expiry (same as collection panel)
+        // Date calculation for promise expiry
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
 
@@ -45,24 +39,27 @@ export async function GET(req: NextRequest) {
 
             // Get exact tahsilat_durumu value
             const tahsilatDurumu = (lead.tahsilat_durumu || '').trim();
+            const promiseDate = lead.odeme_sozu_tarihi ? lead.odeme_sozu_tarihi.split('T')[0] : null;
 
-            // Check if promise is expired based on date (same as collection panel)
-            const hasExpiredPromise = lead.odeme_sozu_tarihi && lead.odeme_sozu_tarihi.split('T')[0] < todayStr;
-
-            if (hasExpiredPromise) {
-                // Date-based: promise date is in the past
+            // Categorize based on exact database values
+            if (tahsilatDurumu === 'Ödeme Sözü Alındı' && promiseDate && promiseDate < todayStr) {
+                // Sözü Geçen: "Ödeme Sözü Alındı" with expired date
                 stats.promiseExpired++;
-            } else if (!tahsilatDurumu || tahsilatDurumu === '' || tahsilatDurumu === 'İşlem Bekliyor') {
-                // No status set - count as unreachable or pending
-                stats.unreachable++;
-            } else if (tahsilatDurumu === 'Ödeme Sözü Alındı' || tahsilatDurumu === 'Ödeme Sözü') {
+            } else if (tahsilatDurumu === 'Ödeme Sözü Alındı' && promiseDate && promiseDate >= todayStr) {
+                // Ödeme Sözü: "Ödeme Sözü Alındı" with future/today date
                 stats.paymentPromised++;
-            } else if (tahsilatDurumu === 'Ulaşılamadı' || tahsilatDurumu === 'Ulaşılamıyor') {
+            } else if (tahsilatDurumu === 'Ulaşılamadı') {
+                // Ulaşılamayan
                 stats.unreachable++;
-            } else if (tahsilatDurumu === 'Avukata Hazırlık' || tahsilatDurumu === 'Avukat Hazırlığı') {
+            } else if (tahsilatDurumu === 'Avukata Hazırlık Aşaması') {
+                // Avukata Hazırlık
                 stats.attorneyPrep++;
-            } else if (tahsilatDurumu === 'Avukata Teslim Edildi' || tahsilatDurumu === 'Avukata Teslim') {
+            } else if (tahsilatDurumu === 'Avukata Teslim Edildi') {
+                // Avukata Teslim
                 stats.attorneyDelivered++;
+            } else if (!tahsilatDurumu || tahsilatDurumu === '' || tahsilatDurumu === 'Seçiniz...') {
+                // No status set - count as unreachable
+                stats.unreachable++;
             } else {
                 // Other statuses - categorize as unreachable for now
                 stats.unreachable++;
