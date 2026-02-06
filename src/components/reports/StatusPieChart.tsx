@@ -55,17 +55,19 @@ export function StatusPieChart({ data }: StatusPieChartProps) {
             <div className="flex flex-col md:flex-row items-center gap-6">
                 {/* Pie Chart */}
                 <div className="w-full md:w-1/2">
-                    <ResponsiveContainer width="100%" height={200}>
+                    <ResponsiveContainer width="100%" height={250}>
                         <PieChart>
                             <Pie
                                 data={chartData}
                                 cx="50%"
                                 cy="50%"
                                 labelLine={false}
-                                label={({ percent }) => percent ? `${(percent * 100).toFixed(0)}%` : '0%'}
-                                outerRadius={80}
+                                label={false}
+                                outerRadius={90}
+                                innerRadius={50}
                                 fill="#8884d8"
                                 dataKey="value"
+                                paddingAngle={2}
                             >
                                 {chartData.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={entry.color} />
@@ -73,6 +75,11 @@ export function StatusPieChart({ data }: StatusPieChartProps) {
                             </Pie>
                             <Tooltip
                                 formatter={(value: number | undefined) => value ? new Intl.NumberFormat('tr-TR').format(value) : '0'}
+                            />
+                            <Legend
+                                verticalAlign="bottom"
+                                height={36}
+                                formatter={(value) => <span className="text-sm font-semibold text-gray-700">{value}</span>}
                             />
                         </PieChart>
                     </ResponsiveContainer>
@@ -85,9 +92,14 @@ export function StatusPieChart({ data }: StatusPieChartProps) {
                             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.approved }}></div>
                             <span className="text-sm font-semibold text-gray-700">{LABELS.approved}</span>
                         </div>
-                        <span className="text-lg font-black text-emerald-600">
-                            {new Intl.NumberFormat('tr-TR').format(data.approved)}
-                        </span>
+                        <div className="text-right">
+                            <div className="text-lg font-black text-emerald-600">
+                                {new Intl.NumberFormat('tr-TR').format(data.approved)}
+                            </div>
+                            <div className="text-xs text-emerald-500 font-bold">
+                                {total > 0 ? `${((data.approved / total) * 100).toFixed(1)}%` : '0%'}
+                            </div>
+                        </div>
                     </div>
 
                     <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-100">
@@ -95,9 +107,14 @@ export function StatusPieChart({ data }: StatusPieChartProps) {
                             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.guarantorRequested }}></div>
                             <span className="text-sm font-semibold text-gray-700">{LABELS.guarantorRequested}</span>
                         </div>
-                        <span className="text-lg font-black text-amber-600">
-                            {new Intl.NumberFormat('tr-TR').format(data.guarantorRequested)}
-                        </span>
+                        <div className="text-right">
+                            <div className="text-lg font-black text-amber-600">
+                                {new Intl.NumberFormat('tr-TR').format(data.guarantorRequested)}
+                            </div>
+                            <div className="text-xs text-amber-500 font-bold">
+                                {total > 0 ? `${((data.guarantorRequested / total) * 100).toFixed(1)}%` : '0%'}
+                            </div>
+                        </div>
                     </div>
 
                     <div className="flex items-center justify-between p-3 bg-indigo-50 rounded-lg border border-indigo-100">
@@ -105,9 +122,14 @@ export function StatusPieChart({ data }: StatusPieChartProps) {
                             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.delivered }}></div>
                             <span className="text-sm font-semibold text-gray-700">{LABELS.delivered}</span>
                         </div>
-                        <span className="text-lg font-black text-indigo-600">
-                            {new Intl.NumberFormat('tr-TR').format(data.delivered)}
-                        </span>
+                        <div className="text-right">
+                            <div className="text-lg font-black text-indigo-600">
+                                {new Intl.NumberFormat('tr-TR').format(data.delivered)}
+                            </div>
+                            <div className="text-xs text-indigo-500 font-bold">
+                                {total > 0 ? `${((data.delivered / total) * 100).toFixed(1)}%` : '0%'}
+                            </div>
+                        </div>
                     </div>
 
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 mt-4">
