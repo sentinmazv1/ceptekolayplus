@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
     try {
-        // Use EXACT same logic as /api/collection/stats
+        // Use EXACT same logic as collection panel
         const { data, error } = await supabaseAdmin
             .from('leads')
             .select('id, tahsilat_durumu, odeme_sozu_tarihi, sinif')
@@ -17,17 +17,6 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ success: false, error: error.message }, { status: 500 });
         }
 
-        // Count by status (same as collection panel)
-        const byStatus: Record<string, number> = {};
-        const today = new Date();
-        const todayStr = today.toISOString().split('T')[0];
-
-        (data || []).forEach(lead => {
-            const status = lead.tahsilat_durumu || 'İşlem Bekliyor';
-            byStatus[status] = (byStatus[status] || 0) + 1;
-        });
-
-        // Map to report categories
         const stats = {
             totalFiles: data?.length || 0,
             paymentPromised: 0,
@@ -37,20 +26,36 @@ export async function GET(req: NextRequest) {
             attorneyDelivered: 0
         };
 
-        // Count "Ödeme Sözü Alındı" with date check
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+
+        // Count by status
+        const byStatus: Record<string, number> = {};
+        (data || []).forEach(lead => {
+            const status = lead.tahsilat_durumu || 'İşlem Bekliyor';
+            byStatus[status] = (byStatus[status] || 0) + 1;
+        });
+
+        // SÖZÜ GEÇEN: Collection panel mantığı - SADECE tarih kontrolü
+        // tahsilat_durumu kontrolü YOK!
+        (data || []).forEach(lead => {
+            if (lead.odeme_sozu_tarihi && lead.odeme_sozu_tarihi.split('T')[0] < todayStr) {
+                stats.promiseExpired++;
+            }
+        });
+
+        // ÖDEME SÖZÜ: "Ödeme Sözü Alındı" + tarih bugün veya gelecek
         (data || []).forEach(lead => {
             if (lead.tahsilat_durumu === 'Ödeme Sözü Alındı' && lead.odeme_sozu_tarihi) {
                 const pDate = lead.odeme_sozu_tarihi.split('T')[0];
-                if (pDate < todayStr) {
-                    stats.promiseExpired++;
-                } else {
+                if (pDate >= todayStr) {
                     stats.paymentPromised++;
                 }
             }
         });
 
-        // Map other statuses
-        stats.unreachable = (byStatus['Ulaşılamadı'] || 0) + (byStatus['İşlem Bekliyor'] || 0) + (byStatus[''] || 0);
+        // Diğer durumlar
+        stats.unreachable = (byStatus['Ulaşılamadı'] || 0) + (byStatus['İşlem Bekliyor'] || 0);
         stats.attorneyPrep = byStatus['Avukata Hazırlık Aşaması'] || 0;
         stats.attorneyDelivered = byStatus['Avukata Teslim Edildi'] || 0;
 
