@@ -215,11 +215,13 @@ export async function GET(req: NextRequest) {
             .gte('onay_tarihi', startIso)
             .lte('onay_tarihi', endIso);
 
-        // Query ALL delivered leads (filter by date in frontend)
+        // Query delivered leads with date filter (using updated_at for reliability)
         const { data: deliveredLeads } = await supabaseAdmin
             .from('leads')
             .select('*')
             .in('durum', ['Teslim edildi', 'Satış yapıldı/Tamamlandı', 'Satış Yapıldı'])
+            .gte('updated_at', startIso)
+            .lte('updated_at', endIso)
             .order('updated_at', { ascending: false });
 
         // Process approved leads
