@@ -96,12 +96,25 @@ export async function GET(req: NextRequest) {
         });
         console.log('Lead owner map created, size:', leadOwnerMap.size);
 
+        // Debug counters for activity logs
+        let totalLogs = 0;
+        let skippedNoUser = 0;
+        let skippedIgnorable = 0;
+        let pullLeadCount = 0;
+        const userCallCounts = new Map<string, number>();
 
         rangeLogs?.forEach((log: any) => {
+            totalLogs++;
             const rawUser = log.user_email;
-            if (!rawUser) return;
+            if (!rawUser) {
+                skippedNoUser++;
+                return;
+            }
             // Filter ignorable users (MATCHING LEGACY)
-            if (['sistem', 'system', 'admin', 'ibrahim', 'ibrahimsentinmaz@gmail.com'].some(x => rawUser.toLowerCase().includes(x))) return;
+            if (['sistem', 'system', 'admin', 'ibrahim', 'ibrahimsentinmaz@gmail.com'].some(x => rawUser.toLowerCase().includes(x))) {
+                skippedIgnorable++;
+                return;
+            }
 
             const user = normalizeUser(rawUser);
             const stats = getStats(user);
@@ -110,7 +123,11 @@ export async function GET(req: NextRequest) {
             const note = String(log.note || '').toLowerCase();
 
             // MATCHING USER REQUEST: ONLY COUNT 'PULL_LEAD' (Müşteri Çek)
-            if (action === 'PULL_LEAD') stats.calls++;
+            if (action === 'PULL_LEAD') {
+                stats.calls++;
+                pullLeadCount++;
+                userCallCounts.set(user, (userCallCounts.get(user) || 0) + 1);
+            }
             if (action === 'SEND_SMS' || action === 'CLICK_SMS') stats.sms++;
             if (action === 'SEND_WHATSAPP' || action === 'CLICK_WHATSAPP') stats.whatsapp++;
 
@@ -124,6 +141,14 @@ export async function GET(req: NextRequest) {
             // Attorney Stats are now handled separately below via 'attorneyHistory'
             // Removing old log parsing logic here to avoid double counting or inaccuracy.
 
+        });
+
+        console.log('Activity logs processed:', {
+            totalLogs,
+            skippedNoUser,
+            skippedIgnorable,
+            pullLeadCount,
+            userCallCounts: Object.fromEntries(userCallCounts)
         });
 
 
@@ -210,6 +235,17 @@ export async function GET(req: NextRequest) {
             debug: {
                 attorneyHistoryCount: attorneyHistory?.length || 0,
                 leadOwnerMapSize: leadOwnerMap.size,
+                activityLogs: {
+                    totalLogs,
+                    skippedNoUser,
+                    skippedIgnorable,
+                    pullLeadCount,
+                    topUsers: Object.fromEntries(
+                        Array.from(userCallCounts.entries())
+                            .sort((a, b) => b[1] - a[1])
+                            .slice(0, 5)
+                    )
+                },
                 dateRange: { startIso, endIso }
             }
         });
