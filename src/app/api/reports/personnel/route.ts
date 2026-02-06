@@ -81,9 +81,13 @@ export async function GET(req: NextRequest) {
         console.log('Attorney history records fetched:', attorneyHistory?.length);
 
         // Fetch all leads to get owner information
+        // Only fetch leads that are in attorney history to avoid Supabase limit issues
+        const leadIds = [...new Set(attorneyHistory?.map((r: any) => r.lead_id).filter(Boolean) || [])];
+
         const { data: allLeads } = await supabaseAdmin
             .from('leads')
-            .select('id, sahip_email, assigned_to');
+            .select('id, sahip_email, assigned_to')
+            .in('id', leadIds.length > 0 ? leadIds : ['']); // Avoid empty array error
 
         // Create a map of lead_id -> owner
         const leadOwnerMap = new Map<string, string>();
