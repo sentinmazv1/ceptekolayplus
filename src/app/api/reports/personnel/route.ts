@@ -86,13 +86,13 @@ export async function GET(req: NextRequest) {
 
         const { data: allLeads } = await supabaseAdmin
             .from('leads')
-            .select('id, sahip_email, assigned_to')
+            .select('id, sahip_email')
             .in('id', leadIds.length > 0 ? leadIds : ['']); // Avoid empty array error
 
         // Create a map of lead_id -> owner
         const leadOwnerMap = new Map<string, string>();
         allLeads?.forEach((lead: any) => {
-            const owner = lead.sahip_email || lead.assigned_to;
+            const owner = lead.sahip_email;
             if (owner) {
                 leadOwnerMap.set(lead.id, owner);
             }
@@ -178,7 +178,7 @@ export async function GET(req: NextRequest) {
 
         // Process approved leads
         approvedLeads?.forEach((lead: any) => {
-            const ownerRaw = lead.sahip_email || lead.assigned_to;
+            const ownerRaw = lead.sahip_email;
             if (!ownerRaw) return;
             if (['sistem', 'system', 'admin', 'ibrahim', 'ibrahimsentinmaz@gmail.com'].some(x => ownerRaw.toLowerCase().includes(x))) return;
 
@@ -191,7 +191,7 @@ export async function GET(req: NextRequest) {
 
         // Process delivered leads
         deliveredLeads?.forEach((lead: any) => {
-            const ownerRaw = lead.sahip_email || lead.assigned_to;
+            const ownerRaw = lead.sahip_email;
             if (!ownerRaw) return;
             if (['sistem', 'system', 'admin', 'ibrahim', 'ibrahimsentinmaz@gmail.com'].some(x => ownerRaw.toLowerCase().includes(x))) return;
 
