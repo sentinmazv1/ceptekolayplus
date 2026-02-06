@@ -68,9 +68,10 @@ export async function GET(req: NextRequest) {
             .lte('created_at', endIso);
 
         // --- 1.5 ATTORNEY HISTORY (New Source of Truth) ---
+        // Fetch with lead data to get owner information
         const { data: attorneyHistory } = await supabaseAdmin
             .from('attorney_status_history')
-            .select('*')
+            .select('*, lead:leads(sahip_email, assigned_to)')
             .gte('created_at', startIso)
             .lte('created_at', endIso);
 
@@ -107,13 +108,18 @@ export async function GET(req: NextRequest) {
 
 
         // --- Process Attorney History ---
+        // IMPORTANT: Attribute to LEAD OWNER, not the person who performed the query
         attorneyHistory?.forEach((record: any) => {
-            const rawUser = record.changed_by;
-            if (!rawUser) return;
-            // Filter ignorable users
-            if (['sistem', 'system', 'admin', 'ibrahim', 'ibrahimsentinmaz@gmail.com'].some(x => rawUser.toLowerCase().includes(x))) return;
+            const lead = record.lead;
+            if (!lead) return;
 
-            const user = normalizeUser(rawUser);
+            const ownerRaw = lead.sahip_email || lead.assigned_to;
+            if (!ownerRaw) return;
+
+            // Filter ignorable users
+            if (['sistem', 'system', 'admin', 'ibrahim', 'ibrahimsentinmaz@gmail.com'].some(x => ownerRaw.toLowerCase().includes(x))) return;
+
+            const user = normalizeUser(ownerRaw);
             const stats = getStats(user);
 
             const status = record.new_status || '';
