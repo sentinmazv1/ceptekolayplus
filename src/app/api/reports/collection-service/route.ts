@@ -14,16 +14,22 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ success: false, error: 'Dates required' }, { status: 400 });
         }
 
-        // Fetch all leads with "Tahsilat servisi" status
-        const { data: leads, error } = await supabaseAdmin
+        // Fetch all leads with collection service status
+        // Note: The status might be stored as different variations
+        const { data: allLeads, error: fetchError } = await supabaseAdmin
             .from('leads')
-            .select('*')
-            .eq('durum', 'Tahsilat servisi');
+            .select('id, ad_soyad, durum, tahsilat_durumu, created_at, updated_at');
 
-        if (error) {
-            console.error('Collection service query error:', error);
-            return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        if (fetchError) {
+            console.error('Collection service query error:', fetchError);
+            return NextResponse.json({ success: false, error: fetchError.message }, { status: 500 });
         }
+
+        // Filter for collection service leads (handle multiple status variations)
+        const leads = allLeads?.filter((lead: any) => {
+            const durum = (lead.durum || '').toLowerCase();
+            return durum.includes('tahsilat') || durum === 'tahsilat servisi' || durum === 'tahsilat servisinde';
+        }) || [];
 
         const stats = {
             totalFiles: 0,
@@ -34,7 +40,7 @@ export async function GET(req: NextRequest) {
             attorneyDelivered: 0
         };
 
-        leads?.forEach((lead: any) => {
+        leads.forEach((lead: any) => {
             stats.totalFiles++;
 
             // Categorize based on tahsilat_durumu field
