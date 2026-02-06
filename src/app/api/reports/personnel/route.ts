@@ -62,7 +62,8 @@ export async function GET(req: NextRequest) {
             .from('activity_logs')
             .select('*')
             .gte('created_at', startIso)
-            .lte('created_at', endIso);
+            .lte('created_at', endIso)
+            .range(0, 9999); // Fetch up to 10000 records
 
         // --- 1.5 ATTORNEY HISTORY (New Source of Truth) ---
         // Fetch attorney history records
