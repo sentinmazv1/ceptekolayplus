@@ -215,13 +215,18 @@ export async function GET(req: NextRequest) {
             .gte('onay_tarihi', startIso)
             .lte('onay_tarihi', endIso);
 
-        // Query delivered leads separately (NO date filter - show all delivered)
+        // Query delivered leads separately with date filter
+        // Use date-only comparison (no time) to avoid timezone issues
+        const startDate = startIso.split('T')[0]; // Get YYYY-MM-DD only
+        const endDate = endIso.split('T')[0];
+
         const { data: deliveredLeads } = await supabaseAdmin
             .from('leads')
             .select('*')
             .in('durum', ['Teslim edildi', 'Satış yapıldı/Tamamlandı', 'Satış Yapıldı'])
-            .order('teslim_tarihi', { ascending: false })
-            .limit(100); // Show last 100 delivered products
+            .gte('teslim_tarihi', startDate)
+            .lte('teslim_tarihi', endDate + 'T23:59:59.999Z')
+            .order('teslim_tarihi', { ascending: false });
 
         // Process approved leads
         approvedLeads?.forEach((lead: any) => {
