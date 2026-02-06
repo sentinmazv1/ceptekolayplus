@@ -101,7 +101,7 @@ export async function GET(req: NextRequest) {
 
 
         rangeLogs?.forEach((log: any) => {
-            const rawUser = log.performed_by || log.user_email;
+            const rawUser = log.user_email;
             if (!rawUser) return;
             // Filter ignorable users (MATCHING LEGACY)
             if (['sistem', 'system', 'admin', 'ibrahim', 'ibrahimsentinmaz@gmail.com'].some(x => rawUser.toLowerCase().includes(x))) return;
