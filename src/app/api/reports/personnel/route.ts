@@ -205,7 +205,12 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            data: filteredData
+            data: filteredData,
+            debug: {
+                attorneyHistoryCount: attorneyHistory?.length || 0,
+                leadOwnerMapSize: leadOwnerMap.size,
+                dateRange: { startIso, endIso }
+            }
         });
 
     } catch (error: any) {
