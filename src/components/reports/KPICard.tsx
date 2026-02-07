@@ -32,7 +32,12 @@ export function KPICard({ title, value, subValue, trend, trendUp = true, icon: I
                 {loading ? (
                     <div className="h-8 w-24 bg-gray-100 rounded animate-pulse mb-1"></div>
                 ) : (
-                    <div className="text-2xl font-black text-gray-900 tracking-tight tabular-nums mb-0.5 truncate">{value}</div>
+                    <div
+                        className="text-2xl font-black text-gray-900 tracking-tight tabular-nums mb-0.5 truncate"
+                        title={typeof value === 'string' ? value : value.toString()}
+                    >
+                        {value}
+                    </div>
                 )}
 
                 {/* Footer / Trend */}

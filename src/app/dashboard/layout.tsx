@@ -55,125 +55,120 @@ export default function DashboardLayout({
             {/* Persistent Header */}
             <header className="bg-white shadow-sm sticky top-0 z-20 print:hidden">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="h-16 flex items-center justify-between">
-                        <div className="flex items-center gap-8">
-                            {/* Logo / Title */}
-                            <div className="flex items-center gap-4">
-                                <h1 className="text-xl font-bold text-gray-900 tracking-tight">CepteKolay+</h1>
-                                <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full border border-indigo-100 hidden sm:inline-block">
-                                    {session?.user?.email}
-                                </span>
-                            </div>
-
-                            {/* Mobile Hamburger Button */}
-                            <div className="md:hidden flex items-center">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setIsSidebarOpen(true)}
-                                    className="text-gray-600 hover:text-gray-900"
-                                >
-                                    <Menu className="w-6 h-6" />
-                                </Button>
-                            </div>
-
-                            {/* Global Navigation - Desktop */}
-                            <nav className="hidden md:flex gap-1 overflow-x-auto">
-                                <Link href="/dashboard">
-                                    <Button
-                                        variant={isActive('/dashboard') ? 'primary' : 'ghost'}
-                                        size="sm"
-                                        className={isActive('/dashboard') ? '' : 'text-gray-600 hover:text-gray-900'}
-                                    >
-                                        <LayoutDashboard className="w-4 h-4 mr-2" />
-                                        Panel
-                                    </Button>
-                                </Link>
-
-                                <Link href="/dashboard/calendar">
-                                    <Button
-                                        variant={isActive('/dashboard/calendar') ? 'primary' : 'ghost'}
-                                        size="sm"
-                                        className={isActive('/dashboard/calendar') ? '' : 'text-gray-600 hover:text-gray-900'}
-                                    >
-                                        <Calendar className="w-4 h-4 mr-2" />
-                                        Takvim
-                                    </Button>
-                                </Link>
-
-                                <Link href="/dashboard/inventory">
-                                    <Button
-                                        variant={isActive('/dashboard/inventory') ? 'primary' : 'ghost'}
-                                        size="sm"
-                                        className={isActive('/dashboard/inventory') ? '' : 'text-gray-600 hover:text-gray-900'}
-                                    >
-                                        <Package className="w-4 h-4 mr-2" />
-                                        Stok
-                                    </Button>
-                                </Link>
-
-                                {['ADMIN', 'Admin'].includes(session?.user?.role || '') && (
-                                    <>
-                                        <Link href="/dashboard/approvals">
-                                            <Button
-                                                variant={isActive('/dashboard/approvals') ? 'primary' : 'ghost'}
-                                                size="sm"
-                                                className={isActive('/dashboard/approvals') ? '' : 'text-gray-600 hover:text-gray-900'}
-                                            >
-                                                <LayoutDashboard className="w-4 h-4 mr-2" />
-                                                Onay {stats?.pending_approval ? `(${stats.pending_approval})` : ''}
-                                            </Button>
-                                        </Link>
-
-                                        <Link href="/dashboard/reports">
-                                            <Button
-                                                variant={isActive('/dashboard/reports') ? 'primary' : 'ghost'}
-                                                size="sm"
-                                                className={isActive('/dashboard/reports') ? '' : 'text-gray-600 hover:text-gray-900'}
-                                            >
-                                                <BarChart2 className="w-4 h-4 mr-2" />
-                                                Raporlar
-                                            </Button>
-                                        </Link>
-
-
-
-
-                                        <Link href="/dashboard/collection">
-                                            <Button
-                                                variant={isActive('/dashboard/collection') ? 'primary' : 'ghost'}
-                                                size="sm"
-                                                className={isActive('/dashboard/collection') ? '' : 'text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 border border-red-200'}
-                                            >
-                                                <ShieldAlert className="w-4 h-4 mr-2" />
-                                                Gecikme Takibi
-                                            </Button>
-                                        </Link>
-
-                                        <div className="w-px h-6 bg-gray-200 mx-2" />
-
-                                        <Link href="/dashboard/admin/settings">
-                                            <Button
-                                                variant={isActive('/dashboard/admin/settings') ? 'primary' : 'ghost'}
-                                                size="sm"
-                                                className={isActive('/dashboard/admin/settings') ? '' : 'text-gray-600 hover:text-gray-900'}
-                                            >
-                                                <Database className="w-4 h-4 mr-2" />
-                                                Ayarlar (Yönetim)
-                                            </Button>
-                                        </Link>
-                                    </>
-                                ) // End Admin Check
-                                }
-
-
-
-
-                            </nav>
+                    <div className="h-16 flex items-center justify-between gap-4">
+                        {/* LEFT: Mobile Hamburger Button */}
+                        <div className="md:hidden flex items-center">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setIsSidebarOpen(true)}
+                                className="text-gray-600 hover:text-gray-900"
+                            >
+                                <Menu className="w-6 h-6" />
+                            </Button>
                         </div>
 
+                        {/* CENTER: Logo / Title (Clickable) */}
+                        <div className="flex items-center gap-4">
+                            <Link href="/dashboard" className="flex items-center gap-4">
+                                <h1 className="text-xl font-bold text-gray-900 tracking-tight hover:text-indigo-600 transition-colors cursor-pointer">
+                                    CepteKolay+
+                                </h1>
+                            </Link>
+                            <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full border border-indigo-100 hidden lg:inline-block">
+                                {session?.user?.email}
+                            </span>
+                        </div>
+
+                        {/* MIDDLE: Global Navigation - Desktop */}
+                        <nav className="hidden md:flex gap-1 overflow-x-auto flex-1">
+                            <Link href="/dashboard">
+                                <Button
+                                    variant={isActive('/dashboard') ? 'primary' : 'ghost'}
+                                    size="sm"
+                                    className={isActive('/dashboard') ? '' : 'text-gray-600 hover:text-gray-900'}
+                                >
+                                    <LayoutDashboard className="w-4 h-4 mr-2" />
+                                    Panel
+                                </Button>
+                            </Link>
+
+                            <Link href="/dashboard/calendar">
+                                <Button
+                                    variant={isActive('/dashboard/calendar') ? 'primary' : 'ghost'}
+                                    size="sm"
+                                    className={isActive('/dashboard/calendar') ? '' : 'text-gray-600 hover:text-gray-900'}
+                                >
+                                    <Calendar className="w-4 h-4 mr-2" />
+                                    Takvim
+                                </Button>
+                            </Link>
+
+                            <Link href="/dashboard/inventory">
+                                <Button
+                                    variant={isActive('/dashboard/inventory') ? 'primary' : 'ghost'}
+                                    size="sm"
+                                    className={isActive('/dashboard/inventory') ? '' : 'text-gray-600 hover:text-gray-900'}
+                                >
+                                    <Package className="w-4 h-4 mr-2" />
+                                    Stok
+                                </Button>
+                            </Link>
+
+                            {['ADMIN', 'Admin'].includes(session?.user?.role || '') && (
+                                <>
+                                    <Link href="/dashboard/approvals">
+                                        <Button
+                                            variant={isActive('/dashboard/approvals') ? 'primary' : 'ghost'}
+                                            size="sm"
+                                            className={isActive('/dashboard/approvals') ? '' : 'text-gray-600 hover:text-gray-900'}
+                                        >
+                                            <LayoutDashboard className="w-4 h-4 mr-2" />
+                                            Onay {stats?.pending_approval ? `(${stats.pending_approval})` : ''}
+                                        </Button>
+                                    </Link>
+
+                                    <Link href="/dashboard/reports">
+                                        <Button
+                                            variant={isActive('/dashboard/reports') ? 'primary' : 'ghost'}
+                                            size="sm"
+                                            className={isActive('/dashboard/reports') ? '' : 'text-gray-600 hover:text-gray-900'}
+                                        >
+                                            <BarChart2 className="w-4 h-4 mr-2" />
+                                            Raporlar
+                                        </Button>
+                                    </Link>
+
+                                    <Link href="/dashboard/collection">
+                                        <Button
+                                            variant={isActive('/dashboard/collection') ? 'primary' : 'ghost'}
+                                            size="sm"
+                                            className={isActive('/dashboard/collection') ? '' : 'text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 border border-red-200'}
+                                        >
+                                            <ShieldAlert className="w-4 h-4 mr-2" />
+                                            Gecikme Takibi
+                                        </Button>
+                                    </Link>
+
+                                    <div className="w-px h-6 bg-gray-200 mx-2" />
+
+                                    <Link href="/dashboard/admin/settings">
+                                        <Button
+                                            variant={isActive('/dashboard/admin/settings') ? 'primary' : 'ghost'}
+                                            size="sm"
+                                            className={isActive('/dashboard/admin/settings') ? '' : 'text-gray-600 hover:text-gray-900'}
+                                        >
+                                            <Database className="w-4 h-4 mr-2" />
+                                            Ayarlar (Yönetim)
+                                        </Button>
+                                    </Link>
+                                </>
+                            ) // End Admin Check
+                            }
+                        </nav>
+
+                        {/* RIGHT: User Info & Logout */}
                         <div className="flex items-center gap-2">
-                            {/* Mobile Menu Button could go here */}
                             <Button variant="secondary" onClick={() => signOut()} size="sm" className="hidden sm:flex">
                                 <LogOut className="w-4 h-4 mr-2" />
                                 Çıkış

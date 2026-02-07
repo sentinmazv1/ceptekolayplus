@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
             paymentPromised: 0,
             unreachable: 0,
             promiseExpired: 0,
+            riskyFollowUp: 0,
             attorneyPrep: 0,
             attorneyDelivered: 0
         };
@@ -29,35 +30,36 @@ export async function GET(req: NextRequest) {
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
 
-        // Count by status
-        const byStatus: Record<string, number> = {};
+        // Count each lead ONLY ONCE with priority order
         (data || []).forEach(lead => {
             const status = lead.tahsilat_durumu || 'İşlem Bekliyor';
-            byStatus[status] = (byStatus[status] || 0) + 1;
-        });
+            const promiseDate = lead.odeme_sozu_tarihi?.split('T')[0];
 
-        // SÖZÜ GEÇEN: Collection panel mantığı - SADECE tarih kontrolü
-        // tahsilat_durumu kontrolü YOK!
-        (data || []).forEach(lead => {
-            if (lead.odeme_sozu_tarihi && lead.odeme_sozu_tarihi.split('T')[0] < todayStr) {
+            // Priority 1: Avukata Teslim Edildi
+            if (status === 'Avukata Teslim Edildi') {
+                stats.attorneyDelivered++;
+            }
+            // Priority 2: Avukata Hazırlık Aşaması
+            else if (status === 'Avukata Hazırlık Aşaması') {
+                stats.attorneyPrep++;
+            }
+            // Priority 3: Riskli Takip
+            else if (status === 'Riskli Takip') {
+                stats.riskyFollowUp++;
+            }
+            // Priority 4: Sözü Geçen (promise date exists AND is in the past)
+            else if (promiseDate && promiseDate < todayStr) {
                 stats.promiseExpired++;
             }
-        });
-
-        // ÖDEME SÖZÜ: "Ödeme Sözü Alındı" + tarih bugün veya gelecek
-        (data || []).forEach(lead => {
-            if (lead.tahsilat_durumu === 'Ödeme Sözü Alındı' && lead.odeme_sozu_tarihi) {
-                const pDate = lead.odeme_sozu_tarihi.split('T')[0];
-                if (pDate >= todayStr) {
-                    stats.paymentPromised++;
-                }
+            // Priority 5: Ödeme Sözü Alındı (promise date exists AND is today or future)
+            else if (status === 'Ödeme Sözü Alındı' && promiseDate && promiseDate >= todayStr) {
+                stats.paymentPromised++;
+            }
+            // Priority 6: Ulaşılamayan (Ulaşılamadı OR İşlem Bekliyor)
+            else if (status === 'Ulaşılamadı' || status === 'İşlem Bekliyor') {
+                stats.unreachable++;
             }
         });
-
-        // Diğer durumlar
-        stats.unreachable = (byStatus['Ulaşılamadı'] || 0) + (byStatus['İşlem Bekliyor'] || 0);
-        stats.attorneyPrep = byStatus['Avukata Hazırlık Aşaması'] || 0;
-        stats.attorneyDelivered = byStatus['Avukata Teslim Edildi'] || 0;
 
         return NextResponse.json({
             success: true,

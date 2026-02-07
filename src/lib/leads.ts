@@ -149,13 +149,20 @@ export async function getCustomersByStatus(status: string, user: { email: string
 export async function searchCustomers(query: string): Promise<Customer[]> {
     if (!query || query.length < 2) return [];
 
+    // Normalize query: lowercase for case-insensitive search
+    const normalizedQuery = query.toLowerCase().trim();
+
+    // Normalize phone number: remove all spaces, dashes, parentheses
+    const phoneQuery = query.replace(/[\s\-\(\)]/g, '');
+
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(query);
     let dbQuery = supabaseAdmin.from('leads').select('*');
 
     if (isUUID) {
-        dbQuery = dbQuery.or(`id.eq.${query},ad_soyad.ilike.%${query}%,tc_kimlik.ilike.%${query}%,telefon.ilike.%${query}%`);
+        dbQuery = dbQuery.or(`id.eq.${query},ad_soyad.ilike.%${normalizedQuery}%,tc_kimlik.ilike.%${normalizedQuery}%,telefon.ilike.%${phoneQuery}%`);
     } else {
-        dbQuery = dbQuery.or(`ad_soyad.ilike.%${query}%,tc_kimlik.ilike.%${query}%,telefon.ilike.%${query}%`);
+        // Use ilike for case-insensitive search, and search phone with normalized version
+        dbQuery = dbQuery.or(`ad_soyad.ilike.%${normalizedQuery}%,tc_kimlik.ilike.%${normalizedQuery}%,telefon.ilike.%${phoneQuery}%`);
     }
     const { data } = await dbQuery.order('created_at', { ascending: false }).limit(500);
     return (data || []).map(mapRowToCustomer);

@@ -24,7 +24,7 @@
     "pg": "^8.17.2",
     "react": "latest",
     "react-dom": "latest",
-    "recharts": "^3.6.0",
+    "recharts": "^3.7.0",
     "tailwind-merge": "^3.4.0",
     "turkey-neighbourhoods": "^4.0.3",
     "xlsx": "^0.18.5"

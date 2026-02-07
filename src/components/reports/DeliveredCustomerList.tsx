@@ -42,7 +42,7 @@ export function DeliveredCustomerList({ data }: DeliveredCustomerListProps) {
                         <thead className="bg-gradient-to-r from-indigo-50 to-purple-50 text-gray-700 font-bold uppercase text-xs">
                             <tr>
                                 <th className="px-6 py-4 w-[20%]">Müşteri Adı</th>
-                                <th className="px-4 py-4 w-[15%]">Meslek</th>
+                                <th className="px-4 py-4 w-[15%]">Çalışma Şekli</th>
                                 <th className="px-4 py-4 w-[35%]">Teslim Edilen Ürünler</th>
                                 <th className="px-6 py-4 text-right w-[15%]">Tutar</th>
                                 <th className="px-4 py-4 text-center w-[15%]">Tarih</th>
