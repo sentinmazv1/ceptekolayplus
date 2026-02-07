@@ -220,7 +220,17 @@ export async function getLeadStats(user?: { email: string; role: string }) {
     // 2. USER/ADMIN OWNED COUNTS
     const pTotalSched = baseFilter(supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).eq('durum', 'Daha sonra aranmak istiyor'));
     const pMyRetry = baseFilter(supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).in('durum', retryStates));
-    const pPending = baseFilter(supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).eq('durum', 'Başvuru alındı'));
+
+    // PENDING APPROVAL - BUGÜNKÜ BAŞVURULAR (Today's applications only)
+    // Filter by updated_at to get applications that were updated to "Başvuru alındı" today
+    const pPending = baseFilter(
+        supabaseAdmin.from('leads')
+            .select('*', { count: 'exact', head: true })
+            .eq('durum', 'Başvuru alındı')
+            .gte('updated_at', `${todayStr}T00:00:00`)
+            .lte('updated_at', `${todayStr}T23:59:59`)
+    );
+
     const pGuarantor = baseFilter(supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).eq('durum', 'Kefil bekleniyor'));
 
     // DELIVERED: Fetch data to count ITEMS, not just customers
