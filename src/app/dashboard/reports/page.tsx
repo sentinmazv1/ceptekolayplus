@@ -80,6 +80,52 @@ export default function ReportsPage() {
         fetchDetailedData();
     }, [startDate, endDate]);
 
+    // Transform raw API data for DeliveredCustomerList
+    const transformDeliveredLeads = (rawLeads: any[]) => {
+        if (!rawLeads || rawLeads.length === 0) return [];
+
+        return rawLeads.map((lead: any) => {
+            // Parse products from satilan_urunler JSON
+            let itemsText = '-';
+            try {
+                if (lead.satilan_urunler) {
+                    const products = typeof lead.satilan_urunler === 'string'
+                        ? JSON.parse(lead.satilan_urunler)
+                        : lead.satilan_urunler;
+
+                    if (Array.isArray(products) && products.length > 0) {
+                        itemsText = products
+                            .map((p: any) => `${p.urun_adi || p.name || 'Ürün'} (${p.adet || 1} adet)`)
+                            .join(', ');
+                    }
+                }
+            } catch (e) {
+                console.error('Error parsing products:', e);
+            }
+
+            // Parse revenue from kredi_limiti
+            const parsePrice = (val: any): number => {
+                if (!val) return 0;
+                let str = String(val).replace(/[^0-9,.-]/g, '');
+                if (str.includes(',') && str.includes('.')) {
+                    str = str.replace(/\./g, '').replace(',', '.');
+                } else if (str.includes(',')) {
+                    str = str.replace(',', '.');
+                }
+                return parseFloat(str) || 0;
+            };
+
+            return {
+                id: lead.id,
+                name: lead.ad_soyad || 'İsimsiz',
+                work: lead.meslek || '-',
+                items: itemsText,
+                revenue: parsePrice(lead.kredi_limiti),
+                date: lead.teslim_tarihi || lead.updated_at || new Date().toISOString()
+            };
+        });
+    };
+
     // Formatters
     const formatCurrency = (val: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(val);
     const formatNumber = (val: number) => new Intl.NumberFormat('tr-TR').format(val);
@@ -114,7 +160,7 @@ export default function ReportsPage() {
 
                 {/* Delivered Customers List */}
                 <div className="mb-12">
-                    <DeliveredCustomerList data={deliveredLeads} />
+                    <DeliveredCustomerList data={transformDeliveredLeads(deliveredLeads)} />
                 </div>
             </div>
         </div>
