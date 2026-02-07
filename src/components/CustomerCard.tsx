@@ -1144,8 +1144,35 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                                 <label className="block text-xs font-semibold text-purple-800 mb-1">Randevu Zamanı</label>
                                                 <input
                                                     type="datetime-local"
-                                                    value={data.sonraki_arama_zamani ? new Date(data.sonraki_arama_zamani).toISOString().slice(0, 16) : ''}
-                                                    onChange={(e) => handleChange('sonraki_arama_zamani', new Date(e.target.value).toISOString())}
+                                                    value={data.sonraki_arama_zamani ? (() => {
+                                                        // Convert UTC to local datetime-local format
+                                                        const date = new Date(data.sonraki_arama_zamani);
+                                                        // Get local time components
+                                                        const year = date.getFullYear();
+                                                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                                                        const day = String(date.getDate()).padStart(2, '0');
+                                                        const hours = String(date.getHours()).padStart(2, '0');
+                                                        const minutes = String(date.getMinutes()).padStart(2, '0');
+                                                        return `${year}-${month}-${day}T${hours}:${minutes}`;
+                                                    })() : ''}
+                                                    onChange={(e) => {
+                                                        // Convert local datetime to ISO string preserving the local time
+                                                        if (e.target.value) {
+                                                            // Parse the local datetime string
+                                                            const localDate = new Date(e.target.value);
+                                                            // Create ISO string but keep the local time as-is
+                                                            const year = localDate.getFullYear();
+                                                            const month = String(localDate.getMonth() + 1).padStart(2, '0');
+                                                            const day = String(localDate.getDate()).padStart(2, '0');
+                                                            const hours = String(localDate.getHours()).padStart(2, '0');
+                                                            const minutes = String(localDate.getMinutes()).padStart(2, '0');
+                                                            const seconds = String(localDate.getSeconds()).padStart(2, '0');
+                                                            const isoString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.000Z`;
+                                                            handleChange('sonraki_arama_zamani', isoString);
+                                                        } else {
+                                                            handleChange('sonraki_arama_zamani', null);
+                                                        }
+                                                    }}
                                                     className="w-full p-2 text-sm border border-purple-200 rounded focus:ring-2 focus:ring-purple-500 outline-none"
                                                 />
                                             </div>
