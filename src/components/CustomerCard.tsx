@@ -1088,6 +1088,25 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                             value={data.email || ''}
                                             onChange={(e) => handleChange('email', e.target.value)}
                                         />
+
+                                        {/* ADMIN ONLY: Owner Selection */}
+                                        {session?.user?.role === 'ADMIN' && (
+                                            <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
+                                                <Select
+                                                    label="📋 Sahip (Müşteriyi Takip Eden)"
+                                                    value={data.sahip || ''}
+                                                    onChange={(e) => handleChange('sahip', e.target.value)}
+                                                    options={[
+                                                        { value: '', label: '-- Sahipsiz (Havuzda) --' },
+                                                        ...users.map(u => ({ value: u.email, label: `${u.name} (${u.email})` }))
+                                                    ]}
+                                                />
+                                                <p className="text-xs text-amber-700 mt-1">
+                                                    ⚠️ Sahip değiştirme raporları etkiler. "sistem" sahipli kayıtlar raporlarda sorun yaratır.
+                                                </p>
+                                            </div>
+                                        )}
+
                                         <div className="grid grid-cols-2 gap-3">
                                             <Select
                                                 label="Şehir"
