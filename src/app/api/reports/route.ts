@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getReportData, getAllLogs, getInventoryStats, getLeadStats } from '@/lib/leads';
+import { supabaseAdmin } from '@/lib/supabase';
 
 // ... (existing code)
 
@@ -414,6 +415,33 @@ export async function GET(req: NextRequest) {
                     stats.rejection[reason] = (stats.rejection[reason] || 0) + 1;
                 }
             }
+        });
+
+        // --- OVERRIDE: Query CURRENT pending applications from leads table ---
+        // This shows the CURRENT workload, not historical applications within date range
+        const { data: currentPendingApplications } = await supabaseAdmin
+            .from('leads')
+            .select('id, sahip_email')
+            .eq('durum', 'Başvuru alındı');
+
+        // Reset application counts
+        applicationIds.clear();
+        Object.keys(userAppIds).forEach(u => userAppIds[u].clear());
+
+        // Recalculate from CURRENT pending applications
+        currentPendingApplications?.forEach((lead: any) => {
+            const ownerRaw = lead.sahip_email;
+            if (!ownerRaw) return;
+
+            // Filter ignorable users
+            if (['sistem', 'system', 'admin', 'ibrahim', 'ibrahimsentinmaz@gmail.com'].some(x => ownerRaw.toLowerCase().includes(x))) return;
+
+            const owner = normalizeUser(ownerRaw);
+
+            // Add to global and per-user counts
+            applicationIds.add(lead.id);
+            if (!userAppIds[owner]) userAppIds[owner] = new Set();
+            userAppIds[owner].add(lead.id);
         });
 
         // --- 3. FINALIZE --- 
