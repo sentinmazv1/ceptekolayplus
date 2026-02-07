@@ -221,14 +221,12 @@ export async function getLeadStats(user?: { email: string; role: string }) {
     const pTotalSched = baseFilter(supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).eq('durum', 'Daha sonra aranmak istiyor'));
     const pMyRetry = baseFilter(supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).in('durum', retryStates));
 
-
-    // PENDING APPROVAL - BUGÜNKÜ BAŞVURULAR (Today's applications only)
-    // Use ilike pattern matching for reliable date filtering (same approach as today_called)
+    // PENDING APPROVAL - ALL pending applications (not just today)
+    // Shows total workload of applications waiting for approval
     const pPending = baseFilter(
         supabaseAdmin.from('leads')
             .select('*', { count: 'exact', head: true })
             .eq('durum', 'Başvuru alındı')
-            .ilike('updated_at', `${todayStr}%`)
     );
 
 
