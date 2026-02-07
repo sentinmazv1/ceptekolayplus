@@ -224,6 +224,13 @@ export async function GET(req: NextRequest) {
             .lte('updated_at', endIso)
             .order('updated_at', { ascending: false });
 
+        // Query CURRENT pending applications (regardless of date)
+        // This shows the CURRENT workload, not historical applications
+        const { data: pendingApplications } = await supabaseAdmin
+            .from('leads')
+            .select('sahip_email')
+            .eq('durum', 'Başvuru alındı');
+
         // Process approved leads
         approvedLeads?.forEach((lead: any) => {
             const ownerRaw = lead.sahip_email;
@@ -249,6 +256,36 @@ export async function GET(req: NextRequest) {
             stats.deliveredCount++;
             // Use kredi_limiti for revenue (matching SQL query)
             stats.deliveredRevenue += parsePrice(lead.kredi_limiti);
+        });
+
+        // Process CURRENT pending applications
+        // OVERRIDE the activity log count with CURRENT count from leads table
+        pendingApplications?.forEach((lead: any) => {
+            const ownerRaw = lead.sahip_email;
+            if (!ownerRaw) return;
+            if (['sistem', 'system', 'admin', 'ibrahim', 'ibrahimsentinmaz@gmail.com'].some(x => ownerRaw.toLowerCase().includes(x))) return;
+
+            const user = normalizeUser(ownerRaw);
+            const stats = getStats(user);
+
+            // Increment current pending count
+            // Note: We're NOT incrementing here, we're SETTING the count
+            // So we need to reset first
+        });
+
+        // Reset applications count and recalculate from pending applications
+        personnelMap.forEach((stats) => {
+            stats.applications = 0; // Reset
+        });
+
+        pendingApplications?.forEach((lead: any) => {
+            const ownerRaw = lead.sahip_email;
+            if (!ownerRaw) return;
+            if (['sistem', 'system', 'admin', 'ibrahim', 'ibrahimsentinmaz@gmail.com'].some(x => ownerRaw.toLowerCase().includes(x))) return;
+
+            const user = normalizeUser(ownerRaw);
+            const stats = getStats(user);
+            stats.applications++;
         });
 
         // Final Filter & Sort
