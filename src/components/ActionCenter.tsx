@@ -34,20 +34,19 @@ export function ActionCenter({ onPullLead, loading, myStats, teamStats, newLeadC
     };
 
     return (
-        <div className="bg-white rounded-[1.5rem] p-6 shadow-sm border border-gray-200/60 mb-8 relative overflow-hidden group">
+        <div className="bg-white rounded-[1.5rem] p-4 md:p-6 shadow-sm border border-gray-200/60 mb-8 relative overflow-hidden group">
             {/* Background Decorative Elements */}
             <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-indigo-50/50 to-transparent rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
 
-            <div className="relative z-10 flex flex-col md:flex-row items-center gap-4 md:gap-8 justify-between">
+            <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-center md:gap-8 md:justify-between">
 
-                {/* 1. Primary Action: CALL BUTTON */}
                 {/* 1. Primary Actions Group */}
-                <div className="flex-shrink-0 w-full md:w-auto flex items-center gap-2 md:gap-3">
+                <div className="flex-shrink-0 w-full md:w-auto grid grid-cols-2 md:flex md:items-center gap-2 md:gap-3">
                     {/* A) CALL BUTTON */}
                     <Button
                         onClick={onPullLead}
                         disabled={loading}
-                        className="relative flex-1 md:flex-none h-20 md:h-16 pl-4 md:pl-6 pr-4 md:pr-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-200 hover:shadow-2xl hover:shadow-indigo-300 transition-all duration-300 hover:-translate-y-1 active:scale-95 group/btn overflow-hidden"
+                        className="relative col-span-2 md:col-span-1 h-16 md:h-16 pl-4 md:pl-6 pr-4 md:pr-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-200 hover:shadow-2xl hover:shadow-indigo-300 transition-all duration-300 hover:-translate-y-1 active:scale-95 group/btn overflow-hidden"
                     >
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover/btn:translate-x-[200%] transition-transform duration-1000"></div>
                         <div className="flex items-center justify-center md:justify-start gap-3">
@@ -76,51 +75,50 @@ export function ActionCenter({ onPullLead, loading, myStats, teamStats, newLeadC
                     {/* B) ADD BUTTON */}
                     <Button
                         onClick={() => router.push('/dashboard/add')}
-                        className="relative w-16 md:w-20 h-20 md:h-16 bg-white hover:bg-gray-50 text-indigo-600 border border-indigo-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 active:scale-95 group/add flex flex-col items-center justify-center gap-1"
+                        className="relative h-16 md:w-20 md:h-16 bg-white hover:bg-gray-50 text-indigo-600 border border-indigo-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 active:scale-95 group/add flex flex-col items-center justify-center gap-1"
                     >
                         <PlusCircle className="w-6 h-6 group-hover/add:rotate-90 transition-transform duration-300" />
-                        <span className="text-[9px] font-bold uppercase tracking-wider hidden md:block">Ekle</span>
+                        <span className="text-[9px] font-bold uppercase tracking-wider">Ekle</span>
                     </Button>
 
                     {/* C) LIST BUTTON (Icon Only) */}
                     <Button
                         onClick={() => router.push('/dashboard/my-leads')}
-                        className="relative w-16 md:w-20 h-20 md:h-16 bg-white hover:bg-gray-50 text-indigo-600 border border-indigo-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 active:scale-95 group/list flex flex-col items-center justify-center gap-1"
+                        className="relative h-16 md:w-20 md:h-16 bg-white hover:bg-gray-50 text-indigo-600 border border-indigo-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 active:scale-95 group/list flex flex-col items-center justify-center gap-1"
                     >
                         <Users className="w-6 h-6 group-hover/list:scale-110 transition-transform duration-300" />
-                        {/* Hidden label for accessibility/tooltip logic if needed, but visually hidden as requested */}
+                        <span className="text-[9px] font-bold uppercase tracking-wider">Liste</span>
                     </Button>
 
-                    {/* D) REQUESTS BUTTON (Talepler) */}
                     {/* D) REQUESTS BUTTON (Talepler) - Conditionally Heroic */}
                     {requestCount > 0 ? (
                         <Button
                             onClick={() => router.push('/dashboard/requests')}
-                            className="relative flex-1 md:flex-none h-20 md:h-16 pl-3 pr-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl shadow-xl shadow-emerald-200 hover:shadow-2xl hover:shadow-emerald-300 transition-all duration-300 hover:-translate-y-1 active:scale-95 group/req overflow-hidden"
+                            className="relative col-span-2 md:col-span-1 h-16 md:h-16 pl-3 pr-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl shadow-xl shadow-emerald-200 hover:shadow-2xl hover:shadow-emerald-300 transition-all duration-300 hover:-translate-y-1 active:scale-95 group/req overflow-hidden"
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover/req:translate-x-[200%] transition-transform duration-1000"></div>
-                            <div className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2">
+                            <div className="flex flex-row items-center justify-center gap-2">
                                 <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm relative">
                                     <Inbox className="w-5 h-5 animate-bounce" />
                                 </div>
-                                <div className="text-center md:text-left flex flex-col">
-                                    <div className="text-[8px] uppercase font-bold text-emerald-100 tracking-wider flex items-center justify-center md:justify-start gap-1">
+                                <div className="text-left flex flex-col">
+                                    <div className="text-[8px] uppercase font-bold text-emerald-100 tracking-wider flex items-center gap-1">
                                         Bekleyen
                                         <span className="bg-white text-emerald-600 px-1.5 py-0.5 rounded-full text-[9px] font-black flex items-center gap-0.5 shadow-sm">
                                             {requestCount}
                                         </span>
                                     </div>
-                                    <div className="text-xs md:text-sm font-black tracking-tight">TALEPLER</div>
+                                    <div className="text-sm font-black tracking-tight">TALEPLER</div>
                                 </div>
                             </div>
                         </Button>
                     ) : (
                         <Button
                             onClick={() => router.push('/dashboard/requests')}
-                            className="relative w-16 md:w-20 h-20 md:h-16 bg-white hover:bg-gray-50 text-orange-600 border border-orange-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 active:scale-95 group/req flex flex-col items-center justify-center gap-1"
+                            className="relative h-16 md:w-20 md:h-16 bg-white hover:bg-gray-50 text-orange-600 border border-orange-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 active:scale-95 group/req flex flex-col items-center justify-center gap-1"
                         >
                             <Inbox className="w-6 h-6 group-hover/req:scale-110 transition-transform duration-300" />
-                            <span className="text-[9px] font-bold uppercase tracking-wider hidden md:block">Talepler</span>
+                            <span className="text-[9px] font-bold uppercase tracking-wider">Talepler</span>
                         </Button>
                     )}
                 </div>
@@ -135,7 +133,7 @@ export function ActionCenter({ onPullLead, loading, myStats, teamStats, newLeadC
                             </div>
                             <input
                                 type="text"
-                                className="w-full bg-transparent border-none focus:ring-0 text-gray-900 placeholder-gray-400 text-lg font-medium py-4 px-4"
+                                className="w-full bg-transparent border-none focus:ring-0 text-gray-900 placeholder-gray-400 text-base md:text-lg font-medium py-3 md:py-4 px-4"
                                 placeholder="TC Kimlik, İsim veya Telefon ile hızlı ara..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
