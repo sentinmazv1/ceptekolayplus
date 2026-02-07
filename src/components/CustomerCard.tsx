@@ -1089,23 +1089,38 @@ export function CustomerCard({ initialData, onSave, isNew = false }: CustomerCar
                                             onChange={(e) => handleChange('email', e.target.value)}
                                         />
 
-                                        {/* ADMIN ONLY: Owner Selection */}
+
+                                        {/* ADMIN ONLY: Owner & Seller Selection */}
                                         {session?.user?.role === 'ADMIN' && (
-                                            <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
-                                                <Select
-                                                    label="📋 Sahip (Müşteriyi Takip Eden)"
-                                                    value={data.sahip || ''}
-                                                    onChange={(e) => handleChange('sahip', e.target.value)}
-                                                    options={[
-                                                        { value: '', label: '-- Sahipsiz (Havuzda) --' },
-                                                        ...users.map(u => ({ value: u.email, label: `${u.name} (${u.email})` }))
-                                                    ]}
-                                                />
-                                                <p className="text-xs text-amber-700 mt-1">
-                                                    ⚠️ Sahip değiştirme raporları etkiler. "sistem" sahipli kayıtlar raporlarda sorun yaratır.
+                                            <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 space-y-3">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    <Select
+                                                        label="📋 Sahip (Müşteriyi Takip Eden)"
+                                                        value={data.sahip || ''}
+                                                        onChange={(e) => handleChange('sahip', e.target.value)}
+                                                        options={[
+                                                            { value: '', label: '-- Sahipsiz (Havuzda) --' },
+                                                            ...users.map(u => ({ value: u.email, label: `${u.name} (${u.email})` }))
+                                                        ]}
+                                                    />
+                                                    <Select
+                                                        label="🚚 Satıcı (Ürünü Teslim Eden)"
+                                                        value={data.teslim_eden || ''}
+                                                        onChange={(e) => handleChange('teslim_eden', e.target.value)}
+                                                        options={[
+                                                            { value: '', label: '-- Seçiniz --' },
+                                                            ...users.map(u => ({ value: u.email, label: `${u.name} (${u.email})` }))
+                                                        ]}
+                                                    />
+                                                </div>
+                                                <p className="text-xs text-amber-700">
+                                                    ⚠️ <strong>Sahip:</strong> Müşteriyi takip eden kişi (raporlarda önemli!)
+                                                    <br />
+                                                    📦 <strong>Satıcı:</strong> Ürünü teslim eden kişi (teslimat raporlarında görünür)
                                                 </p>
                                             </div>
                                         )}
+
 
                                         <div className="grid grid-cols-2 gap-3">
                                             <Select
