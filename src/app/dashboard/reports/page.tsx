@@ -82,9 +82,14 @@ export default function ReportsPage() {
 
     // Transform raw API data for DeliveredCustomerList
     const transformDeliveredLeads = (rawLeads: any[]) => {
-        if (!rawLeads || rawLeads.length === 0) return [];
+        console.log('🔍 [DeliveredLeads] Raw data received:', rawLeads?.length || 0, 'leads');
 
-        return rawLeads.map((lead: any) => {
+        if (!rawLeads || rawLeads.length === 0) {
+            console.log('⚠️ [DeliveredLeads] No raw leads data');
+            return [];
+        }
+
+        const transformed = rawLeads.map((lead: any) => {
             // Parse products from satilan_urunler JSON
             let itemsText = '-';
             try {
@@ -100,7 +105,7 @@ export default function ReportsPage() {
                     }
                 }
             } catch (e) {
-                console.error('Error parsing products:', e);
+                console.error('❌ [DeliveredLeads] Error parsing products:', e);
             }
 
             // Parse revenue from kredi_limiti
@@ -124,6 +129,11 @@ export default function ReportsPage() {
                 date: lead.teslim_tarihi || lead.updated_at || new Date().toISOString()
             };
         });
+
+        console.log('✅ [DeliveredLeads] Transformed data:', transformed.length, 'leads');
+        console.log('📊 [DeliveredLeads] Sample:', transformed[0]);
+
+        return transformed;
     };
 
     // Formatters
