@@ -52,8 +52,7 @@ export function PersonnelTable({ data, loading }: PersonnelTableProps) {
                             <th className="px-4 py-4 text-center">SMS</th>
                             <th className="px-4 py-4 text-center">WP</th>
                             <th className="px-4 py-4 text-center border-l">Başvuru</th>
-                            <th className="px-4 py-4 text-center border-l bg-purple-50/30 text-purple-600">Avukat<br />Sorgu</th>
-                            <th className="px-4 py-4 text-center bg-emerald-50/30 text-emerald-600">Temiz</th>
+                            <th className="px-4 py-4 text-center border-l bg-emerald-50/30 text-emerald-600">Temiz</th>
                             <th className="px-4 py-4 text-center bg-red-50/30 text-red-600">Riskli</th>
                             <th className="px-6 py-4 text-right border-l bg-blue-50/30 text-blue-700">Onaylı (Limit)</th>
                             <th className="px-6 py-4 text-right border-l bg-indigo-50/30 text-indigo-700">Teslim (Ciro)</th>
@@ -69,8 +68,7 @@ export function PersonnelTable({ data, loading }: PersonnelTableProps) {
 
                                 <td className="px-4 py-4 text-center tabular-nums font-bold text-gray-800 border-l">{row.applications}</td>
 
-                                <td className="px-4 py-4 text-center tabular-nums font-medium text-purple-600 border-l bg-purple-50/10">{row.attorneyQuery}</td>
-                                <td className="px-4 py-4 text-center tabular-nums font-medium text-emerald-600 bg-emerald-50/10">{row.attorneyClean}</td>
+                                <td className="px-4 py-4 text-center tabular-nums font-medium text-emerald-600 border-l bg-emerald-50/10">{row.attorneyClean}</td>
                                 <td className="px-4 py-4 text-center tabular-nums font-medium text-red-600 bg-red-50/10">{row.attorneyRisky}</td>
 
                                 <td className="px-6 py-4 text-right border-l bg-blue-50/10">
