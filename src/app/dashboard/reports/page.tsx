@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users } from 'lucide-react';
+import { Wallet, ShoppingBag, PieChart, TrendingUp, Users, Package } from 'lucide-react';
 import { ReportHeader } from '@/components/reports/ReportHeader';
+import { KPICard } from '@/components/reports/KPICard';
 import { PersonnelTable } from '@/components/reports/PersonnelTable';
 import { DeliveredCustomerList } from '@/components/reports/DeliveredCustomerList';
 import { CollectionServiceKPI } from '@/components/reports/CollectionServiceKPI';
@@ -152,12 +153,71 @@ export default function ReportsPage() {
                     onRefresh={fetchDetailedData}
                 />
 
-                {/* Collection Service KPI */}
-                {collectionServiceStats && (
-                    <div className="mb-6">
-                        <CollectionServiceKPI data={collectionServiceStats} loading={!collectionServiceStats} />
+                {/* GENEL TOPLAM KPI GRID */}
+                <div className="mb-6">
+                    <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <PieChart className="w-4 h-4 text-gray-400" />
+                        GENEL TOPLAM ({startDate} - {endDate})
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
+                        <KPICard
+                            title="Toplam Ciro"
+                            value={detailedStats ? formatCurrency(detailedStats.funnel.deliveredVolume) : '0 ₺'}
+                            subValue="Net Satış"
+                            icon={Wallet}
+                            loading={detailedLoading}
+                            className="text-xs lg:col-span-1"
+                        />
+                        <KPICard
+                            title="Ürün Adedi"
+                            value={detailedStats ? formatNumber(detailedStats.funnel.delivered) : '0'}
+                            subValue="Teslim Edilen"
+                            icon={ShoppingBag}
+                            loading={detailedLoading}
+                            className="text-xs"
+                        />
+                        <KPICard
+                            title="Müşteri Sayısı"
+                            value={detailedStats ? formatNumber(detailedStats.funnel.sale) : '0'}
+                            subValue="Teslim Edilen"
+                            icon={Users}
+                            loading={detailedLoading}
+                            className="text-xs"
+                        />
+                        <KPICard
+                            title="Toplam Arama"
+                            value={detailedStats ? formatNumber(detailedStats.funnel.totalCalled) : '0'}
+                            subValue="Çekilen"
+                            icon={Package}
+                            loading={detailedLoading}
+                            className="text-xs"
+                        />
+                        <KPICard
+                            title="Başvuru"
+                            value={detailedStats ? formatNumber(detailedStats.funnel.applications) : '0'}
+                            subValue="Alınan"
+                            icon={TrendingUp}
+                            loading={detailedLoading}
+                            className="text-xs"
+                        />
+                        <KPICard
+                            title="Arama→Başvuru"
+                            value={detailedStats && detailedStats.funnel.totalCalled > 0 ? `%${((detailedStats.funnel.applications / detailedStats.funnel.totalCalled) * 100).toFixed(1)}` : '%0'}
+                            subValue="Dönüşüm"
+                            icon={TrendingUp}
+                            loading={detailedLoading}
+                            className="text-xs"
+                        />
+                        <KPICard
+                            title="Başvuru→Satış"
+                            value={detailedStats && detailedStats.funnel.applications > 0 ? `%${((detailedStats.funnel.sale / detailedStats.funnel.applications) * 100).toFixed(1)}` : '%0'}
+                            subValue="Dönüşüm"
+                            icon={PieChart}
+                            loading={detailedLoading}
+                            className="text-xs"
+                        />
                     </div>
-                )}
+                </div>
 
                 {/* Personnel Table */}
                 <div className="mb-6">
@@ -169,9 +229,16 @@ export default function ReportsPage() {
                 </div>
 
                 {/* Delivered Customers List */}
-                <div className="mb-12">
+                <div className="mb-6">
                     <DeliveredCustomerList data={transformDeliveredLeads(deliveredLeads)} />
                 </div>
+
+                {/* Collection Service KPI */}
+                {collectionServiceStats && (
+                    <div className="mb-6">
+                        <CollectionServiceKPI data={collectionServiceStats} loading={!collectionServiceStats} />
+                    </div>
+                )}
             </div>
         </div>
     );
